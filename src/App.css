@@ -1,8 +1,7 @@
 /* App component styles */
 .app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  min-height: 100vh;
+  background-color: #f5f5f5;
 }
 
 .app-header {
@@ -12,4 +11,47 @@
 
 .app-content {
   min-height: 60vh;
+}
+
+/* Custom styles for Ant Design components */
+.ant-form-item-label > label {
+  color: #333;
+  font-weight: 600;
+}
+
+.ant-input:focus,
+.ant-input-focused {
+  border-color: #00b4aa;
+  box-shadow: 0 0 0 2px rgba(0, 180, 170, 0.2);
+}
+
+.ant-picker:focus,
+.ant-picker-focused {
+  border-color: #00b4aa;
+  box-shadow: 0 0 0 2px rgba(0, 180, 170, 0.2);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .app {
+    padding: 0;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00b4aa;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #008b82;
 }
