@@ -10,11 +10,15 @@ import {
   Row,
   Col,
   theme,
+  Flex,
+  Alert,
+  Result,
 } from "antd";
 import {
   MailOutlined,
   ArrowLeftOutlined,
   LoginOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../services/firebase";
@@ -27,8 +31,6 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
-
-  // Sử dụng theme token của Ant Design
   const { token } = theme.useToken();
 
   const handleSubmit = async (values) => {
@@ -62,66 +64,46 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div
+    <Flex
+      justify="center"
+      align="center"
       style={{
         minHeight: "100vh",
         background: `linear-gradient(135deg, ${token.colorPrimary} 0%, ${token.colorPrimaryBg} 100%)`,
         padding: token.paddingLG,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <Card
         style={{
           width: "100%",
           maxWidth: "450px",
-          boxShadow: token.boxShadowSecondary,
-        }}
-        styles={{
-          body: { padding: token.paddingXL }
+          textAlign: "center",
         }}
       >
-        <Space
-          direction="vertical"
-          size="large"
-          style={{ width: "100%", textAlign: "center" }}
-        >
-          <div>
-            <Title level={2} style={{ color: token.colorPrimary, marginBottom: token.marginXS }}>
-              {emailSent ? "Email Đã Được Gửi" : "Quên Mật Khẩu"}
-            </Title>
-            <Text type="secondary" style={{ fontSize: token.fontSizeLG }}>
-              {emailSent
-                ? "Vui lòng kiểm tra email để đặt lại mật khẩu"
-                : "Nhập email để nhận liên kết đặt lại mật khẩu"
-              }
-            </Text>
-          </div>
-
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
           {emailSent ? (
-            <Space direction="vertical" size="large" style={{ width: "100%" }}>
-              <div
-                style={{
-                  padding: token.paddingLG,
-                  backgroundColor: token.colorSuccessBg,
-                  borderRadius: token.borderRadius,
-                  border: `1px solid ${token.colorSuccessBorder}`,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: token.fontSizeSM,
-                    color: token.colorSuccessText,
-                    lineHeight: "1.6",
-                    display: "block"
-                  }}
-                >
-                  ✅ <strong>Thành công!</strong><br />
-                  Email khôi phục mật khẩu đã được gửi đến địa chỉ email của bạn.
-                  Vui lòng kiểm tra hộp thư đến và làm theo hướng dẫn.
-                </Text>
-              </div>
+            // Email sent success view
+            <>
+              <Result
+                icon={<CheckCircleOutlined style={{ color: token.colorSuccess }} />}
+                title={
+                  <Title level={3} style={{ color: token.colorPrimary, margin: 0 }}>
+                    Email Đã Được Gửi
+                  </Title>
+                }
+                subTitle={
+                  <Text type="secondary">
+                    Vui lòng kiểm tra email để đặt lại mật khẩu
+                  </Text>
+                }
+              />
+
+              <Alert
+                message="Thành công!"
+                description="Email khôi phục mật khẩu đã được gửi đến địa chỉ email của bạn. Vui lòng kiểm tra hộp thư đến và làm theo hướng dẫn."
+                type="success"
+                showIcon
+              />
 
               <Space direction="vertical" size="middle" style={{ width: "100%" }}>
                 <Button
@@ -129,7 +111,6 @@ export default function ForgotPassword() {
                   onClick={handleBackToSignIn}
                   block
                   size="large"
-                  style={{ height: "48px", fontWeight: 600 }}
                 >
                   Quay Về Đăng Nhập
                 </Button>
@@ -138,87 +119,89 @@ export default function ForgotPassword() {
                   type="default"
                   onClick={handleResendEmail}
                   block
-                  style={{ fontWeight: 500 }}
                 >
                   Gửi Lại Email Khác
                 </Button>
               </Space>
-            </Space>
+            </>
           ) : (
-            <Form
-              form={form}
-              onFinish={handleSubmit}
-              layout="vertical"
-              requiredMark={false}
-              size="large"
-              style={{ textAlign: "left" }}
-            >
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: "Vui lòng nhập email!" },
-                  { type: "email", message: "Email không hợp lệ!" },
-                ]}
+            // Forgot password form view
+            <>
+              <div>
+                <Title level={3} style={{ color: token.colorPrimary, margin: 0 }}>
+                  Quên Mật Khẩu
+                </Title>
+                <Text type="secondary">
+                  Nhập email để nhận liên kết đặt lại mật khẩu
+                </Text>
+              </div>
+
+              <Form
+                form={form}
+                onFinish={handleSubmit}
+                layout="vertical"
+                requiredMark={false}
+                size="large"
+                style={{ textAlign: "left" }}
               >
-                <Input
-                  prefix={<MailOutlined style={{ color: token.colorPrimary }} />}
-                  placeholder="Nhập địa chỉ email"
-                />
-              </Form.Item>
-
-              <Form.Item style={{ marginBottom: token.marginMD }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  block
-                  size="large"
-                  style={{ height: "48px", fontWeight: 600 }}
+                <Form.Item
+                  name="email"
+                  label="Email"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập email!" },
+                    { type: "email", message: "Email không hợp lệ!" },
+                  ]}
                 >
-                  {loading ? "Đang gửi..." : "Gửi Email Khôi Phục"}
-                </Button>
-              </Form.Item>
+                  <Input
+                    prefix={<MailOutlined style={{ color: token.colorPrimary }} />}
+                    placeholder="Nhập địa chỉ email"
+                  />
+                </Form.Item>
 
-              <Row justify="space-between" align="middle" style={{ marginTop: token.marginSM }}>
-                <Col>
+                <Form.Item>
                   <Button
-                    type="link"
-                    onClick={handleBackToSignIn}
-                    style={{
-                      padding: 0,
-                      fontSize: token.fontSizeXS,
-                      color: token.colorTextTertiary,
-                      height: "auto"
-                    }}
-                    icon={<ArrowLeftOutlined />}
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    block
+                    size="large"
                   >
-                    Quay lại đăng nhập
+                    {loading ? "Đang gửi..." : "Gửi Email Khôi Phục"}
                   </Button>
-                </Col>
-                <Col>
-                  <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
-                    Chưa có tài khoản?{" "}
-                  </Text>
-                  <Button
-                    type="link"
-                    onClick={() => navigate("/signup")}
-                    style={{
-                      padding: 0,
-                      fontSize: token.fontSizeXS,
-                      fontWeight: 500,
-                      height: "auto"
-                    }}
-                    icon={<LoginOutlined />}
-                  >
-                    Đăng ký ngay
-                  </Button>
-                </Col>
-              </Row>
-            </Form>
+                </Form.Item>
+
+                <Row justify="space-between" align="middle">
+                  <Col>
+                    <Button
+                      type="link"
+                      onClick={handleBackToSignIn}
+                      icon={<ArrowLeftOutlined />}
+                      style={{ padding: 0, height: "auto" }}
+                    >
+                      <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
+                        Quay lại đăng nhập
+                      </Text>
+                    </Button>
+                  </Col>
+                  <Col>
+                    <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
+                      Chưa có tài khoản?{" "}
+                    </Text>
+                    <Button
+                      type="link"
+                      onClick={() => navigate("/signup")}
+                      icon={<LoginOutlined />}
+                      style={{ padding: 0, height: "auto" }}
+                    >
+                      Đăng ký ngay
+                    </Button>
+                  </Col>
+                </Row>
+              </Form>
+            </>
           )}
         </Space>
       </Card>
-    </div>
+    </Flex>
   );
 }

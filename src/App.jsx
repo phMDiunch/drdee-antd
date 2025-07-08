@@ -5,6 +5,13 @@ import { ConfigProvider } from "antd";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
+// Import contexts
+import { AuthProvider } from "./contexts/AuthContext";
+
+// Import components
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
+
 // Import pages
 import Home from "./pages/Home";
 import SignUp from "./pages/auth/SignUp";
@@ -23,32 +30,69 @@ function App() {
         },
       }}
     >
-      <Router>
-        <div className="app">
-          <Routes>
-            <Route path="/" element={<SignIn />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/pending" element={<Pending />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reject" element={<Reject />} />
-          </Routes>
-        </div>
+      <AuthProvider>
+        <Router>
+          <div className="app">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <PublicRoute>
+                    <SignIn />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <Home />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <PublicRoute>
+                    <SignUp />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/signin"
+                element={
+                  <PublicRoute>
+                    <SignIn />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/pending" element={<Pending />} />
+              <Route
+                path="/forgot-password"
+                element={
+                  <PublicRoute>
+                    <ForgotPassword />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/reject" element={<Reject />} />
+            </Routes>
+          </div>
 
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-      </Router>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </Router>
+      </AuthProvider>
     </ConfigProvider>
   );
 }

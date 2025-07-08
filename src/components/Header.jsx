@@ -10,6 +10,8 @@ import {
   Space,
   Typography,
   theme,
+  Grid,
+  Flex,
 } from "antd";
 import {
   SearchOutlined,
@@ -20,20 +22,23 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from "@ant-design/icons";
-import { signOut } from "firebase/auth";
-import { auth } from "../services/firebase";
 import { toast } from "react-toastify";
+import { useAuth } from "../contexts/AuthContext";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function Header({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const { token } = theme.useToken();
+  const { logout, userData } = useAuth();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md; // md breakpoint is 768px
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       toast.success("Đăng xuất thành công!");
       navigate("/");
     } catch (error) {
@@ -90,129 +95,131 @@ export default function Header({ collapsed, onToggle }) {
   return (
     <AntHeader
       style={{
-        padding: "0 24px",
+        padding: `0 ${isMobile ? token.paddingMD : token.paddingLG}px`,
         background: token.colorBgContainer,
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
         position: "sticky",
         top: 0,
         zIndex: 1000,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        boxShadow: token.boxShadowTertiary,
       }}
     >
-      {/* Left Section - Logo and Menu Toggle */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <Button
-          type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={onToggle}
-          style={{
-            fontSize: "16px",
-            width: 40,
-            height: 40,
-          }}
-        />
-        <div
-          onClick={() => navigate("/home")}
-          style={{
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Text
+      <Flex justify="space-between" align="center" style={{ height: "100%" }}>
+        {/* Left Section - Logo and Menu Toggle */}
+        <Flex align="center" gap={isMobile ? "small" : "middle"}>
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={onToggle}
+            size="large"
+          />
+          <Button
+            type="text"
+            onClick={() => navigate("/home")}
             style={{
-              fontSize: "24px",
-              fontWeight: "bold",
-              color: token.colorPrimary,
-              letterSpacing: "1px",
+              padding: 0,
+              height: "auto",
+              border: "none",
+              background: "none",
             }}
           >
-            DR DEE
-          </Text>
-        </div>
-      </div>
-
-      {/* Center Section - Search */}
-      <div style={{ flex: 1, maxWidth: "500px", margin: "0 24px" }}>
-        <Input
-          placeholder="Tìm kiếm..."
-          prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
-          style={{
-            borderRadius: token.borderRadius,
-            backgroundColor: token.colorBgLayout,
-            border: `1px solid ${token.colorBorder}`,
-          }}
-          size="large"
-          onPressEnter={(e) => {
-            // Handle search
-            console.log("Search:", e.target.value);
-          }}
-        />
-      </div>
-
-      {/* Right Section - Notifications and User */}
-      <Space size="middle">
-        <Dropdown
-          menu={{ items: notificationMenuItems }}
-          trigger={["click"]}
-          placement="bottomRight"
-        >
-          <Badge count={5} size="small">
-            <Button
-              type="text"
-              icon={<BellOutlined />}
-              style={{
-                fontSize: "18px",
-                width: 40,
-                height: 40,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            />
-          </Badge>
-        </Dropdown>
-
-        <Dropdown
-          menu={{ items: userMenuItems }}
-          trigger={["click"]}
-          placement="bottomRight"
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-              padding: "4px 8px",
-              borderRadius: token.borderRadius,
-              transition: "background-color 0.2s",
-            }}
-            className="user-dropdown"
-          >
-            <Avatar
-              size="small"
-              icon={<UserOutlined />}
-              style={{
-                backgroundColor: token.colorPrimary,
-              }}
-            />
             <Text
               style={{
-                fontSize: "14px",
-                fontWeight: "500",
-                color: token.colorText,
+                fontSize: isMobile ? token.fontSizeXL : token.fontSizeHeading4,
+                fontWeight: "bold",
+                color: token.colorPrimary,
+                letterSpacing: "1px",
               }}
             >
-              Admin
+              DR DEE
             </Text>
+          </Button>
+        </Flex>
+
+        {/* Center Section - Search */}
+        {!isMobile && (
+          <div style={{ flex: 1, maxWidth: "500px", margin: `0 ${token.paddingLG}px` }}>
+            <Input
+              placeholder="Tìm kiếm..."
+              prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+              style={{
+                borderRadius: token.borderRadius,
+                backgroundColor: token.colorBgLayout,
+                border: `1px solid ${token.colorBorder}`,
+              }}
+              size="large"
+              onPressEnter={(e) => {
+                console.log("Search:", e.target.value);
+              }}
+            />
           </div>
-        </Dropdown>
-      </Space>
+        )}
+
+        {/* Right Section - Notifications and User */}
+        <Space size={isMobile ? "small" : "middle"}>
+          {/* Search button for mobile */}
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<SearchOutlined />}
+              size="large"
+              onClick={() => {
+                console.log("Mobile search clicked");
+              }}
+            />
+          )}
+
+          <Dropdown
+            menu={{ items: notificationMenuItems }}
+            trigger={["click"]}
+            placement="bottomRight"
+          >
+            <Badge count={5} size="small">
+              <Button
+                type="text"
+                icon={<BellOutlined />}
+                size="large"
+              />
+            </Badge>
+          </Dropdown>
+
+          <Dropdown
+            menu={{ items: userMenuItems }}
+            trigger={["click"]}
+            placement="bottomRight"
+          >
+            <Button
+              type="text"
+              style={{
+                height: "auto",
+                padding: `${token.paddingXS}px ${token.paddingSM}px`,
+                borderRadius: token.borderRadius,
+              }}
+            >
+              <Flex align="center" gap={isMobile ? 0 : "small"}>
+                <Avatar
+                  size="small"
+                  icon={<UserOutlined />}
+                  style={{
+                    backgroundColor: token.colorPrimary,
+                  }}
+                />
+                {!isMobile && (
+                  <Text
+                    style={{
+                      fontSize: token.fontSizeSM,
+                      fontWeight: "500",
+                      color: token.colorText,
+                    }}
+                  >
+                    {userData ? userData.hoTen : "User"}
+                  </Text>
+                )}
+              </Flex>
+            </Button>
+          </Dropdown>
+        </Space>
+      </Flex>
     </AntHeader>
   );
 }

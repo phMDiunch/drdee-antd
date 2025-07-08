@@ -26,6 +26,7 @@ import {
 } from "@ant-design/icons";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../contexts/AuthContext";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -34,6 +35,7 @@ export default function Home() {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const { token } = theme.useToken();
+  const { user } = useAuth();
 
   // Handle window resize
   React.useEffect(() => {

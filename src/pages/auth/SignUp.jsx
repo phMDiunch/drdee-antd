@@ -10,7 +10,7 @@ import {
   DatePicker,
   Typography,
   Space,
-  Divider,
+  Flex,
   theme,
 } from "antd";
 import {
@@ -129,24 +129,19 @@ export default function SignUp() {
   );
 
   return (
-    <div
+    <Flex
+      justify="center"
+      align="center"
       style={{
         minHeight: "100vh",
         background: `linear-gradient(135deg, ${token.colorPrimary} 0%, ${token.colorPrimaryBg} 100%)`,
         padding: token.paddingLG,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <Card
         style={{
           width: "100%",
           maxWidth: "800px",
-          boxShadow: token.boxShadowSecondary,
-        }}
-        styles={{
-          body: { padding: token.paddingXL }
         }}
       >
         <Space
@@ -154,14 +149,14 @@ export default function SignUp() {
           size="large"
           style={{ width: "100%", textAlign: "center" }}
         >
-          <div>
-            <Title level={2} style={{ color: token.colorPrimary, marginBottom: token.marginXS }}>
+          <Space direction="vertical" size="small">
+            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
               Đăng Ký Tài Khoản
             </Title>
             <Text type="secondary" style={{ fontSize: token.fontSizeLG }}>
               Tạo tài khoản mới để bắt đầu sử dụng dịch vụ
             </Text>
-          </div>
+          </Space>
 
           <Form
             form={form}
@@ -355,36 +350,33 @@ export default function SignUp() {
               </Col>
             </Row>
 
-            <Divider />
-
-            <Form.Item style={{ marginBottom: 0 }}>
+            <Form.Item>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
                 size="large"
-                style={{ height: "48px", fontWeight: 600 }}
               >
                 {loading ? "Đang xử lý..." : "Đăng Ký"}
               </Button>
             </Form.Item>
 
-            <div style={{ textAlign: "center", marginTop: token.marginLG }}>
+            <Space direction="vertical" size="small" style={{ width: "100%", textAlign: "center" }}>
               <Text type="secondary">
                 Đã có tài khoản?{" "}
                 <Button
                   type="link"
-                  style={{ padding: 0, fontWeight: 600 }}
+                  style={{ padding: 0, height: "auto" }}
                   onClick={() => navigate("/signin")}
                 >
                   Đăng nhập ngay
                 </Button>
               </Text>
-            </div>
+            </Space>
           </Form>
         </Space>
       </Card>
-    </div>
+    </Flex>
   );
 }

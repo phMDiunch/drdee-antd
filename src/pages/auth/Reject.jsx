@@ -7,26 +7,27 @@ import {
   Space,
   theme,
   Result,
+  Flex,
+  Alert,
 } from "antd";
 import {
   CloseCircleOutlined,
   LogoutOutlined,
+  PhoneOutlined,
 } from "@ant-design/icons";
-import { signOut } from "firebase/auth";
-import { auth } from "../../services/firebase";
 import { toast } from "react-toastify";
+import { useAuth } from "../../contexts/AuthContext";
 
 const { Title, Text } = Typography;
 
 export default function Reject() {
   const navigate = useNavigate();
-
-  // Sử dụng theme token của Ant Design
+  const { logout } = useAuth();
   const { token } = theme.useToken();
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await logout();
       toast.success("Đã đăng xuất thành công!");
       navigate("/signin");
     } catch (error) {
@@ -36,76 +37,70 @@ export default function Reject() {
   };
 
   return (
-    <div
+    <Flex
+      justify="center"
+      align="center"
       style={{
         minHeight: "100vh",
         background: `linear-gradient(135deg, ${token.colorError} 0%, ${token.colorErrorBg} 100%)`,
         padding: token.paddingLG,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <Card
         style={{
           width: "100%",
           maxWidth: "450px",
-          boxShadow: token.boxShadowSecondary,
-        }}
-        styles={{
-          body: { padding: token.paddingXL }
+          textAlign: "center",
         }}
       >
-        <Result
-          icon={<CloseCircleOutlined style={{ color: token.colorError }} />}
-          status="error"
-          title={
-            <Title level={2} style={{ color: token.colorError, marginBottom: token.marginXS }}>
-              Tài Khoản Bị Từ Chối
-            </Title>
-          }
-          subTitle={
-            <Text type="secondary" style={{ fontSize: token.fontSizeLG }}>
-              Rất tiếc, tài khoản của bạn đã bị từ chối
-            </Text>
-          }
-        />
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          {/* Thông báo chính */}
+          <Result
+            icon={<CloseCircleOutlined style={{ color: token.colorError }} />}
+            status="error"
+            title={
+              <Title level={3} style={{ color: token.colorError, margin: 0 }}>
+                Tài Khoản Bị Từ Chối
+              </Title>
+            }
+            subTitle={
+              <Text type="secondary">
+                Rất tiếc, tài khoản của bạn đã bị từ chối
+              </Text>
+            }
+          />
 
-        <Space direction="vertical" size="large" style={{ width: "100%", marginTop: token.marginLG }}>
-          <div
-            style={{
-              padding: token.paddingLG,
-              backgroundColor: token.colorInfoBg,
-              borderRadius: token.borderRadius,
-              border: `1px solid ${token.colorInfoBorder}`,
-              textAlign: "center"
-            }}
-          >
-            <Text
-              style={{
-                fontSize: token.fontSizeLG,
-                color: token.colorTextSecondary,
-                lineHeight: "1.6",
-                display: "block"
-              }}
-            >
-              📞 Vui lòng liên hệ admin để được hướng dẫn
-            </Text>
-          </div>
+          {/* Thông tin liên hệ */}
+          <Alert
+            message="Cần hỗ trợ?"
+            description={
+              <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                <Flex align="center" justify="center" gap="small">
+                  <PhoneOutlined style={{ color: token.colorPrimary }} />
+                  <Text strong>Vui lòng liên hệ admin để được hướng dẫn</Text>
+                </Flex>
+                <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
+                  Hotline: 1900-xxxx | Email: support@example.com
+                </Text>
+              </Space>
+            }
+            type="warning"
+            showIcon={false}
+          />
 
+          {/* Button đăng xuất */}
           <Button
             type="primary"
             danger
+            size="large"
+            icon={<LogoutOutlined />}
             onClick={handleSignOut}
             block
-            size="large"
-            style={{ height: "48px", fontWeight: 600 }}
-            icon={<LogoutOutlined />}
           >
             Đăng Xuất
           </Button>
         </Space>
       </Card>
-    </div>
+    </Flex>
   );
 }

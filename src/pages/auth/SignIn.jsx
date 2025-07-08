@@ -7,8 +7,7 @@ import {
   Card,
   Typography,
   Space,
-  Row,
-  Col,
+  Flex,
   theme,
 } from "antd";
 import {
@@ -68,9 +67,13 @@ export default function SignIn() {
           break;
         case "disabled":
           toast.error("Tài khoản đã bị vô hiệu hóa.");
+          // Đăng xuất user nếu tài khoản bị disabled
+          await auth.signOut();
           break;
         default:
           toast.error("Trạng thái tài khoản không hợp lệ.");
+          // Đăng xuất user nếu trạng thái không hợp lệ
+          await auth.signOut();
       }
     } catch (error) {
       console.error("Error signing in:", error);
@@ -84,6 +87,8 @@ export default function SignIn() {
         toast.error("Tài khoản đã bị vô hiệu hóa!");
       } else if (error.code === "auth/too-many-requests") {
         toast.error("Quá nhiều lần thử. Vui lòng thử lại sau!");
+      } else if (error.code === "auth/invalid-credential") {
+        toast.error("Thông tin đăng nhập không chính xác!");
       } else {
         toast.error("Có lỗi xảy ra khi đăng nhập!");
       }
@@ -92,24 +97,19 @@ export default function SignIn() {
   };
 
   return (
-    <div
+    <Flex
+      justify="center"
+      align="center"
       style={{
         minHeight: "100vh",
         background: `linear-gradient(135deg, ${token.colorPrimary} 0%, ${token.colorPrimaryBg} 100%)`,
         padding: token.paddingLG,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <Card
         style={{
           width: "100%",
           maxWidth: "450px",
-          boxShadow: token.boxShadowSecondary,
-        }}
-        styles={{
-          body: { padding: token.paddingXL }
         }}
       >
         <Space
@@ -117,14 +117,14 @@ export default function SignIn() {
           size="large"
           style={{ width: "100%", textAlign: "center" }}
         >
-          <div>
-            <Title level={2} style={{ color: token.colorPrimary, marginBottom: token.marginXS }}>
+          <Space direction="vertical" size="small">
+            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
               Đăng Nhập
             </Title>
             <Text type="secondary" style={{ fontSize: token.fontSizeLG }}>
               Chào mừng bạn quay trở lại!
             </Text>
-          </div>
+          </Space>
 
           <Form
             form={form}
@@ -162,55 +162,40 @@ export default function SignIn() {
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: token.marginMD }}>
+            <Form.Item>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
                 size="large"
-                style={{ height: "48px", fontWeight: 600 }}
               >
                 {loading ? "Đang xử lý..." : "Đăng Nhập"}
               </Button>
             </Form.Item>
 
-            <Row justify="space-between" align="middle" style={{ marginTop: token.marginSM }}>
-              <Col>
-                <Button
-                  type="link"
-                  onClick={() => navigate("/forgot-password")}
-                  style={{
-                    padding: 0,
-                    fontSize: token.fontSizeXS,
-                    color: token.colorTextTertiary,
-                    height: "auto"
-                  }}
-                >
-                  Quên mật khẩu?
-                </Button>
-              </Col>
-              <Col>
-                <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
-                  Chưa có tài khoản?{" "}
-                </Text>
+            <Flex justify="space-between" align="center">
+              <Button
+                type="link"
+                onClick={() => navigate("/forgot-password")}
+                style={{ padding: 0, height: "auto" }}
+              >
+                Quên mật khẩu?
+              </Button>
+              <Space size="small">
+                <Text type="secondary">Chưa có tài khoản?</Text>
                 <Button
                   type="link"
                   onClick={() => navigate("/signup")}
-                  style={{
-                    padding: 0,
-                    fontSize: token.fontSizeXS,
-                    fontWeight: 500,
-                    height: "auto"
-                  }}
+                  style={{ padding: 0, height: "auto" }}
                 >
                   Đăng ký ngay
                 </Button>
-              </Col>
-            </Row>
+              </Space>
+            </Flex>
           </Form>
         </Space>
       </Card>
-    </div>
+    </Flex>
   );
 }
