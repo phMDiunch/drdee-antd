@@ -66,3 +66,79 @@ h6 {
 p {
   margin: 0 0 1rem 0;
 }
+
+/* Custom styles for header components */
+.user-dropdown:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* Force sidebar to be hidden on mobile */
+  .ant-layout-sider {
+    display: none !important;
+  }
+  
+  /* Ensure main layout takes full width on mobile */
+  .ant-layout {
+    margin-left: 0 !important;
+  }
+  
+  .ant-layout-header {
+    padding: 0 16px !important;
+  }
+  
+  .ant-layout-content {
+    margin: 16px 16px 0 !important;
+  }
+  
+  /* Hide search bar on mobile */
+  .ant-input-affix-wrapper {
+    display: none !important;
+  }
+  
+  /* Make statistics cards stack vertically on mobile */
+  .ant-col-xs-24 {
+    margin-bottom: 8px;
+  }
+  
+  /* Adjust table on mobile */
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 8px 4px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 576px) {
+  .ant-layout-header {
+    padding: 0 12px !important;
+  }
+  
+  .ant-layout-content {
+    margin: 12px 12px 0 !important;
+  }
+  
+  /* Hide some table columns on very small screens */
+  .ant-table-tbody > tr > td:nth-child(3),
+  .ant-table-thead > tr > th:nth-child(3) {
+    display: none;
+  }
+  
+  /* Adjust card padding on mobile */
+  .ant-card-body {
+    padding: 12px !important;
+  }
+  
+  /* Adjust typography on mobile */
+  .ant-typography h2 {
+    font-size: 18px !important;
+    margin-bottom: 16px !important;
+  }
+}

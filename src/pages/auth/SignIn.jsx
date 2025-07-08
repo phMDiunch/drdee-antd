@@ -64,7 +64,7 @@ export default function SignIn() {
           break;
         case "approve":
           toast.success("Đăng nhập thành công!");
-          navigate("/");
+          navigate("/home");
           break;
         case "disabled":
           toast.error("Tài khoản đã bị vô hiệu hóa.");
