@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
-  Layout,
   Card,
   Row,
   Col,
@@ -24,42 +23,13 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
 import { useAuth } from "../contexts/AuthContext";
 
-const { Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function Home() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const { token } = theme.useToken();
   const { user } = useAuth();
-
-  // Handle window resize
-  React.useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
-      if (mobile) {
-        setCollapsed(true); // Close sidebar on mobile by default
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    handleResize(); // Call once on mount
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const toggle = () => {
-    setCollapsed(!collapsed);
-  };
-
-  const handleSidebarClose = () => {
-    setCollapsed(true);
-  };
 
   // Sample data for dashboard
   const stats = [
@@ -192,118 +162,95 @@ export default function Home() {
   ];
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Sidebar
-        collapsed={collapsed}
-        onClose={handleSidebarClose}
-        isMobile={isMobile}
-      />
-      <Layout
-        style={{
-          marginLeft: isMobile ? 0 : (collapsed ? 80 : 250),
-          transition: "all 0.2s",
-        }}
-      >
-        <Header collapsed={collapsed} onToggle={toggle} />
-        <Content
-          style={{
-            margin: "24px 24px 0",
-            overflow: "initial",
-            background: token.colorBgLayout,
-          }}
-        >
-          <div
-            style={{
-              padding: 24,
-              background: token.colorBgContainer,
-              borderRadius: token.borderRadiusLG,
-              marginBottom: 24,
-            }}
+    <div
+      style={{
+        padding: 24,
+        background: token.colorBgContainer,
+        borderRadius: token.borderRadiusLG,
+        marginBottom: 24,
+        minHeight: "calc(100vh - 110px)",
+      }}
+    >
+      <Title level={2} style={{ marginBottom: 24 }}>
+        Trang chủ
+      </Title>
+
+      {/* Statistics Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        {stats.map((stat, index) => (
+          <Col xs={24} sm={12} md={6} key={index}>
+            <Card hoverable>
+              <Statistic
+                title={stat.title}
+                value={stat.value}
+                prefix={stat.prefix}
+                suffix={stat.suffix}
+                valueStyle={stat.valueStyle}
+              />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Main Content */}
+      <Row gutter={[16, 16]}>
+        {/* Recent Activities */}
+        <Col xs={24} lg={16}>
+          <Card
+            title="Hoạt động gần đây"
+            extra={
+              <Button type="primary" size="small">
+                Xem tất cả
+              </Button>
+            }
           >
-            <Title level={2} style={{ marginBottom: 24 }}>
-              Trang chủ
-            </Title>
+            <Table
+              dataSource={recentActivities}
+              columns={activityColumns}
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
 
-            {/* Statistics Cards */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              {stats.map((stat, index) => (
-                <Col xs={24} sm={12} md={6} key={index}>
-                  <Card hoverable>
-                    <Statistic
-                      title={stat.title}
-                      value={stat.value}
-                      prefix={stat.prefix}
-                      suffix={stat.suffix}
-                      valueStyle={stat.valueStyle}
-                    />
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-
-            {/* Main Content */}
-            <Row gutter={[16, 16]}>
-              {/* Recent Activities */}
-              <Col xs={24} lg={16}>
-                <Card
-                  title="Hoạt động gần đây"
-                  extra={
-                    <Button type="primary" size="small">
-                      Xem tất cả
-                    </Button>
-                  }
-                >
-                  <Table
-                    dataSource={recentActivities}
-                    columns={activityColumns}
-                    pagination={false}
+        {/* Project Progress */}
+        <Col xs={24} lg={8}>
+          <Card title="Tiến độ dự án">
+            <Space direction="vertical" style={{ width: "100%" }}>
+              {projects.map((project, index) => (
+                <div key={index} style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text strong>{project.name}</Text>
+                    <Text type="secondary">{project.progress}%</Text>
+                  </div>
+                  <Progress
+                    percent={project.progress}
                     size="small"
+                    status={project.progress >= 90 ? "success" : "active"}
                   />
-                </Card>
-              </Col>
-
-              {/* Project Progress */}
-              <Col xs={24} lg={8}>
-                <Card title="Tiến độ dự án">
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    {projects.map((project, index) => (
-                      <div key={index} style={{ marginBottom: 16 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: 8,
-                          }}
-                        >
-                          <Text strong>{project.name}</Text>
-                          <Text type="secondary">{project.progress}%</Text>
-                        </div>
-                        <Progress
-                          percent={project.progress}
-                          size="small"
-                          status={project.progress >= 90 ? "success" : "active"}
-                        />
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginTop: 4,
-                          }}
-                        >
-                          <Tag color="blue">{project.status}</Tag>
-                          <Text type="secondary">{project.team} thành viên</Text>
-                        </div>
-                      </div>
-                    ))}
-                  </Space>
-                </Card>
-              </Col>
-            </Row>
-          </div>
-        </Content>
-      </Layout>
-    </Layout>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: 4,
+                    }}
+                  >
+                    <Tag color="blue">{project.status}</Tag>
+                    <Text type="secondary">{project.team} thành viên</Text>
+                  </div>
+                </div>
+              ))}
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+    </div>
   );
 }
-

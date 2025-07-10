@@ -19,6 +19,11 @@ import SignIn from "./pages/auth/SignIn";
 import Pending from "./pages/auth/Pending";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Reject from "./pages/auth/Reject";
+import UserList from "./pages/users/UserList";
+import UserEdit from "./pages/users/UserEdit";
+
+// Import layout
+import AppLayout from "./layouts/AppLayout";
 
 function App() {
   return (
@@ -34,48 +39,34 @@ function App() {
         <Router>
           <div className="app">
             <Routes>
-              <Route
-                path="/"
-                element={
-                  <PublicRoute>
-                    <SignIn />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/home"
-                element={
-                  <ProtectedRoute>
-                    <Home />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/signup"
-                element={
-                  <PublicRoute>
-                    <SignUp />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/signin"
-                element={
-                  <PublicRoute>
-                    <SignIn />
-                  </PublicRoute>
-                }
-              />
+              {/* Các route public KHÔNG dùng layout */}
+              <Route path="/" element={
+                <PublicRoute><SignIn /></PublicRoute>
+              } />
+              <Route path="/signin" element={
+                <PublicRoute><SignIn /></PublicRoute>
+              } />
+              <Route path="/signup" element={
+                <PublicRoute><SignUp /></PublicRoute>
+              } />
+              <Route path="/forgot-password" element={
+                <PublicRoute><ForgotPassword /></PublicRoute>
+              } />
               <Route path="/pending" element={<Pending />} />
-              <Route
-                path="/forgot-password"
-                element={
-                  <PublicRoute>
-                    <ForgotPassword />
-                  </PublicRoute>
-                }
-              />
               <Route path="/reject" element={<Reject />} />
+
+              {/* Route nội bộ - DÙNG layout */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="home" element={<Home />} />
+                <Route path="users" element={<UserList />} />
+                <Route path="users/edit/:id" element={<UserEdit />} />
+                <Route path="users/new" element={<UserEdit />} />
+                {/* Thêm các route nội bộ khác tại đây */}
+              </Route>
             </Routes>
           </div>
 
