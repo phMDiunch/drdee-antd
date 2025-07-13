@@ -2,7 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Result, Button, Card, Typography, theme, Space, Flex, Alert } from "antd";
 import { ClockCircleOutlined, LogoutOutlined, PhoneOutlined } from "@ant-design/icons";
-import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "react-toastify";
+import { useAuth } from "../../../contexts/AuthContext";
+
+// Hotline info tách thành constant dùng lại
+const HOTLINE = "1900-xxxx";
+const WORK_TIME = "8:00 - 17:30 (T2-T6)";
 
 const { Title, Text } = Typography;
 
@@ -14,8 +19,10 @@ export default function Pending() {
   const handleLogout = async () => {
     try {
       await logout();
+      toast.success("Đã đăng xuất thành công!");
       navigate("/signin");
     } catch (error) {
+      toast.error("Có lỗi xảy ra khi đăng xuất!");
       console.error("Error signing out:", error);
     }
   };
@@ -38,7 +45,6 @@ export default function Pending() {
         }}
       >
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          {/* Thông báo chính */}
           <Result
             icon={<ClockCircleOutlined style={{ color: token.colorPrimary }} />}
             title={
@@ -53,7 +59,6 @@ export default function Pending() {
             }
           />
 
-          {/* Button đăng xuất */}
           <Button
             type="primary"
             size="large"
@@ -64,17 +69,16 @@ export default function Pending() {
             Đăng Xuất
           </Button>
 
-          {/* Hotline liên hệ */}
           <Alert
             message="Cần hỗ trợ?"
             description={
               <Space direction="vertical" size="small" style={{ width: "100%" }}>
                 <Flex align="center" justify="center" gap="small">
                   <PhoneOutlined style={{ color: token.colorPrimary }} />
-                  <Text strong>Hotline: 1900-xxxx</Text>
+                  <Text strong>Hotline: {HOTLINE}</Text>
                 </Flex>
                 <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
-                  Thời gian làm việc: 8:00 - 17:30 (T2-T6)
+                  Thời gian làm việc: {WORK_TIME}
                 </Text>
               </Space>
             }

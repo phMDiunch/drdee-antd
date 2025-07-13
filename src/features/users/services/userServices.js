@@ -1,5 +1,5 @@
 // src/services/userServices.js
-import { db } from "./firebase";
+import { db } from "../../../services/firebase";
 import {
   collection,
   getDocs,

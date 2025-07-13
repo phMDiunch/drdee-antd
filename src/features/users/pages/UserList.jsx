@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// src/features/users/pages/UserList.jsx
+import React from "react";
 import {
     Card,
     Table,
@@ -13,98 +14,69 @@ import {
 } from "antd";
 import {
     UserOutlined,
-    SearchOutlined,
     ClockCircleOutlined,
     CloseCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import {
     ACCOUNT_STATUS,
     getAccountStatusConfig,
     getWorkStatusConfig,
-} from "../../constants";
-import { fetchUsers } from "../../services/userServices";
+} from "../../../constants";
+// 1. Import hook mới
+import { useUsers } from "../hooks/useUsers";
 
 const { Title } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
 export default function UserList() {
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [searchText, setSearchText] = useState("");
-    const [filterStatus, setFilterStatus] = useState("all");
-    const [filterRole, setFilterRole] = useState("all");
+    // 2. Sử dụng hook để lấy tất cả state và logic cần thiết
+    const {
+        users, // Đây là `filteredUsers` đã được xử lý từ hook
+        loading,
+        searchText,
+        setSearchText,
+        filterStatus,
+        setFilterStatus,
+        filterRole,
+        setFilterRole,
+        uniqueRoles,
+        statsData,
+    } = useUsers();
+
     const { token } = theme.useToken();
     const navigate = useNavigate();
 
-    // Fetch users từ service
-    useEffect(() => {
-        const loadUsers = async () => {
-            setLoading(true);
-            try {
-                const data = await fetchUsers();
-                setUsers(data);
-            } catch (error) {
-                toast.error("Có lỗi xảy ra khi tải danh sách nhân viên");
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadUsers();
-    }, []);
-
     const handleEditUser = (userId) => navigate(`/users/edit/${userId}`);
 
-    // Lọc chức danh duy nhất
-    const uniqueRoles = Array.from(new Set(users.map(u => u.chucDanh).filter(Boolean)));
-
-    // Filter
-    const filteredUsers = users.filter(user => {
-        const matchSearch = searchText
-            ? user.hoTen?.toLowerCase().includes(searchText.toLowerCase())
-            : true;
-        const matchStatus = filterStatus === "all" || user.trangThaiTaiKhoan === filterStatus;
-        const matchRole = filterRole === "all" || user.chucDanh === filterRole;
-        return matchSearch && matchStatus && matchRole;
-    });
-
-    // Thống kê theo trạng thái tài khoản
-    const approveCount = users.filter(u => u.trangThaiTaiKhoan === ACCOUNT_STATUS.APPROVE).length;
-    const pendingCount = users.filter(u => u.trangThaiTaiKhoan === ACCOUNT_STATUS.PENDING).length;
-    const rejectCount = users.filter(u => u.trangThaiTaiKhoan === ACCOUNT_STATUS.REJECT).length;
-
-    // Click card để lọc
-    const handleStatClick = (status) => setFilterStatus(status);
-
-    // 3 thống kê nhỏ gọn
+    // 3. Tạo mảng thống kê dựa trên `statsData` từ hook
     const stats = [
         {
             key: ACCOUNT_STATUS.APPROVE,
             title: "Tổng nhân viên",
-            value: approveCount,
+            value: statsData.approveCount,
             icon: <UserOutlined style={{ color: token.colorPrimary }} />,
             color: token.colorPrimary,
         },
         {
             key: ACCOUNT_STATUS.PENDING,
             title: "Chờ duyệt",
-            value: pendingCount,
+            value: statsData.pendingCount,
             icon: <ClockCircleOutlined style={{ color: "#fa8c16" }} />,
             color: "#fa8c16",
         },
         {
             key: ACCOUNT_STATUS.REJECT,
             title: "Không hoạt động",
-            value: rejectCount,
+            value: statsData.rejectCount,
             icon: <CloseCircleOutlined style={{ color: "#f5222d" }} />,
             color: "#f5222d",
         },
     ];
 
-    // Table columns
+    // Table columns không thay đổi nhiều
     const columns = [
         {
             title: "Họ và tên",
@@ -117,19 +89,19 @@ export default function UserList() {
                 </a>
             ),
         },
-        { title: "email", dataIndex: "email", key: "email" },
+        { title: "Email", dataIndex: "email", key: "email" },
         { title: "Số điện thoại", dataIndex: "soDienThoai", key: "soDienThoai" },
         {
             title: "Chức danh",
             dataIndex: "chucDanh",
             key: "chucDanh",
-            render: (text) => text ? <Tag color="blue">{text}</Tag> : "-",
+            render: (text) => (text ? <Tag color="blue">{text}</Tag> : "-"),
         },
         {
             title: "Phòng ban",
             dataIndex: "phongBan",
             key: "phongBan",
-            render: (text) => text ? <Tag color="green">{text}</Tag> : "-",
+            render: (text) => (text ? <Tag color="green">{text}</Tag> : "-"),
         },
         {
             title: "Trạng thái tài khoản",
@@ -155,6 +127,7 @@ export default function UserList() {
             key: "ngaySinh",
             render: (date) => {
                 if (!date) return "-";
+                // Firebase timestamp object has a toDate() method
                 if (date.toDate) return dayjs(date.toDate()).format("DD/MM/YYYY");
                 return dayjs(date).format("DD/MM/YYYY");
             },
@@ -171,10 +144,13 @@ export default function UserList() {
                 minHeight: "calc(100vh - 110px)",
             }}
         >
-            <Title level={4} style={{ marginBottom: 16 }}>Quản lý nhân viên</Title>
+            <Title level={4} style={{ marginBottom: 16 }}>
+                Quản lý nhân viên
+            </Title>
+
             {/* Thống kê nhỏ gọn */}
             <Row gutter={8} style={{ marginBottom: 8 }}>
-                {stats.map(stat => (
+                {stats.map((stat) => (
                     <Col xs={8} sm={6} md={4} key={stat.key}>
                         <Card
                             size="small"
@@ -185,7 +161,8 @@ export default function UserList() {
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}
-                            onClick={() => handleStatClick(stat.key)}
+                            // 4. Sử dụng hàm setFilterStatus từ hook
+                            onClick={() => setFilterStatus(stat.key)}
                             style={{
                                 borderColor: filterStatus === stat.key ? stat.color : "#f0f0f0",
                                 boxShadow: filterStatus === stat.key ? "0 0 0 2px " + stat.color : undefined,
@@ -194,9 +171,7 @@ export default function UserList() {
                             }}
                         >
                             <Statistic
-                                title={
-                                    <span style={{ fontSize: 12, fontWeight: 400 }}>{stat.title}</span>
-                                }
+                                title={<span style={{ fontSize: 12, fontWeight: 400 }}>{stat.title}</span>}
                                 value={stat.value}
                                 prefix={stat.icon}
                                 valueStyle={{
@@ -209,6 +184,7 @@ export default function UserList() {
                     </Col>
                 ))}
             </Row>
+
             {/* Tìm kiếm và lọc chức danh */}
             <Row gutter={8} align="middle" style={{ marginBottom: 8 }}>
                 <Col xs={16} sm={8} md={6}>
@@ -217,7 +193,8 @@ export default function UserList() {
                         allowClear
                         size="middle"
                         value={searchText}
-                        onChange={e => setSearchText(e.target.value)}
+                        // 5. Sử dụng hàm setSearchText từ hook
+                        onChange={(e) => setSearchText(e.target.value)}
                         style={{ width: "100%" }}
                     />
                 </Col>
@@ -226,21 +203,27 @@ export default function UserList() {
                         placeholder="Chức danh"
                         style={{ width: "100%" }}
                         value={filterRole}
+                        // 6. Sử dụng hàm setFilterRole từ hook
                         onChange={setFilterRole}
                         allowClear
                         size="middle"
                     >
                         <Option value="all">Tất cả</Option>
-                        {uniqueRoles.map(role => (
-                            <Option key={role} value={role}>{role}</Option>
+                        {/* 7. Dùng `uniqueRoles` từ hook */}
+                        {uniqueRoles.map((role) => (
+                            <Option key={role} value={role}>
+                                {role}
+                            </Option>
                         ))}
                     </Select>
                 </Col>
             </Row>
+
             {/* Table */}
             <Table
                 columns={columns}
-                dataSource={filteredUsers}
+                // 8. Dùng `users` (đã lọc) từ hook
+                dataSource={users}
                 loading={loading}
                 rowKey="id"
                 scroll={{ x: 900 }}
@@ -248,7 +231,7 @@ export default function UserList() {
                     showSizeChanger: false,
                     pageSize: 10,
                     size: "small",
-                    showTotal: (total, range) => `${range[0]}-${range[1]}/${total}`,
+                    showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}`,
                 }}
                 size="small"
                 style={{ background: "white", borderRadius: 8, marginTop: 8 }}

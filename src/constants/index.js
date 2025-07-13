@@ -9,7 +9,6 @@ export const ACCOUNT_STATUS = {
   PENDING: "pending",
   APPROVE: "approve",
   REJECT: "reject",
-  DISABLED: "disabled",
 };
 
 export const ACCOUNT_STATUS_OPTIONS = [
@@ -30,12 +29,6 @@ export const ACCOUNT_STATUS_OPTIONS = [
     label: "Từ chối",
     color: "red",
     colorHex: "#ff4d4f",
-  },
-  {
-    value: ACCOUNT_STATUS.DISABLED,
-    label: "Vô hiệu hóa",
-    color: "gray",
-    colorHex: "#8c8c8c",
   },
 ];
 
@@ -145,4 +138,53 @@ export const WORK_STATUS_FILTER_OPTIONS = [
     value: option.value,
     label: option.label,
   })),
+];
+
+// Trạng thái của lead
+export const LEAD_STATUS_OPTIONS = [
+  { label: "Mới", value: "new" },
+  { label: "Đang chăm sóc", value: "in_progress" },
+  { label: "Hẹn lịch", value: "appointment" },
+  { label: "Đã đến", value: "visited" },
+  { label: "Chưa liên hệ được", value: "unreachable" },
+  { label: "Từ chối", value: "rejected" },
+  { label: "Không tiềm năng", value: "not_potential" },
+  // Thêm trạng thái khác nếu cần
+];
+
+// Danh sách nguồn khách
+export const CHANNEL_OPTIONS = [
+  { label: "Facebook", value: "facebook" },
+  { label: "Messenger", value: "messenger" },
+  { label: "Zalo", value: "zalo" },
+  { label: "TikTok", value: "tiktok" },
+  { label: "Hotline", value: "hotline" },
+  { label: "Instagram", value: "instagram" },
+  { label: "Website", value: "website" },
+  // Thêm các kênh khác nếu cần
+];
+
+// Các trường hợp chăm sóc/loại tương tác (nếu cần)
+export const INTERACTION_TYPE_OPTIONS = [
+  { label: "Gọi điện", value: "call" },
+  { label: "Nhắn tin", value: "message" },
+  { label: "Đặt lịch", value: "appointment" },
+  { label: "Chăm sóc sau", value: "followup" },
+  // Thêm nếu cần
+];
+
+// Ví dụ, đưa vào constants/serviceOptions.js
+export const SERVICE_OPTIONS = [
+  { label: "Niềng răng", value: "nieng_rang" },
+  { label: "Tẩy trắng", value: "tay_trang" },
+  { label: "Trồng răng Implant", value: "implant" },
+  { label: "Nhổ răng khôn", value: "nho_rang_khon" },
+  // ... Bổ sung thêm
+];
+
+export const REGION_OPTIONS = [
+  { label: "Hải Phòng", value: "haiphong" },
+  { label: "Hà Nội", value: "hanoi" },
+  { label: "Online", value: "online" },
+  // ... Bổ sung thêm
 ];

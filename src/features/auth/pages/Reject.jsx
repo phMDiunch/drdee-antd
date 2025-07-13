@@ -16,7 +16,10 @@ import {
   PhoneOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../../contexts/AuthContext";
+
+const HOTLINE = "1900-xxxx";
+const SUPPORT_EMAIL = "support@example.com";
 
 const { Title, Text } = Typography;
 
@@ -54,7 +57,6 @@ export default function Reject() {
         }}
       >
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          {/* Thông báo chính */}
           <Result
             icon={<CloseCircleOutlined style={{ color: token.colorError }} />}
             status="error"
@@ -70,7 +72,6 @@ export default function Reject() {
             }
           />
 
-          {/* Thông tin liên hệ */}
           <Alert
             message="Cần hỗ trợ?"
             description={
@@ -80,7 +81,7 @@ export default function Reject() {
                   <Text strong>Vui lòng liên hệ admin để được hướng dẫn</Text>
                 </Flex>
                 <Text type="secondary" style={{ fontSize: token.fontSizeXS }}>
-                  Hotline: 1900-xxxx | Email: support@example.com
+                  Hotline: {HOTLINE} | Email: {SUPPORT_EMAIL}
                 </Text>
               </Space>
             }
@@ -88,7 +89,6 @@ export default function Reject() {
             showIcon={false}
           />
 
-          {/* Button đăng xuất */}
           <Button
             type="primary"
             danger

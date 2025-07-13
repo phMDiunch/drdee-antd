@@ -35,12 +35,11 @@ const menuConfig = [
     ],
   },
   {
-    key: "documents",
+    key: "leads",
     icon: <FileTextOutlined />,
-    label: "Tài liệu",
+    label: "Leads",
     children: [
-      { key: "/documents/list", label: "Danh sách" },
-      { key: "/documents/categories", label: "Danh mục" },
+      { key: "/leads", label: "Danh sách" },
     ],
   },
   { key: "/projects", icon: <FolderOutlined />, label: "Dự án" },

@@ -23,7 +23,7 @@ import {
   MenuUnfoldOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;

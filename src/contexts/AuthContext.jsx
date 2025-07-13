@@ -1,7 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../services/firebase";
+import { auth } from "../services/firebase"; // Import từ config
+import { getUserProfile } from "../features/auth/services/authService"; // Import service
 
 const AuthContext = createContext();
 
@@ -16,56 +23,56 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Chỉ loading lần đầu tiên
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true); // Set loading true khi có thay đổi auth state
-
-      if (user) {
-        // Lấy thông tin user từ Firestore
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data());
-          } else {
-            setUserData(null);
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          setUserData(null);
-        }
+    // onAuthStateChanged trả về một hàm unsubscribe
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Nếu có user, lấy thông tin từ service
+        const profile = await getUserProfile(currentUser.uid);
+        setUser(currentUser);
+        setUserData(profile);
       } else {
+        // Nếu không có user (logout), reset state
+        setUser(null);
         setUserData(null);
       }
-
-      setUser(user);
-      setLoading(false); // Set loading false sau khi hoàn thành
+      // Sau lần kiểm tra đầu tiên, tắt loading
+      if (loading) {
+        setLoading(false);
+      }
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, []);
+  }, [loading]); // Thêm loading vào dependency để chỉ chạy logic setLoading một lần
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await signOut(auth);
-      setUserData(null);
+      // Không cần set state ở đây, onAuthStateChanged sẽ tự động bắt sự kiện logout và cập nhật
     } catch (error) {
       console.error("Error signing out:", error);
     }
-  };
+  }, []);
 
-  const value = {
-    user,
-    userData,
-    loading,
-    isAuthenticated: !!user,
-    logout,
-  };
+  // Ghi nhớ giá trị của context để tránh re-render không cần thiết
+  const value = useMemo(
+    () => ({
+      user,
+      userData,
+      loading,
+      isAuthenticated: !!user,
+      logout,
+    }),
+    [user, userData, loading, logout]
+  );
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {/* Chỉ render children khi không còn loading để đảm bảo có dữ liệu auth */}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

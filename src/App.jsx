@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { ConfigProvider } from "antd";
+import { App as AntdApp } from "antd";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
@@ -9,82 +10,86 @@ import "./App.css";
 import { AuthProvider } from "./contexts/AuthContext";
 
 // Import components
-import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
 
 // Import pages
 import Home from "./pages/Home";
-import SignUp from "./pages/auth/SignUp";
-import SignIn from "./pages/auth/SignIn";
-import Pending from "./pages/auth/Pending";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import Reject from "./pages/auth/Reject";
-import UserList from "./pages/users/UserList";
-import UserEdit from "./pages/users/UserEdit";
+import SignUp from "./features/auth/pages/SignUp";
+import SignIn from "./features/auth/pages/SignIn";
+import Pending from "./features/auth/pages/Pending";
+import ForgotPassword from "./features/auth/pages/ForgotPassword";
+import Reject from "./features/auth/pages/Reject";
+import UserList from "./features/users/pages/UserList";
+import UserEdit from "./features/users/pages/UserEdit";
 
 // Import layout
 import AppLayout from "./layouts/AppLayout";
+import LeadList from "./features/leads/pages/LeadPage";
 
 function App() {
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: "#00b4aa",
-          borderRadius: 8,
-        },
-      }}
-    >
-      <AuthProvider>
-        <Router>
-          <div className="app">
-            <Routes>
-              {/* Các route public KHÔNG dùng layout */}
-              <Route path="/" element={
-                <PublicRoute><SignIn /></PublicRoute>
-              } />
-              <Route path="/signin" element={
-                <PublicRoute><SignIn /></PublicRoute>
-              } />
-              <Route path="/signup" element={
-                <PublicRoute><SignUp /></PublicRoute>
-              } />
-              <Route path="/forgot-password" element={
-                <PublicRoute><ForgotPassword /></PublicRoute>
-              } />
-              <Route path="/pending" element={<Pending />} />
-              <Route path="/reject" element={<Reject />} />
+    <AntdApp>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#00b4aa",
+            borderRadius: 8,
+          },
+        }}
+      >
+        <AuthProvider>
+          <Router>
+            <div className="app">
+              <Routes>
+                {/* Các route public KHÔNG dùng layout */}
+                <Route path="/" element={
+                  <PublicRoute><SignIn /></PublicRoute>
+                } />
+                <Route path="/signin" element={
+                  <PublicRoute><SignIn /></PublicRoute>
+                } />
+                <Route path="/signup" element={
+                  <PublicRoute><SignUp /></PublicRoute>
+                } />
+                <Route path="/forgot-password" element={
+                  <PublicRoute><ForgotPassword /></PublicRoute>
+                } />
+                <Route path="/pending" element={<Pending />} />
+                <Route path="/reject" element={<Reject />} />
 
-              {/* Route nội bộ - DÙNG layout */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }>
-                <Route path="home" element={<Home />} />
-                <Route path="users" element={<UserList />} />
-                <Route path="users/edit/:id" element={<UserEdit />} />
-                <Route path="users/new" element={<UserEdit />} />
-                {/* Thêm các route nội bộ khác tại đây */}
-              </Route>
-            </Routes>
-          </div>
+                {/* Route nội bộ - DÙNG layout */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route path="home" element={<Home />} />
+                  <Route path="users" element={<UserList />} />
+                  <Route path="users/edit/:id" element={<UserEdit />} />
+                  <Route path="users/new" element={<UserEdit />} />
+                  <Route path="leads" element={<LeadList />} />
+                  {/* Thêm các route nội bộ khác tại đây */}
+                </Route>
+              </Routes>
+            </div>
 
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-          />
-        </Router>
-      </AuthProvider>
-    </ConfigProvider>
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
+          </Router>
+        </AuthProvider>
+      </ConfigProvider>
+    </AntdApp>
   );
 }
 

@@ -20,9 +20,8 @@ import {
   LoginOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../../services/firebase";
 import { toast } from "react-toastify";
+import { sendResetPassword } from "../services/authService";
 
 const { Title, Text } = Typography;
 
@@ -36,7 +35,7 @@ export default function ForgotPassword() {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, values.email);
+      await sendResetPassword(values.email);
       setEmailSent(true);
       toast.success("Email khôi phục mật khẩu đã được gửi!");
       form.resetFields();
@@ -82,7 +81,6 @@ export default function ForgotPassword() {
       >
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
           {emailSent ? (
-            // Email sent success view
             <>
               <Result
                 icon={<CheckCircleOutlined style={{ color: token.colorSuccess }} />}
@@ -125,7 +123,6 @@ export default function ForgotPassword() {
               </Space>
             </>
           ) : (
-            // Forgot password form view
             <>
               <div>
                 <Title level={3} style={{ color: token.colorPrimary, margin: 0 }}>

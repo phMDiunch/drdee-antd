@@ -1,23 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Typography,
-  Space,
-  Flex,
-  theme,
-} from "antd";
-import {
-  MailOutlined,
-  LockOutlined,
-} from "@ant-design/icons";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../services/firebase";
+import { Form, Input, Button, Card, Typography, Space, Flex, theme } from "antd";
+import { MailOutlined, LockOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
+import { loginUser } from "../services/authService";
 
 const { Title, Text } = Typography;
 
@@ -25,33 +11,14 @@ export default function SignIn() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  // Sử dụng theme token của Ant Design
   const { token } = theme.useToken();
 
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      // Đăng nhập Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-
-      // Lấy thông tin user từ Firestore
-      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-
-      if (!userDoc.exists()) {
-        toast.error("Không tìm thấy thông tin tài khoản!");
-        setLoading(false);
-        return;
-      }
-
-      const userData = userDoc.data();
+      const { userData } = await loginUser(values.email, values.password);
       const { trangThaiTaiKhoan } = userData;
 
-      // Kiểm tra trạng thái tài khoản và chuyển hướng
       switch (trangThaiTaiKhoan) {
         case "pending":
           toast.info("Tài khoản đang chờ phê duyệt.");
@@ -68,30 +35,21 @@ export default function SignIn() {
         case "disabled":
           toast.error("Tài khoản đã bị vô hiệu hóa.");
           // Đăng xuất user nếu tài khoản bị disabled
-          await auth.signOut();
+          // await auth.signOut(); // Nếu muốn, import auth từ firebase
           break;
         default:
           toast.error("Trạng thái tài khoản không hợp lệ.");
-          // Đăng xuất user nếu trạng thái không hợp lệ
-          await auth.signOut();
+        // await auth.signOut();
       }
     } catch (error) {
-      console.error("Error signing in:", error);
-      if (error.code === "auth/user-not-found") {
-        toast.error("Email không tồn tại!");
-      } else if (error.code === "auth/wrong-password") {
-        toast.error("Mật khẩu không đúng!");
-      } else if (error.code === "auth/invalid-email") {
-        toast.error("Email không hợp lệ!");
-      } else if (error.code === "auth/user-disabled") {
-        toast.error("Tài khoản đã bị vô hiệu hóa!");
-      } else if (error.code === "auth/too-many-requests") {
-        toast.error("Quá nhiều lần thử. Vui lòng thử lại sau!");
-      } else if (error.code === "auth/invalid-credential") {
-        toast.error("Thông tin đăng nhập không chính xác!");
-      } else {
-        toast.error("Có lỗi xảy ra khi đăng nhập!");
-      }
+      if (error.message === "user-not-found") toast.error("Không tìm thấy thông tin tài khoản!");
+      else if (error.code === "auth/user-not-found") toast.error("Email không tồn tại!");
+      else if (error.code === "auth/wrong-password") toast.error("Mật khẩu không đúng!");
+      else if (error.code === "auth/invalid-email") toast.error("Email không hợp lệ!");
+      else if (error.code === "auth/user-disabled") toast.error("Tài khoản đã bị vô hiệu hóa!");
+      else if (error.code === "auth/too-many-requests") toast.error("Quá nhiều lần thử. Vui lòng thử lại sau!");
+      else if (error.code === "auth/invalid-credential") toast.error("Thông tin đăng nhập không chính xác!");
+      else toast.error("Có lỗi xảy ra khi đăng nhập!");
     }
     setLoading(false);
   };
@@ -106,17 +64,8 @@ export default function SignIn() {
         padding: token.paddingLG,
       }}
     >
-      <Card
-        style={{
-          width: "100%",
-          maxWidth: "450px",
-        }}
-      >
-        <Space
-          direction="vertical"
-          size="large"
-          style={{ width: "100%", textAlign: "center" }}
-        >
+      <Card style={{ width: "100%", maxWidth: "450px" }}>
+        <Space direction="vertical" size="large" style={{ width: "100%", textAlign: "center" }}>
           <Space direction="vertical" size="small">
             <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
               Đăng Nhập
@@ -125,7 +74,6 @@ export default function SignIn() {
               Chào mừng bạn quay trở lại!
             </Text>
           </Space>
-
           <Form
             form={form}
             onFinish={handleSubmit}
@@ -142,12 +90,8 @@ export default function SignIn() {
                 { type: "email", message: "Email không hợp lệ!" },
               ]}
             >
-              <Input
-                prefix={<MailOutlined style={{ color: token.colorPrimary }} />}
-                placeholder="Nhập địa chỉ email"
-              />
+              <Input prefix={<MailOutlined style={{ color: token.colorPrimary }} />} placeholder="Nhập địa chỉ email" />
             </Form.Item>
-
             <Form.Item
               name="password"
               label="Mật khẩu"
@@ -156,39 +100,20 @@ export default function SignIn() {
                 { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: token.colorPrimary }} />}
-                placeholder="Nhập mật khẩu"
-              />
+              <Input.Password prefix={<LockOutlined style={{ color: token.colorPrimary }} />} placeholder="Nhập mật khẩu" />
             </Form.Item>
-
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                size="large"
-              >
+              <Button type="primary" htmlType="submit" loading={loading} block size="large">
                 {loading ? "Đang xử lý..." : "Đăng Nhập"}
               </Button>
             </Form.Item>
-
             <Flex justify="space-between" align="center">
-              <Button
-                type="link"
-                onClick={() => navigate("/forgot-password")}
-                style={{ padding: 0, height: "auto" }}
-              >
+              <Button type="link" onClick={() => navigate("/forgot-password")} style={{ padding: 0, height: "auto" }}>
                 Quên mật khẩu?
               </Button>
               <Space size="small">
                 <Text type="secondary">Chưa có tài khoản?</Text>
-                <Button
-                  type="link"
-                  onClick={() => navigate("/signup")}
-                  style={{ padding: 0, height: "auto" }}
-                >
+                <Button type="link" onClick={() => navigate("/signup")} style={{ padding: 0, height: "auto" }}>
                   Đăng ký ngay
                 </Button>
               </Space>
