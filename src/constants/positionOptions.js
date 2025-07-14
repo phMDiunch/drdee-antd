@@ -1,0 +1,17 @@
+export const POSITION_OPTIONS = [
+  "Bác sĩ",
+  "Lễ tân",
+  "Điều dưỡng",
+  "Kế toán",
+  "Tạp vụ",
+  "Digital",
+  "Content",
+  "Thiết kế",
+  "Lead MKT",
+  "Quay dựng",
+  "HCNS",
+  "Sale Onl",
+  "Sale Off",
+  "Bảo vệ",
+  "Tuyển dụng",
+];

@@ -1,4 +1,4 @@
-// src/features/users/pages/UserEdit.jsx
+// src/features/users/pages/UserDetail.jsx
 import React from "react";
 import {
     Card,

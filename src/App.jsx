@@ -21,11 +21,15 @@ import Pending from "./features/auth/pages/Pending";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import Reject from "./features/auth/pages/Reject";
 import UserList from "./features/users/pages/UserList";
-import UserEdit from "./features/users/pages/UserEdit";
+import UserDetail from "./features/users/pages/UserDetail";
+
+import LeadList from "./features/leads/pages/LeadList";
+import LeadCreate from "./features/leads/pages/LeadCreate";
+import LeadEdit from "./features/leads/pages/LeadEdit";
 
 // Import layout
 import AppLayout from "./layouts/AppLayout";
-import LeadList from "./features/leads/pages/LeadPage";
+
 
 function App() {
   return (
@@ -66,9 +70,12 @@ function App() {
                 }>
                   <Route path="home" element={<Home />} />
                   <Route path="users" element={<UserList />} />
-                  <Route path="users/edit/:id" element={<UserEdit />} />
-                  <Route path="users/new" element={<UserEdit />} />
+                  <Route path="users/edit/:id" element={<UserDetail />} />
+                  <Route path="users/new" element={<UserDetail />} />
+
                   <Route path="leads" element={<LeadList />} />
+                  <Route path="leads/create" element={<LeadCreate />} />
+                  <Route path="leads/:id/edit" element={<LeadEdit />} />
                   {/* Thêm các route nội bộ khác tại đây */}
                 </Route>
               </Routes>

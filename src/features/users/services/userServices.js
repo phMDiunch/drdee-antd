@@ -1,4 +1,4 @@
-// src/services/userServices.js
+// src/features/users/services/userServices.js
 import { db } from "../../../services/firebase";
 import {
   collection,
