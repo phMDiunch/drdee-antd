@@ -116,23 +116,38 @@ customerSchema.virtual("tinhTrangLichHenGanNhat").get(function () {
   return "Chưa có lịch hẹn qua";
 });
 
-// Tương tự cho các trường tài chính và chăm sóc khách hàng...
-// Lưu ý: Các trường này cần được tính toán ở tầng logic ứng dụng hoặc qua các bước tổng hợp dữ liệu (aggregation)
-// để đảm bảo hiệu năng, thay vì tính toán mỗi khi truy vấn một khách hàng.
-customerSchema.virtual("tongThanhTien", {
-  /* ... */
-});
-customerSchema.virtual("tongThucThu", {
-  /* ... */
-});
+customerSchema.methods.getFinancials = async function () {
+  // Lấy `_id` của khách hàng hiện tại
+  const customerId = this._id;
 
-// 3. Về `tongConNo`
-customerSchema.virtual("tongConNo").get(function () {
-  // Lưu ý nhỏ: Công thức của bạn nên là `Thành tiền - Thực thu`
-  // Các giá trị này cần được tính toán trước
-  const thanhTien = this.tongThanhTien || 0;
-  const thucThu = this.tongThucThu || 0;
-  return thanhTien - thucThu;
-});
+  // 1. Tính tổng thành tiền từ các dịch vụ đã chốt
+  const consultedServices = await mongoose.model("ConsultedService").find({
+    khachHang: customerId,
+    trangThaiDichVu: "Đã chốt", // Chỉ tính các dịch vụ đã chốt
+  });
+  const tongThanhTien = consultedServices.reduce(
+    (sum, service) => sum + service.thanhTien,
+    0
+  );
+
+  // 2. Tính tổng thực thu từ các phiếu thu chi tiết
+  const paymentDetails = await mongoose.model("PaymentVoucherDetail").find({
+    khachHang: customerId,
+    trangThaiPhieu: "Đã thu", // Chỉ tính các phiếu đã thu thành công
+  });
+  const tongThucThu = paymentDetails.reduce(
+    (sum, detail) => sum + detail.soTienThu,
+    0
+  );
+
+  // 3. Tính công nợ
+  const tongConNo = tongThanhTien - tongThucThu;
+
+  return {
+    tongThanhTien,
+    tongThucThu,
+    tongConNo,
+  };
+};
 
 module.exports = mongoose.model("Customer", customerSchema);

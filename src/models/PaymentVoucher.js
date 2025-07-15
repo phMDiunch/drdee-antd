@@ -58,6 +58,28 @@ paymentVoucherSchema.pre("save", async function (next) {
   next();
 });
 
+/**
+ * Tính toán tổng số tiền của phiếu thu này dựa trên các chi tiết của nó.
+ * @returns {Promise<number>} Tổng số tiền đã thu.
+ */
+paymentVoucherSchema.methods.calculateTotal = async function () {
+  // `this` ở đây chính là document của một phiếu thu cụ thể
+  const voucherId = this._id;
+
+  // 1. Tìm tất cả các chi tiết thuộc về phiếu thu này
+  const details = await mongoose.model("PaymentVoucherDetail").find({
+    phieuThu: voucherId,
+  });
+
+  // 2. Tính tổng tiền từ các chi tiết
+  const totalAmount = details.reduce(
+    (sum, detail) => sum + detail.soTienThu,
+    0
+  );
+
+  return totalAmount;
+};
+
 // Virtual để link đến các chi tiết của nó
 paymentVoucherSchema.virtual("chiTiet", {
   ref: "PaymentVoucherDetail",

@@ -85,19 +85,35 @@ consultedServiceSchema.virtual("soLuong").get(function () {
   return 1;
 });
 
-// 2. Các virtual liên quan đến tài chính
-// Lưu ý: Các giá trị này cần được tính toán từ collection khác (ví dụ: PhieuThu)
-// và gán vào sau khi truy vấn. Virtual ở đây chỉ để hiển thị.
-consultedServiceSchema.virtual("soTienDaThanhToan").get(function () {
-  // Logic này sẽ được tính ở tầng ứng dụng, ví dụ:
-  // const payments = await Payment.find({ consultedServiceId: this._id });
-  // return payments.reduce((sum, p) => sum + p.amount, 0);
-  return this._soTienDaThanhToan || 0; // Trả về giá trị được gán tạm
-});
+/**
+ * Tính toán số tiền đã thanh toán và công nợ cho dịch vụ này.
+ * @returns {Promise<{soTienDaThanhToan: number, conNo: number}>}
+ */
+consultedServiceSchema.methods.getPaymentDetails = async function () {
+  // `this` ở đây chính là document của một dịch vụ tư vấn cụ thể
+  const serviceId = this._id;
+  const thanhTien = this.thanhTien || 0;
 
-consultedServiceSchema.virtual("conNo").get(function () {
-  return (this.thanhTien || 0) - (this.soTienDaThanhToan || 0);
-});
+  // 1. Tìm tất cả các phiếu thu chi tiết liên quan đến dịch vụ này
+  const paymentDetails = await mongoose.model("PaymentVoucherDetail").find({
+    dichVuTuVan: serviceId,
+    trangThaiPhieu: "Đã thu", // Chỉ tính các phiếu đã thu thành công
+  });
+
+  // 2. Tính tổng số tiền đã thanh toán
+  const soTienDaThanhToan = paymentDetails.reduce(
+    (sum, detail) => sum + detail.soTienThu,
+    0
+  );
+
+  // 3. Tính công nợ
+  const conNo = thanhTien - soTienDaThanhToan;
+
+  return {
+    soTienDaThanhToan,
+    conNo,
+  };
+};
 
 // --- HOOKS ---
 
