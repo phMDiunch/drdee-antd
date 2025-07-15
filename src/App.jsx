@@ -14,7 +14,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 
 // Import pages
-import Home from "./pages/Home";
+import Home from "./features/home/pages/Home";
 import SignUp from "./features/auth/pages/SignUp";
 import SignIn from "./features/auth/pages/SignIn";
 import Pending from "./features/auth/pages/Pending";
