@@ -1,0 +1,56 @@
+// src/layouts/AppLayout/menu.config.tsx
+
+import type { MenuProps } from "antd";
+import {
+  DashboardOutlined,
+  TeamOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  BarChartOutlined,
+  SettingOutlined,
+} from "@ant-design/icons";
+
+type MenuItem = Required<MenuProps>["items"][number];
+
+export const menuItems: MenuItem[] = [
+  { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
+  {
+    key: "customers",
+    icon: <UserOutlined />,
+    label: "Khách hàng",
+    children: [
+      { key: "/customers", label: "Danh sách" },
+      { key: "/customers/create", label: "Thêm mới" },
+    ],
+  },
+  {
+    key: "employees",
+    icon: <TeamOutlined />,
+    label: "Nhân sự",
+    children: [
+      { key: "/employees", label: "Danh sách" },
+      { key: "/employees/create", label: "Thêm mới" },
+    ],
+  },
+  {
+    key: "appointments",
+    icon: <CalendarOutlined />,
+    label: "Lịch hẹn",
+    children: [
+      { key: "/appointments", label: "Lịch" },
+      { key: "/appointments/list", label: "Danh sách" },
+    ],
+  },
+  {
+    key: "payments",
+    icon: <DollarOutlined />,
+    label: "Thanh toán",
+    children: [
+      { key: "/payments", label: "Phiếu thu" },
+      { key: "/payments/reports", label: "Báo cáo" },
+    ],
+  },
+  { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
+  { key: "/settings", icon: <SettingOutlined />, label: "Cài đặt" },
+];
