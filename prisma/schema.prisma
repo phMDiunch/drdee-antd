@@ -1,0 +1,551 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================
+//            MODELS
+// ===================================
+
+
+model Clinic {
+  id String @id @default(uuid())
+
+  // Thông tin cơ bản
+  name String @unique // Tên phòng khám
+  address String // Địa chỉ phòng khám
+  phone String? // Số điện thoại liên hệ
+  email String? // Email liên hệ
+  colorCode String? // Mã màu để phân biệt phòng khám trên UI
+
+  // Metadata
+  createdAt DateTime @default(now()) @db.Timestamptz // Ngày tạo
+  updatedAt DateTime @updatedAt @db.Timestamptz // Ngày cập nhật cuối
+
+  // Liên kết đến nhân viên
+  employees Employee[]
+}
+
+model DentalService {
+  id String @id @default(uuid())
+
+  // Thông tin cơ bản
+  name        String  @unique // Tên dịch vụ, ví dụ: "Cạo vôi răng"
+  description String? // Mô tả chi tiết
+
+  // Thông tin phân loại
+  serviceGroup   String? // Nhóm dịch vụ, ví dụ: niềng răng invisalign, niềng răng mắc cài
+  department     String? // Bộ môn, ví dụ: niềng răng invisalign moderate, niềng răng invisalign comprehensive
+  tags String[] @default([]) // Các thẻ (tags) để phân loại dịch vụ do phòng khám tự định nghĩa
+
+  // Thông tin giá & đơn vị
+  unit  String // Đơn vị tính: "Răng", "Hàm", "Lần"
+  price Int // Đơn giá, lưu dạng Int để tránh sai số
+
+  // Thông tin chi tiết & bảo hành
+  officialWarranty     String? // Bảo hành chính hãng
+  clinicWarranty       String? // Bảo hành uy tín từ phòng khám
+  origin               String? // Xuất xứ
+  avgTreatmentMinutes  Int? // Số phút điều trị trung bình
+  avgTreatmentSessions Int? // Số buổi điều trị trung bình
+
+  // Metadata
+  isActive  Boolean  @default(true) // Trạng thái dịch vụ
+  createdAt DateTime @default(now()) @db.Timestamptz // Ngày tạo
+  updatedAt DateTime @updatedAt @db.Timestamptz // Ngày cập nhật cuối
+
+  createdById String // ID của người tạo
+  updatedById String // ID của người cập nhật
+
+  // Liên kết đến nhân viên
+  createdBy         Employee           @relation("CreatedDentalServices", fields: [createdById], references: [id])
+  updatedBy         Employee           @relation("UpdatedDentalServices", fields: [updatedById], references: [id])
+
+  // Liên kết đến dịch vụ tư vấn
+  consultedServices ConsultedService[]
+}
+
+model Employee {
+  id String @id @default(uuid())
+
+  // Thông tin tài khoản
+  uid   String? @unique // User ID từ Supabase Auth để liên kết
+  email String  @unique // Email đăng nhập
+  role  String // Vai trò trong hệ thống: "admin", "employee"
+
+  // Thông tin cơ bản
+  fullName     String //
+  dob          DateTime? @db.Date // Ngày sinh
+  gender       Gender // Giới tính
+  avatarUrl    String? //
+  favoriteColor String? // Màu yêu thích để cá nhân hóa giao diện
+
+  // Thông tin liên hệ
+  phone          String  @unique
+  currentAddress String? // Địa chỉ hiện tại
+  hometown       String? // Quê quán
+
+  // Thông tin pháp lý & BH
+  nationalId           String?   @unique // Số CCCD
+  nationalIdIssueDate  DateTime? @db.Date // Ngày cấp
+  nationalIdIssuePlace String? // Nơi cấp
+  taxId                String?   @unique // Mã số thuế
+  insuranceNumber      String?   @unique // Số sổ BHXH
+
+  // Thông tin ngân hàng
+  bankAccountNumber String? // Số tài khoản ngân hàng
+  bankName          String? // Tên ngân hàng
+
+  // Thông tin công việc
+  employeeCode String?   @unique // Mã nhân viên
+  employmentStatus String  @default("Thử việc") // "Đang làm việc", "Thử việc", "Nghỉ việc"
+  clinicId         String? // ID của phòng khám làm việc
+  department       String? // Phòng ban
+  division         String? // Bộ phận
+  jobTitle         String? // Chức danh
+  position         String? // Chức vụ
+
+  // Metadata
+  createdById String? // ID của người tạo
+  updatedById String? // ID của người cập nhật cuối
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến nhân viên
+  createdBy        Employee?  @relation("CreatedEmployees", fields: [createdById], references: [id])
+  updatedBy        Employee?  @relation("UpdatedEmployees", fields: [updatedById], references: [id])
+  createdEmployees Employee[] @relation("CreatedEmployees")
+  updatedEmployees Employee[] @relation("UpdatedEmployees")
+
+  // Liên kết đến phòng khám
+  clinic Clinic? @relation(fields: [clinicId], references: [id])
+
+  // Liên kết đến khách hàng
+  createdCustomers Customer[] @relation("CreatedCustomers")
+  updatedCustomers Customer[] @relation("UpdatedCustomers")
+
+  // Liên kết đến dịch vụ nha khoa
+  createdDentalServices DentalService[] @relation("CreatedDentalServices")
+  updatedDentalServices DentalService[] @relation("UpdatedDentalServices")
+
+  // Liên kết đến lịch hẹn
+  primaryDentistAppointments   Appointment[] @relation("PrimaryDentistAppointments")
+  secondaryDentistAppointments Appointment[] @relation("SecondaryDentistAppointments")
+  createdAppointments          Appointment[] @relation("CreatedAppointments")
+  updatedAppointments          Appointment[] @relation("UpdatedAppointments")
+
+  // Liên kết đến dịch vụ tư vấn
+  consultingDoctorServices ConsultedService[] @relation("ConsultingDoctorServices")
+  consultingSaleServices   ConsultedService[] @relation("ConsultingSaleServices")
+  treatingDoctorServices   ConsultedService[] @relation("TreatingDoctorServices")
+  createdConsultedServices ConsultedService[] @relation("CreatedConsultedServices")
+  updatedConsultedServices ConsultedService[] @relation("UpdatedConsultedServices")
+
+  // Liên kết đến nhật ký điều trị
+  dentistLogs    TreatmentLog[] @relation("DentistLogs")
+  assistant1Logs TreatmentLog[] @relation("Assistant1Logs")
+  assistant2Logs TreatmentLog[] @relation("Assistant2Logs")
+  createdLogs    TreatmentLog[] @relation("CreatedLogs")
+  updatedLogs    TreatmentLog[] @relation("UpdatedLogs")
+
+  // Liên kết đến phiếu thu
+  cashierVouchers       PaymentVoucher[]       @relation("CashierVouchers")
+  createdVouchers       PaymentVoucher[]       @relation("CreatedVouchers")
+  updatedVouchers       PaymentVoucher[]       @relation("UpdatedVouchers")
+
+  // Liên kết đến chi tiết phiếu thu
+  createdVoucherDetails PaymentVoucherDetail[] @relation("CreatedVoucherDetails")
+
+  // Liên kết đến chăm sóc sau điều trị (aftercare)
+  careStaffTreatmentCares TreatmentCare[]
+  createdTreatmentCares   TreatmentCare[] @relation("CreatedTreatmentCares")
+  updatedTreatmentCares   TreatmentCare[] @relation("UpdatedTreatmentCares")
+
+  // Liên kết đến nhà cung cấp
+  createdSuppliers Supplier[] @relation("CreatedSuppliers")
+  updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model Customer {
+  id String @id @default(uuid())
+
+  // Thông tin cơ bản
+  fullName           String // Họ tên
+  dob                DateTime? @db.Date // Ngày sinh
+  gender             Gender // Giới tính
+
+  // Thông tin liên hệ
+  phone    String? @unique // Số điện thoại
+  email    String? @unique
+  address  String? // Địa chỉ
+  city     String? // Tỉnh/Thành phố
+  district String? // Quận/Huyện
+
+  relationshipToPrimary String? // Mối quan hệ: Bố, Mẹ, Con, Vợ, Chồng...
+  primaryContactId      String? // ID của người liên hệ chính
+
+  // Thông tin phân loại
+  customerCode       String?   @unique // Mã khách hàng
+  clinicId String? // Chi nhánh
+
+  occupation         String? // Nghề nghiệp
+  source             String? // Nguồn khách
+  sourceNotes        String? // Ghi chú nguồn
+  servicesOfInterest String[] // Dịch vụ quan tâm (mảng các chuỗi)
+
+
+  // Metadata  
+  createdById String // ID của người tạo
+  updatedById String // ID của người cập nhật cuối
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến khách hàng
+  primaryContact Customer?  @relation("PrimaryContactDependents", fields: [primaryContactId], references: [id])
+  dependents     Customer[] @relation("PrimaryContactDependents")
+
+  // Liên kết đến nhân viên
+  createdBy         Employee           @relation("CreatedCustomers", fields: [createdById], references: [id])
+  updatedBy         Employee           @relation("UpdatedCustomers", fields: [updatedById], references: [id])
+
+  // Liên kết đến lịch hẹn
+  appointments      Appointment[]
+
+  // Liên kết đến dịch vụ tư vấn
+  consultedServices ConsultedService[]
+
+  // Liên kết đến nhật ký điều trị
+  treatmentLogs     TreatmentLog[]
+
+  // Liên kết đến phiếu thu
+  paymentVouchers   PaymentVoucher[]
+
+  // Liên kết đến chăm sóc sau điều trị (aftercare)
+  treatmentCares TreatmentCare[]
+}
+
+model Appointment {
+  id String @id @default(uuid())
+
+  // Thông tin cơ bản
+  customerId          String // ID khách hàng
+  appointmentDateTime DateTime @db.Timestamptz // Thời gian hẹn chính xác (ngày và giờ)
+  duration            Int      @default(30) // Thời lượng cuộc hẹn tính bằng phút, mặc định là 30 phút
+  notes               String? // Nội dung, ghi chú cho cuộc hẹn
+
+  // Thông tin phân công
+  primaryDentistId   String // Bác sĩ chính (bắt buộc)
+  secondaryDentistId String? // Bác sĩ phụ (không bắt buộc)
+  clinicId           String // Chi nhánh diễn ra cuộc hẹn
+
+  // Trạng thái & Check-in
+  status       String // "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Không đến", "Đã hủy"
+  checkInTime  DateTime? @db.Timestamptz // Thời gian khách hàng check-in thực tế
+  checkOutTime DateTime? @db.Timestamptz // Thời gian khách hàng check-out
+
+  // Metadata
+  createdById String
+  updatedById String
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến khách hàng
+  customer         Customer       @relation(fields: [customerId], references: [id])
+
+  // Liên kết đến nhân viên
+  primaryDentist   Employee       @relation("PrimaryDentistAppointments", fields: [primaryDentistId], references: [id])
+  secondaryDentist Employee?      @relation("SecondaryDentistAppointments", fields: [secondaryDentistId], references: [id])
+  createdBy        Employee       @relation("CreatedAppointments", fields: [createdById], references: [id])
+  updatedBy        Employee       @relation("UpdatedAppointments", fields: [updatedById], references: [id])
+
+  // Liên kết đến dịch vụ tư vấn
+  consultedServices ConsultedService[]
+
+  // Liên kết đến nhật ký điều trị
+  treatmentLogs    TreatmentLog[]
+}
+
+model ConsultedService {
+  id String @id @default(uuid())
+
+  // Liên kết Dữ liệu
+  customerId      String // Khách hàng
+  appointmentId   String // Lịch hẹn tư vấn 
+  dentalServiceId String // Dịch vụ tư vấn
+  clinicId        String // Chi nhánh diễn ra tư vấn
+
+  // Dữ liệu Sao chép (Denormalized)
+  // Giữ lịch sử giá và tên tại thời điểm tư vấn
+  consultedServiceName String // Sao chép tên dịch vụ tại thời điểm tư vấn
+  consultedServiceUnit String // Sao chép đơn vị tính
+  price             Int // Giá niêm yết gốc
+
+  // Thông tin Điều trị Chi tiết
+  toothPositions String[] // Mảng vị trí răng, ví dụ: ["R16", "R26"]
+  specificStatus String? // Ghi chú của bác sĩ về tình trạng
+
+  // Thông tin Tài chính
+  quantity          Int @default(1) // Số lượng
+  preferentialPrice Int // Giá ưu đãi cho 1 đơn vị
+  finalPrice        Int // Thành tiền = preferentialPrice * quantity
+  amountPaid        Int @default(0) // Số tiền đã trả cho dịch vụ này
+  debt              Int // Công nợ còn lại
+
+  // Trạng thái & Ngày quan trọng
+  consultationDate   DateTime  @default(now()) @db.Timestamptz // Ngày tư vấn
+  serviceConfirmDate DateTime? @db.Timestamptz // Ngày khách hàng đồng ý
+  serviceStatus      String    @default("Chưa chốt") // "Chưa chốt", "Đã chốt"
+  treatmentStatus    String    @default("Chưa điều trị") // "Chưa điều trị", "Đang điều trị", "Hoàn thành"
+
+  // Thông tin Phân công
+  consultingDoctorId String?
+  consultingSaleId   String?
+  treatingDoctorId   String?
+
+  // Metadata
+  createdById String
+  updatedById String
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến khách hàng
+  customer      Customer      @relation(fields: [customerId], references: [id])
+
+  // Liên kết đến dịch vụ nha khoa
+  dentalService DentalService @relation(fields: [dentalServiceId], references: [id])
+
+  // Liên kết đến nhân viên
+  consultingDoctor Employee? @relation("ConsultingDoctorServices", fields: [consultingDoctorId], references: [id])
+  consultingSale   Employee? @relation("ConsultingSaleServices", fields: [consultingSaleId], references: [id])
+  treatingDoctor   Employee? @relation("TreatingDoctorServices", fields: [treatingDoctorId], references: [id])
+
+  createdBy Employee @relation("CreatedConsultedServices", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedConsultedServices", fields: [updatedById], references: [id])
+
+  // Liên kết đến lịch hẹn
+  Appointment    Appointment?           @relation(fields: [appointmentId], references: [id])
+
+  // Liên kết đến nhật ký điều trị
+  treatmentLogs  TreatmentLog[]
+
+  // Liên kết đến phiếu thu chi tiết
+  paymentDetails PaymentVoucherDetail[]
+}
+
+model TreatmentLog {
+  id String @id @default(uuid())
+
+  // Liên kết Dữ liệu
+  customerId         String
+  consultedServiceId String // Liên kết đến dịch vụ cụ thể đã được chốt
+  appointmentId      String // Lịch hẹn của buổi điều trị này
+
+  // Thông tin Lâm sàng
+  treatmentDate   DateTime @default(now()) @db.Timestamptz // Ngày điều trị
+  treatmentNotes  String // Chi tiết, nội dung điều trị
+  nextStepNotes   String? // Kế hoạch cho buổi hẹn tiếp theo
+  treatmentStatus String // "Đang tiến hành", "Hoàn tất bước", "Hoàn tất dịch vụ"
+
+  imageUrls String[] // Mảng chứa các URL của hình ảnh
+  xrayUrls  String[] // Mảng chứa các URL của phim X-quang
+
+  // Nhân sự thực hiện
+  dentistId    String
+  assistant1Id String?
+  assistant2Id String?
+  clinicId     String
+
+  // Metadata & Ghi nhận
+  createdById String
+  updatedById String
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến khách hàng
+  customer         Customer         @relation(fields: [customerId], references: [id])
+
+  // Liên kết đến dịch vụ tư vấn
+  consultedService ConsultedService @relation(fields: [consultedServiceId], references: [id])
+
+  // Liên kết đến lịch hẹn
+  appointment      Appointment?     @relation(fields: [appointmentId], references: [id])
+  dentist          Employee         @relation("DentistLogs", fields: [dentistId], references: [id])
+
+  // 
+  assistant1       Employee?        @relation("Assistant1Logs", fields: [assistant1Id], references: [id])
+  assistant2       Employee?        @relation("Assistant2Logs", fields: [assistant2Id], references: [id])
+  createdBy        Employee         @relation("CreatedLogs", fields: [createdById], references: [id])
+  updatedBy        Employee         @relation("UpdatedLogs", fields: [updatedById], references: [id])
+}
+
+model PaymentVoucher {
+  id            String   @id @default(uuid())
+
+  paymentNumber String   @unique // Số phiếu thu
+  customerId    String  // Khách hàng
+  paymentDate   DateTime @default(now()) @db.Date // Ngày thu tiền
+  totalAmount   Int // Tổng tiền của cả phiếu thu
+  notes         String? // Nội dung thu tiền: Đặt cọc, Thanh toán tiếp, Hoàn tất thanh toán
+  cashierId     String // Nhân viên thu tiền
+  clinicId      String // Chi nhánh thực hiện thu tiền
+
+  // Metadata
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến chi tiết phiếu thu
+  details PaymentVoucherDetail[]
+
+  // Liên kết đến khách hàng
+  customer Customer @relation(fields: [customerId], references: [id])
+  // Liên kết đến nhân viên
+  cashier  Employee @relation("CashierVouchers", fields: [cashierId], references: [id])
+
+  createdBy Employee @relation("CreatedVouchers", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedVouchers", fields: [updatedById], references: [id])
+}
+
+model PaymentVoucherDetail {
+  id String @id @default(uuid())
+
+  // Liên kết ngược lại với phiếu thu chính
+  paymentVoucherId String
+  paymentVoucher   PaymentVoucher @relation(fields: [paymentVoucherId], references: [id])
+
+  // Liên kết đến dịch vụ được thanh toán
+  consultedServiceId String
+  consultedService   ConsultedService @relation(fields: [consultedServiceId], references: [id])
+
+  amount        Int // Số tiền thanh toán cho dòng này
+  paymentMethod String // Hình thức thanh toán: "Tiền mặt", "Quẹt thẻ",...
+
+  // Metadata
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  createdById String
+
+  // 
+  createdBy Employee @relation("CreatedVoucherDetails", fields: [createdById], references: [id])
+}
+
+//---------------------------
+// TreatmentCare (Aftercare) v1
+//---------------------------
+
+model TreatmentCare {
+  id String @id @default(uuid())
+
+  // Liên kết
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  // Cơ sở báo cáo: theo nhân viên chăm sóc (careStaff)
+  clinicId String
+
+  careStaffId String
+  careStaff   Employee @relation(fields: [careStaffId], references: [id])
+
+  // Ngày nghiệp vụ
+  treatmentDate DateTime @db.Date // Ngày điều trị (Date-only)
+  careAt        DateTime @db.Timestamptz // Thời điểm chăm sóc
+
+  // Nội dung & Trạng thái
+  careContent String
+  careStatus  TreatmentCareStatus
+
+  // Snapshot (gộp theo treatmentDate)
+  treatmentServiceNames String[]
+  treatingDoctorNames   String[]
+  treatingDoctorIds     String[]
+  treatmentClinicIds    String[]
+
+  // Audit
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  createdBy Employee @relation("CreatedTreatmentCares", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedTreatmentCares", fields: [updatedById], references: [id])
+
+  // Indexes
+  @@index([clinicId, treatmentDate])
+  @@index([clinicId, careAt])
+  @@index([careStaffId, careAt])
+  @@index([customerId, treatmentDate])
+}
+
+enum TreatmentCareStatus {
+  STABLE
+  UNREACHABLE
+  NEEDS_FOLLOW_UP
+}
+
+// ===================================
+//        SUPPLIER MODEL
+// ===================================
+model Supplier {
+  id           String  @id @default(uuid())
+  supplierCode String? @unique // Mã nhà cung cấp tự động
+  name         String // Tên nhà cung cấp
+
+  // Thông tin phân loại - dùng constants
+  categoryType String // "medical_equipment", "consumables", "pharmaceuticals"
+
+  // Thông tin liên hệ
+  phone         String?
+  email         String?
+  website       String?
+  address       String?
+  contactPerson String? // Người liên hệ chính
+  contactPhone  String? // SĐT người liên hệ
+
+  // Thông tin pháp lý
+  taxId           String? @unique // Mã số thuế
+  businessLicense String? // Số giấy phép KD
+  bankName        String?
+  bankAccount     String?
+
+  // Thông tin đánh giá
+  rating     Int?    @default(5) // 1-5 sao
+  ratingNote String? // Ghi chú đánh giá
+
+  // Thông tin khác
+  description String? // Mô tả, ghi chú
+  isActive    Boolean @default(true)
+
+  // Metadata
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  createdById String
+  updatedById String
+  createdBy   Employee @relation("CreatedSuppliers", fields: [createdById], references: [id])
+  updatedBy   Employee @relation("UpdatedSuppliers", fields: [updatedById], references: [id])
+
+  // Indexes
+  @@index([categoryType])
+  @@index([isActive])
+  @@index([createdAt])
+}

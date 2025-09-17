@@ -1,0 +1,1018 @@
+[
+  {
+    "name": "An Giang",
+    "districts": [
+      { "name": "Long Xuyên" },
+      { "name": "Châu Đốc" },
+      { "name": "An Phú" },
+      { "name": "Tân Châu" },
+      { "name": "Phú Tân" },
+      { "name": "Châu Phú" },
+      { "name": "Tịnh Biên" },
+      { "name": "Tri Tôn" },
+      { "name": "Châu Thành" },
+      { "name": "Chợ Mới" },
+      { "name": "Thoại Sơn" }
+    ]
+  },
+  {
+    "name": "Bà Rịa Vũng Tàu",
+    "districts": [
+      { "name": "Vũng Tàu" },
+      { "name": "Bà Rịa" },
+      { "name": "Châu Đức" },
+      { "name": "Xuyên Mộc" },
+      { "name": "Long Điền" },
+      { "name": "Đất Đỏ" },
+      { "name": "Tân Thành" }
+    ]
+  },
+  {
+    "name": "Bạc Liêu",
+    "districts": [
+      { "name": "Bạc Liêu" },
+      { "name": "Hồng Dân" },
+      { "name": "Phước Long" },
+      { "name": "Vĩnh Lợi" },
+      { "name": "Giá Rai" },
+      { "name": "Đông Hải" },
+      { "name": "Hoà Bình" }
+    ]
+  },
+  {
+    "name": "Bắc Giang",
+    "districts": [
+      { "name": "Bắc Giang" },
+      { "name": "Yên Thế" },
+      { "name": "Tân Yên" },
+      { "name": "Lạng Giang" },
+      { "name": "Lục Nam" },
+      { "name": "Lục Ngạn" },
+      { "name": "Sơn Động" },
+      { "name": "Yên Dũng" },
+      { "name": "Việt Yên" },
+      { "name": "Hiệp Hòa" }
+    ]
+  },
+  {
+    "name": "Bắc Kạn",
+    "districts": [
+      { "name": "Ba Bể" },
+      { "name": "Bạch Thông" },
+      { "name": "Bắc Kạn" },
+      { "name": "Chợ Đồn" },
+      { "name": "Chợ Mới" },
+      { "name": "Na Rì" },
+      { "name": "Ngân Sơn" },
+      { "name": "Pác Nặm" }
+    ]
+  },
+  {
+    "name": "Bắc Ninh",
+    "districts": [
+      { "name": "Bắc Ninh" },
+      { "name": "Yên Phong" },
+      { "name": "Quế Võ" },
+      { "name": "Tiên Du" },
+      { "name": "Từ Sơn" },
+      { "name": "Thuận Thành" },
+      { "name": "Gia Bình" },
+      { "name": "Lương Tài" }
+    ]
+  },
+  {
+    "name": "Bến Tre",
+    "districts": [
+      { "name": "Bến Tre" },
+      { "name": "Châu Thành" },
+      { "name": "Chợ Lách" },
+      { "name": "Mỏ Cày Nam" },
+      { "name": "Giồng Trôm" },
+      { "name": "Bình Đại" },
+      { "name": "Ba Tri" },
+      { "name": "Thạnh Phú" },
+      { "name": "Mỏ Cày Bắc" }
+    ]
+  },
+  {
+    "name": "Bình Dương",
+    "districts": [
+      { "name": "Thủ Dầu Một" },
+      { "name": "Bàu Bàng" },
+      { "name": "Dầu Tiếng" },
+      { "name": "Bến Cát" },
+      { "name": "Phú Giáo" },
+      { "name": "Tân Uyên" },
+      { "name": "Dĩ An" },
+      { "name": "Thuận An" },
+      { "name": "Bắc Tân Uyên" }
+    ]
+  },
+  {
+    "name": "Bình Định",
+    "districts": [
+      { "name": "Qui Nhơn" },
+      { "name": "An Lão" },
+      { "name": "Hoài Nhơn" },
+      { "name": "Hoài Ân" },
+      { "name": "Phù Mỹ" },
+      { "name": "Vĩnh Thạnh" },
+      { "name": "Tây Sơn" },
+      { "name": "Phù Cát" },
+      { "name": "An Nhơn" },
+      { "name": "Tuy Phước" },
+      { "name": "Vân Canh" }
+    ]
+  },
+  {
+    "name": "Bình Phước",
+    "districts": [
+      { "name": "Phước Long" },
+      { "name": "Đồng Xoài" },
+      { "name": "Bình Long" },
+      { "name": "Bù Gia Mập" },
+      { "name": "Lộc Ninh" },
+      { "name": "Bù Đốp" },
+      { "name": "Hớn Quản" },
+      { "name": "Đồng Phú" },
+      { "name": "Bù Đăng" },
+      { "name": "Chơn Thành" },
+      { "name": "Phú Riềng" }
+    ]
+  },
+  {
+    "name": "Bình Thuận",
+    "districts": [
+      { "name": "Phan Thiết" },
+      { "name": "La Gi" },
+      { "name": "Tuy Phong" },
+      { "name": "Bắc Bình" },
+      { "name": "Hàm Thuận Bắc" },
+      { "name": "Hàm Thuận Nam" },
+      { "name": "Tánh Linh" },
+      { "name": "Đức Linh" },
+      { "name": "Hàm Tân" },
+      { "name": "Phú Quí" }
+    ]
+  },
+  {
+    "name": "Cà Mau",
+    "districts": [
+      { "name": "Cà Mau" },
+      { "name": "U Minh" },
+      { "name": "Thới Bình" },
+      { "name": "Trần Văn Thời" },
+      { "name": "Cái Nước" },
+      { "name": "Đầm Dơi" },
+      { "name": "Năm Căn" },
+      { "name": "Phú Tân" },
+      { "name": "Ngọc Hiển" }
+    ]
+  },
+  {
+    "name": "Cao Bằng",
+    "districts": [
+      { "name": "Bảo Lạc" },
+      { "name": "Bảo Lâm" },
+      { "name": "Cao Bằng" },
+      { "name": "Hạ Lang" },
+      { "name": "Hà Quảng" },
+      { "name": "Hoà An" },
+      { "name": "Nguyên Bình" },
+      { "name": "Phục Hoà" },
+      { "name": "Quảng Uyên" },
+      { "name": "Thạch An" },
+      { "name": "Thông Nông" },
+      { "name": "Trà Lĩnh" },
+      { "name": "Trùng Khánh" }
+    ]
+  },
+  {
+    "name": "Cần Thơ",
+    "districts": [
+      { "name": "Ninh Kiều" },
+      { "name": "Ô Môn" },
+      { "name": "Bình Thuỷ" },
+      { "name": "Cái Răng" },
+      { "name": "Thốt Nốt" },
+      { "name": "Vĩnh Thạnh" },
+      { "name": "Cờ Đỏ" },
+      { "name": "Phong Điền" },
+      { "name": "Thới Lai" }
+    ]
+  },
+  {
+    "name": "Đà Nẵng",
+    "districts": [
+      { "name": "Liên Chiểu" },
+      { "name": "Thanh Khê" },
+      { "name": "Hải Châu" },
+      { "name": "Sơn Trà" },
+      { "name": "Ngũ Hành Sơn" },
+      { "name": "Cẩm Lệ" },
+      { "name": "Hòa Vang" }
+    ]
+  },
+  {
+    "name": "Đắk Lắk",
+    "districts": [
+      { "name": "Buôn Ma Thuột" },
+      { "name": "Buôn Hồ" },
+      { "name": "Ea H'leo" },
+      { "name": "Ea Súp" },
+      { "name": "Buôn Đôn" },
+      { "name": "Cư M'gar" },
+      { "name": "Krông Búk" },
+      { "name": "Krông Năng" },
+      { "name": "Ea Kar" },
+      { "name": "M'Đrắk" },
+      { "name": "Krông Bông" },
+      { "name": "Krông Pắc" },
+      { "name": "Krông A Na" },
+      { "name": "Lắk" },
+      { "name": "Cư Kuin" }
+    ]
+  },
+  {
+    "name": "Đắk Nông",
+    "districts": [
+      { "name": "Gia Nghĩa" },
+      { "name": "Đăk Glong" },
+      { "name": "Cư Jút" },
+      { "name": "Đắk Mil" },
+      { "name": "Krông Nô" },
+      { "name": "Đắk Song" },
+      { "name": "Đắk R'Lấp" },
+      { "name": "Tuy Đức" }
+    ]
+  },
+  {
+    "name": "Điện Biên",
+    "districts": [
+      { "name": "Điện Biên" },
+      { "name": "Điện Biên Đông" },
+      { "name": "Điện Biên Phủ" },
+      { "name": "Mường Ảng" },
+      { "name": "Mường Chà" },
+      { "name": "Mường Lay" },
+      { "name": "Mường Nhé" },
+      { "name": "Nậm Pồ" },
+      { "name": "Tủa Chùa" },
+      { "name": "Tuần Giáo" }
+    ]
+  },
+  {
+    "name": "Đồng Nai",
+    "districts": [
+      { "name": "Biên Hòa" },
+      { "name": "Long Khánh" },
+      { "name": "Tân Phú" },
+      { "name": "Vĩnh Cửu" },
+      { "name": "Định Quán" },
+      { "name": "Trảng Bom" },
+      { "name": "Thống Nhất" },
+      { "name": "Cẩm Mỹ" },
+      { "name": "Long Thành" },
+      { "name": "Xuân Lộc" },
+      { "name": "Nhơn Trạch" }
+    ]
+  },
+  {
+    "name": "Đồng Tháp",
+    "districts": [
+      { "name": "Cao Lãnh" },
+      { "name": "Sa Đéc" },
+      { "name": "Hồng Ngự" },
+      { "name": "Tân Hồng" },
+      { "name": "Tam Nông" },
+      { "name": "Tháp Mười" },
+      { "name": "Thanh Bình" },
+      { "name": "Lấp Vò" },
+      { "name": "Lai Vung" },
+      { "name": "Châu Thành" }
+    ]
+  },
+  {
+    "name": "Gia Lai",
+    "districts": [
+      { "name": "Pleiku" },
+      { "name": "An Khê" },
+      { "name": "Ayun Pa" },
+      { "name": "KBang" },
+      { "name": "Đăk Đoa" },
+      { "name": "Chư Păh" },
+      { "name": "Ia Grai" },
+      { "name": "Mang Yang" },
+      { "name": "Kông Chro" },
+      { "name": "Đức Cơ" },
+      { "name": "Chư Prông" },
+      { "name": "Chư Sê" },
+      { "name": "Đăk Pơ" },
+      { "name": "Ia Pa" },
+      { "name": "Krông Pa" },
+      { "name": "Phú Thiện" },
+      { "name": "Chư Pưh" }
+    ]
+  },
+  {
+    "name": "Hà Giang",
+    "districts": [
+      { "name": "Bắc Mê" },
+      { "name": "Bắc Quang" },
+      { "name": "Đồng Văn" },
+      { "name": "Hà Giang" },
+      { "name": "Hoàng Su Phì" },
+      { "name": "Mèo Vạc" },
+      { "name": "Quản Bạ" },
+      { "name": "Quang Bình" },
+      { "name": "Vị Xuyên" },
+      { "name": "Xín Mần" },
+      { "name": "Yên Minh" }
+    ]
+  },
+  {
+    "name": "Hà Nam",
+    "districts": [
+      { "name": "Phủ Lý" },
+      { "name": "Duy Tiên" },
+      { "name": "Kim Bảng" },
+      { "name": "Thanh Liêm" },
+      { "name": "Bình Lục" },
+      { "name": "Lý Nhân" }
+    ]
+  },
+  {
+    "name": "Hà Nội",
+    "districts": [
+      { "name": "Ba Đình" },
+      { "name": "Ba Vì" },
+      { "name": "Bắc Từ Liêm" },
+      { "name": "Cầu Giấy" },
+      { "name": "Chương Mỹ" },
+      { "name": "Đan Phượng" },
+      { "name": "Đông Anh" },
+      { "name": "Đống Đa" },
+      { "name": "Gia Lâm" },
+      { "name": "Hà Đông" },
+      { "name": "Hai Bà Trưng" },
+      { "name": "Hoài Đức" },
+      { "name": "Hoàn Kiếm" },
+      { "name": "Hoàng Mai" },
+      { "name": "Long Biên" },
+      { "name": "Mê Linh" },
+      { "name": "Mỹ Đức" },
+      { "name": "Nam Từ Liêm" },
+      { "name": "Phú Xuyên" },
+      { "name": "Phúc Thọ" },
+      { "name": "Quốc Oai" },
+      { "name": "Sóc Sơn" },
+      { "name": "Sơn Tây" },
+      { "name": "Tây Hồ" },
+      { "name": "Thạch Thất" },
+      { "name": "Thanh Oai" },
+      { "name": "Thanh Trì" },
+      { "name": "Thanh Xuân" },
+      { "name": "Thường Tín" },
+      { "name": "Ứng Hòa" }
+    ]
+  },
+  {
+    "name": "Hà Tĩnh",
+    "districts": [
+      { "name": "Hà Tĩnh" },
+      { "name": "Hồng Lĩnh" },
+      { "name": "Hương Sơn" },
+      { "name": "Đức Thọ" },
+      { "name": "Vũ Quang" },
+      { "name": "Nghi Xuân" },
+      { "name": "Can Lộc" },
+      { "name": "Hương Khê" },
+      { "name": "Thạch Hà" },
+      { "name": "Cẩm Xuyên" },
+      { "name": "Kỳ Anh" },
+      { "name": "Lộc Hà" }
+    ]
+  },
+  {
+    "name": "Hải Dương",
+    "districts": [
+      { "name": "Hải Dương" },
+      { "name": "Chí Linh" },
+      { "name": "Nam Sách" },
+      { "name": "Kinh Môn" },
+      { "name": "Kim Thành" },
+      { "name": "Thanh Hà" },
+      { "name": "Cẩm Giàng" },
+      { "name": "Bình Giang" },
+      { "name": "Gia Lộc" },
+      { "name": "Tứ Kỳ" },
+      { "name": "Ninh Giang" },
+      { "name": "Thanh Miện" }
+    ]
+  },
+  {
+    "name": "Hải Phòng",
+    "districts": [
+      { "name": "Hồng Bàng" },
+      { "name": "Ngô Quyền" },
+      { "name": "Lê Chân" },
+      { "name": "Hải An" },
+      { "name": "Kiến An" },
+      { "name": "Đồ Sơn" },
+      { "name": "Dương Kinh" },
+      { "name": "Thuỷ Nguyên" },
+      { "name": "An Dương" },
+      { "name": "An Lão" },
+      { "name": "Kiến Thuỵ" },
+      { "name": "Tiên Lãng" },
+      { "name": "Vĩnh Bảo" },
+      { "name": "Cát Hải" }
+    ]
+  },
+  {
+    "name": "Hậu Giang",
+    "districts": [
+      { "name": "Vị Thanh" },
+      { "name": "Ngã Bảy" },
+      { "name": "Châu Thành A" },
+      { "name": "Châu Thành" },
+      { "name": "Phụng Hiệp" },
+      { "name": "Vị Thuỷ" },
+      { "name": "Long Mỹ" }
+    ]
+  },
+  {
+    "name": "Hoà Bình",
+    "districts": [
+      { "name": "Hòa Bình" },
+      { "name": "Đà Bắc" },
+      { "name": "Kỳ Sơn" },
+      { "name": "Lương Sơn" },
+      { "name": "Kim Bôi" },
+      { "name": "Cao Phong" },
+      { "name": "Tân Lạc" },
+      { "name": "Mai Châu" },
+      { "name": "Lạc Sơn" },
+      { "name": "Yên Thủy" },
+      { "name": "Lạc Thủy" }
+    ]
+  },
+  {
+    "name": "Hồ Chí Minh",
+    "districts": [
+      { "name": "Quận 1" },
+      { "name": "Quận 12" },
+      { "name": "Thủ Đức" },
+      { "name": "Quận 9" },
+      { "name": "Gò Vấp" },
+      { "name": "Bình Thạnh" },
+      { "name": "Tân Bình" },
+      { "name": "Tân Phú" },
+      { "name": "Phú Nhuận" },
+      { "name": "Quận 2" },
+      { "name": "Quận 3" },
+      { "name": "Quận 10" },
+      { "name": "Quận 11" },
+      { "name": "Quận 4" },
+      { "name": "Quận 5" },
+      { "name": "Quận 6" },
+      { "name": "Quận 8" },
+      { "name": "Bình Tân" },
+      { "name": "Quận 7" },
+      { "name": "Củ Chi" },
+      { "name": "Hóc Môn" },
+      { "name": "Bình Chánh" },
+      { "name": "Nhà Bè" },
+      { "name": "Cần Giờ" }
+    ]
+  },
+  {
+    "name": "Hưng Yên",
+    "districts": [
+      { "name": "Hưng Yên" },
+      { "name": "Văn Lâm" },
+      { "name": "Văn Giang" },
+      { "name": "Yên Mỹ" },
+      { "name": "Mỹ Hào" },
+      { "name": "Ân Thi" },
+      { "name": "Khoái Châu" },
+      { "name": "Kim Động" },
+      { "name": "Tiên Lữ" },
+      { "name": "Phù Cừ" }
+    ]
+  },
+  {
+    "name": "Khánh Hòa",
+    "districts": [
+      { "name": "Nha Trang" },
+      { "name": "Cam Ranh" },
+      { "name": "Cam Lâm" },
+      { "name": "Vạn Ninh" },
+      { "name": "Ninh Hòa" },
+      { "name": "Khánh Vĩnh" },
+      { "name": "Diên Khánh" },
+      { "name": "Khánh Sơn" },
+      { "name": "Trường Sa" }
+    ]
+  },
+  {
+    "name": "Kiên Giang",
+    "districts": [
+      { "name": "Rạch Giá" },
+      { "name": "Hà Tiên" },
+      { "name": "Kiên Lương" },
+      { "name": "Hòn Đất" },
+      { "name": "Tân Hiệp" },
+      { "name": "Châu Thành" },
+      { "name": "Giồng Riềng" },
+      { "name": "Gò Quao" },
+      { "name": "An Biên" },
+      { "name": "An Minh" },
+      { "name": "Vĩnh Thuận" },
+      { "name": "Phú Quốc" },
+      { "name": "Kiên Hải" },
+      { "name": "U Minh Thượng" },
+      { "name": "Giang Thành" }
+    ]
+  },
+  {
+    "name": "Kon Tum",
+    "districts": [
+      { "name": "Kon Tum" },
+      { "name": "Đắk Glei" },
+      { "name": "Ngọc Hồi" },
+      { "name": "Đắk Tô" },
+      { "name": "Kon Plông" },
+      { "name": "Kon Rẫy" },
+      { "name": "Đắk Hà" },
+      { "name": "Sa Thầy" },
+      { "name": "Tu Mơ Rông" },
+      { "name": "Ia H' Drai" }
+    ]
+  },
+  {
+    "name": "Lai Châu",
+    "districts": [
+      { "name": "Lai Châu" },
+      { "name": "Mường Tè" },
+      { "name": "Nậm Nhùn" },
+      { "name": "Phong Thổ" },
+      { "name": "Sìn Hồ" },
+      { "name": "Tam Đường" },
+      { "name": "Tân Uyên" },
+      { "name": "Than Uyên" }
+    ]
+  },
+  {
+    "name": "Lạng Sơn",
+    "districts": [
+      { "name": "Lạng Sơn" },
+      { "name": "Tràng Định" },
+      { "name": "Bình Gia" },
+      { "name": "Văn Lãng" },
+      { "name": "Cao Lộc" },
+      { "name": "Văn Quan" },
+      { "name": "Bắc Sơn" },
+      { "name": "Hữu Lũng" },
+      { "name": "Chi Lăng" },
+      { "name": "Lộc Bình" },
+      { "name": "Đình Lập" }
+    ]
+  },
+  {
+    "name": "Lào Cai",
+    "districts": [
+      { "name": "Bảo Thắng" },
+      { "name": "Bảo Yên" },
+      { "name": "Bát Xát" },
+      { "name": "Bắc Hà" },
+      { "name": "Lào Cai" },
+      { "name": "Mường Khương" },
+      { "name": "Sa Pa" },
+      { "name": "Si Ma Cai" },
+      { "name": "Văn Bàn" }
+    ]
+  },
+  {
+    "name": "Lâm Đồng",
+    "districts": [
+      { "name": "Đà Lạt" },
+      { "name": "Bảo Lộc" },
+      { "name": "Đam Rông" },
+      { "name": "Lạc Dương" },
+      { "name": "Lâm Hà" },
+      { "name": "Đơn Dương" },
+      { "name": "Đức Trọng" },
+      { "name": "Di Linh" },
+      { "name": "Bảo Lâm" },
+      { "name": "Đạ Huoai" },
+      { "name": "Đạ Tẻh" },
+      { "name": "Cát Tiên" }
+    ]
+  },
+  {
+    "name": "Long An",
+    "districts": [
+      { "name": "Tân An" },
+      { "name": "Kiến Tường" },
+      { "name": "Tân Hưng" },
+      { "name": "Vĩnh Hưng" },
+      { "name": "Mộc Hóa" },
+      { "name": "Tân Thạnh" },
+      { "name": "Thạnh Hóa" },
+      { "name": "Đức Huệ" },
+      { "name": "Đức Hòa" },
+      { "name": "Bến Lức" },
+      { "name": "Thủ Thừa" },
+      { "name": "Tân Trụ" },
+      { "name": "Cần Đước" },
+      { "name": "Cần Giuộc" },
+      { "name": "Châu Thành" }
+    ]
+  },
+  {
+    "name": "Nam Định",
+    "districts": [
+      { "name": "Nam Định" },
+      { "name": "Mỹ Lộc" },
+      { "name": "Vụ Bản" },
+      { "name": "Ý Yên" },
+      { "name": "Nghĩa Hưng" },
+      { "name": "Nam Trực" },
+      { "name": "Trực Ninh" },
+      { "name": "Xuân Trường" },
+      { "name": "Giao Thủy" },
+      { "name": "Hải Hậu" }
+    ]
+  },
+  {
+    "name": "Nghệ An",
+    "districts": [
+      { "name": "Vinh" },
+      { "name": "Cửa Lò" },
+      { "name": "Thái Hoà" },
+      { "name": "Quế Phong" },
+      { "name": "Quỳ Châu" },
+      { "name": "Kỳ Sơn" },
+      { "name": "Tương Dương" },
+      { "name": "Nghĩa Đàn" },
+      { "name": "Quỳ Hợp" },
+      { "name": "Quỳnh Lưu" },
+      { "name": "Con Cuông" },
+      { "name": "Tân Kỳ" },
+      { "name": "Anh Sơn" },
+      { "name": "Diễn Châu" },
+      { "name": "Yên Thành" },
+      { "name": "Đô Lương" },
+      { "name": "Thanh Chương" },
+      { "name": "Nghi Lộc" },
+      { "name": "Nam Đàn" },
+      { "name": "Hưng Nguyên" },
+      { "name": "Hoàng Mai" }
+    ]
+  },
+  {
+    "name": "Ninh Bình",
+    "districts": [
+      { "name": "Ninh Bình" },
+      { "name": "Tam Điệp" },
+      { "name": "Nho Quan" },
+      { "name": "Gia Viễn" },
+      { "name": "Hoa Lư" },
+      { "name": "Yên Khánh" },
+      { "name": "Kim Sơn" },
+      { "name": "Yên Mô" }
+    ]
+  },
+  {
+    "name": "Ninh Thuận",
+    "districts": [
+      { "name": "Phan Rang-Tháp Chàm" },
+      { "name": "Bác Ái" },
+      { "name": "Ninh Sơn" },
+      { "name": "Ninh Hải" },
+      { "name": "Ninh Phước" },
+      { "name": "Thuận Bắc" },
+      { "name": "Thuận Nam" }
+    ]
+  },
+  {
+    "name": "Phú Thọ",
+    "districts": [
+      { "name": "Việt Trì" },
+      { "name": "Phú Thọ" },
+      { "name": "Đoan Hùng" },
+      { "name": "Hạ Hoà" },
+      { "name": "Thanh Ba" },
+      { "name": "Phù Ninh" },
+      { "name": "Yên Lập" },
+      { "name": "Cẩm Khê" },
+      { "name": "Lâm Thao" },
+      { "name": "Thanh Sơn" },
+      { "name": "Thanh Thuỷ" },
+      { "name": "Tân Sơn" }
+    ]
+  },
+  {
+    "name": "Phú Yên",
+    "districts": [
+      { "name": "Tuy Hoà" },
+      { "name": "Sông Cầu" },
+      { "name": "Đồng Xuân" },
+      { "name": "Tuy An" },
+      { "name": "Sơn Hòa" },
+      { "name": "Sông Hinh" },
+      { "name": "Tây Hoà" },
+      { "name": "Phú Hoà" },
+      { "name": "Đông Hòa" }
+    ]
+  },
+  {
+    "name": "Quảng Bình",
+    "districts": [
+      { "name": "Đồng Hới" },
+      { "name": "Minh Hóa" },
+      { "name": "Tuyên Hóa" },
+      { "name": "Quảng Trạch" },
+      { "name": "Bố Trạch" },
+      { "name": "Quảng Ninh" },
+      { "name": "Lệ Thủy" },
+      { "name": "Ba Đồn" }
+    ]
+  },
+  {
+    "name": "Quảng Nam",
+    "districts": [
+      { "name": "Tam Kỳ" },
+      { "name": "Hội An" },
+      { "name": "Tây Giang" },
+      { "name": "Đông Giang" },
+      { "name": "Đại Lộc" },
+      { "name": "Điện Bàn" },
+      { "name": "Duy Xuyên" },
+      { "name": "Quế Sơn" },
+      { "name": "Nam Giang" },
+      { "name": "Phước Sơn" },
+      { "name": "Hiệp Đức" },
+      { "name": "Thăng Bình" },
+      { "name": "Tiên Phước" },
+      { "name": "Bắc Trà My" },
+      { "name": "Nam Trà My" },
+      { "name": "Núi Thành" },
+      { "name": "Phú Ninh" },
+      { "name": "Nông Sơn" }
+    ]
+  },
+  {
+    "name": "Quảng Ngãi",
+    "districts": [
+      { "name": "Quảng Ngãi" },
+      { "name": "Bình Sơn" },
+      { "name": "Trà Bồng" },
+      { "name": "Tây Trà" },
+      { "name": "Sơn Tịnh" },
+      { "name": "Tư Nghĩa" },
+      { "name": "Sơn Hà" },
+      { "name": "Sơn Tây" },
+      { "name": "Minh Long" },
+      { "name": "Nghĩa Hành" },
+      { "name": "Mộ Đức" },
+      { "name": "Đức Phổ" },
+      { "name": "Ba Tơ" },
+      { "name": "Lý Sơn" }
+    ]
+  },
+  {
+    "name": "Quảng Ninh",
+    "districts": [
+      { "name": "Hạ Long" },
+      { "name": "Móng Cái" },
+      { "name": "Cẩm Phả" },
+      { "name": "Uông Bí" },
+      { "name": "Bình Liêu" },
+      { "name": "Tiên Yên" },
+      { "name": "Đầm Hà" },
+      { "name": "Hải Hà" },
+      { "name": "Ba Chẽ" },
+      { "name": "Vân Đồn" },
+      { "name": "Hoành Bồ" },
+      { "name": "Đông Triều" },
+      { "name": "Quảng Yên" },
+      { "name": "Cô Tô" }
+    ]
+  },
+  {
+    "name": "Quảng Trị",
+    "districts": [
+      { "name": "Đông Hà" },
+      { "name": "Quảng Trị" },
+      { "name": "Vĩnh Linh" },
+      { "name": "Hướng Hóa" },
+      { "name": "Gio Linh" },
+      { "name": "Đa Krông" },
+      { "name": "Cam Lộ" },
+      { "name": "Triệu Phong" },
+      { "name": "Hải Lăng" }
+    ]
+  },
+  {
+    "name": "Sóc Trăng",
+    "districts": [
+      { "name": "Sóc Trăng" },
+      { "name": "Châu Thành" },
+      { "name": "Kế Sách" },
+      { "name": "Mỹ Tú" },
+      { "name": "Cù Lao Dung" },
+      { "name": "Long Phú" },
+      { "name": "Mỹ Xuyên" },
+      { "name": "Ngã Năm" },
+      { "name": "Thạnh Trị" },
+      { "name": "Vĩnh Châu" },
+      { "name": "Trần Đề" }
+    ]
+  },
+  {
+    "name": "Sơn La",
+    "districts": [
+      { "name": "Bắc Yên" },
+      { "name": "Mai Sơn" },
+      { "name": "Mộc Châu" },
+      { "name": "Mường La" },
+      { "name": "Phù Yên" },
+      { "name": "Quỳnh Nhai" },
+      { "name": "Sông Mã" },
+      { "name": "Sốp Cộp" },
+      { "name": "Sơn La" },
+      { "name": "Thuận Châu" },
+      { "name": "Vân Hồ" },
+      { "name": "Yên Châu" }
+    ]
+  },
+  {
+    "name": "Tây Ninh",
+    "districts": [
+      { "name": "Tây Ninh" },
+      { "name": "Tân Biên" },
+      { "name": "Tân Châu" },
+      { "name": "Dương Minh Châu" },
+      { "name": "Châu Thành" },
+      { "name": "Hòa Thành" },
+      { "name": "Gò Dầu" },
+      { "name": "Bến Cầu" },
+      { "name": "Trảng Bàng" }
+    ]
+  },
+  {
+    "name": "Thái Bình",
+    "districts": [
+      { "name": "Thái Bình" },
+      { "name": "Quỳnh Phụ" },
+      { "name": "Hưng Hà" },
+      { "name": "Đông Hưng" },
+      { "name": "Thái Thụy" },
+      { "name": "Tiền Hải" },
+      { "name": "Kiến Xương" },
+      { "name": "Vũ Thư" }
+    ]
+  },
+  {
+    "name": "Thái Nguyên",
+    "districts": [
+      { "name": "Thái Nguyên" },
+      { "name": "Sông Công" },
+      { "name": "Định Hóa" },
+      { "name": "Phú Lương" },
+      { "name": "Đồng Hỷ" },
+      { "name": "Võ Nhai" },
+      { "name": "Đại Từ" },
+      { "name": "Phổ Yên" },
+      { "name": "Phú Bình" }
+    ]
+  },
+  {
+    "name": "Thanh Hóa",
+    "districts": [
+      { "name": "Thanh Hóa" },
+      { "name": "Bỉm Sơn" },
+      { "name": "Sầm Sơn" },
+      { "name": "Mường Lát" },
+      { "name": "Quan Hóa" },
+      { "name": "Bá Thước" },
+      { "name": "Quan Sơn" },
+      { "name": "Lang Chánh" },
+      { "name": "Ngọc Lặc" },
+      { "name": "Cẩm Thủy" },
+      { "name": "Thạch Thành" },
+      { "name": "Hà Trung" },
+      { "name": "Vĩnh Lộc" },
+      { "name": "Yên Định" },
+      { "name": "Thọ Xuân" },
+      { "name": "Thường Xuân" },
+      { "name": "Triệu Sơn" },
+      { "name": "Thiệu Hóa" },
+      { "name": "Hoằng Hóa" },
+      { "name": "Hậu Lộc" },
+      { "name": "Nga Sơn" },
+      { "name": "Như Xuân" },
+      { "name": "Như Thanh" },
+      { "name": "Nông Cống" },
+      { "name": "Đông Sơn" },
+      { "name": "Quảng Xương" },
+      { "name": "Tĩnh Gia" }
+    ]
+  },
+  {
+    "name": "Thừa Thiên Huế",
+    "districts": [
+      { "name": "Huế" },
+      { "name": "Phong Điền" },
+      { "name": "Quảng Điền" },
+      { "name": "Phú Vang" },
+      { "name": "Hương Thủy" },
+      { "name": "Hương Trà" },
+      { "name": "A Lưới" },
+      { "name": "Phú Lộc" },
+      { "name": "Nam Đông" }
+    ]
+  },
+  {
+    "name": "Tiền Giang",
+    "districts": [
+      { "name": "Mỹ Tho" },
+      { "name": "Gò Công" },
+      { "name": "Cai Lậy" },
+      { "name": "Tân Phước" },
+      { "name": "Cái Bè" },
+      { "name": "Chợ Gạo" },
+      { "name": "Gò Công Tây" },
+      { "name": "Gò Công Đông" },
+      { "name": "Tân Phú Đông" }
+    ]
+  },
+  {
+    "name": "Trà Vinh",
+    "districts": [
+      { "name": "Trà Vinh" },
+      { "name": "Càng Long" },
+      { "name": "Cầu Kè" },
+      { "name": "Tiểu Cần" },
+      { "name": "Châu Thành" },
+      { "name": "Cầu Ngang" },
+      { "name": "Trà Cú" },
+      { "name": "Duyên Hải" }
+    ]
+  },
+  {
+    "name": "Tuyên Quang",
+    "districts": [
+      { "name": "Chiêm Hóa" },
+      { "name": "Hàm Yên" },
+      { "name": "Lâm Bình" },
+      { "name": "Nà Hang" },
+      { "name": "Sơn Dương" },
+      { "name": "Tuyên Quang" },
+      { "name": "Yên Sơn" }
+    ]
+  },
+  {
+    "name": "Vĩnh Long",
+    "districts": [
+      { "name": "Vĩnh Long" },
+      { "name": "Long Hồ" },
+      { "name": "Mang Thít" },
+      { "name": "Vũng Liêm" },
+      { "name": "Tam Bình" },
+      { "name": "Bình Minh" },
+      { "name": "Trà Ôn" },
+      { "name": "Bình Tân" }
+    ]
+  },
+  {
+    "name": "Vĩnh Phúc",
+    "districts": [
+      { "name": "Vĩnh Yên" },
+      { "name": "Phúc Yên" },
+      { "name": "Lập Thạch" },
+      { "name": "Tam Dương" },
+      { "name": "Tam Đảo" },
+      { "name": "Bình Xuyên" },
+      { "name": "Yên Lạc" },
+      { "name": "Vĩnh Tường" },
+      { "name": "Sông Lô" }
+    ]
+  },
+  {
+    "name": "Yên Bái",
+    "districts": [
+      { "name": "Yên Bái" },
+      { "name": "Nghĩa Lộ" },
+      { "name": "Lục Yên" },
+      { "name": "Văn Yên" },
+      { "name": "Mù Căng Chải" },
+      { "name": "Trấn Yên" },
+      { "name": "Trạm Tấu" },
+      { "name": "Văn Chấn" },
+      { "name": "Yên Bình" }
+    ]
+  }
+]

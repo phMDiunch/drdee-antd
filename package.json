@@ -9,17 +9,30 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.0.2",
+    "@ant-design/nextjs-registry": "^1.1.0",
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@prisma/client": "^6.16.2",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.4",
+    "@tanstack/react-query": "^5.89.0",
+    "@tanstack/react-query-devtools": "^5.89.0",
+    "antd": "^5.27.3",
+    "dayjs": "^1.11.18",
+    "next": "15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.3"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
-    "@eslint/eslintrc": "^3"
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5"
   }
 }
