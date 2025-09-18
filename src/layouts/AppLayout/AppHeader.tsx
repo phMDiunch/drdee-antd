@@ -5,40 +5,18 @@ import "@ant-design/v5-patch-for-react-19";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Layout,
-  Space,
-  Typography,
-  theme,
-  Input,
-  Badge,
-  Avatar,
-  Dropdown,
-  Button,
-  Tag,
-  Grid,
-  Tooltip,
-  Modal,
-} from "antd";
-import {
-  BellOutlined,
-  MenuOutlined,
-  SearchOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { Layout, Space, Typography, theme, Input, Badge, Avatar, Dropdown, Button, Tag, Grid, Tooltip, Modal } from "antd";
+import { BellOutlined, MenuOutlined, SearchOutlined, UserOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { APP_LAYOUT } from "./theme";
+import type { UserCore } from "@/shared/types/user";
+
+import { useLogout } from "@/features/auth/hooks/useLogout";
+import { User } from "@supabase/supabase-js";
 
 const { Header } = Layout;
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
-
-export type CurrentUser = {
-  fullName: string;
-  email?: string;
-  role: "admin" | "manager" | "employee" | string;
-  avatarUrl?: string;
-};
 
 function roleColor(role: string): string | undefined {
   const r = role.toLowerCase();
@@ -49,27 +27,20 @@ function roleColor(role: string): string | undefined {
 }
 
 type Props = {
-  currentUser?: CurrentUser;
+  currentUser?: UserCore;
   collapsed?: boolean;
   onToggleSider?: () => void;
 };
 
-export default function AppHeader({
-  currentUser,
-  collapsed,
-  onToggleSider,
-}: Props) {
+export default function AppHeader({ currentUser, collapsed, onToggleSider }: Props) {
   const { token } = theme.useToken();
   const router = useRouter();
 
   const screens = useBreakpoint();
-  const isMdUp = !!screens.md;
+  const isMdUp = !!screens.lg;
 
   const displayName = useMemo(
-    () =>
-      (currentUser?.fullName && currentUser.fullName.trim()) ||
-      (currentUser?.email && currentUser.email.trim()) ||
-      "Người dùng",
+    () => (currentUser?.fullName && currentUser.fullName.trim()) || (currentUser?.email && currentUser.email.trim()) || "Người dùng",
     [currentUser?.fullName, currentUser?.email]
   );
 
@@ -85,16 +56,22 @@ export default function AppHeader({
     setSearchOpen(false);
   };
 
+  const logout = useLogout();
+
   const userMenu: MenuProps["items"] = [
     { key: "profile", label: "Hồ sơ" },
     { type: "divider" },
-    { key: "logout", label: "Đăng xuất" },
+    {
+      key: "logout",
+      label: logout.isPending ? "Đang đăng xuất..." : "Đăng xuất",
+      disabled: logout.isPending,
+    },
   ];
 
   const onUserClick: MenuProps["onClick"] = async (info) => {
     if (info.key === "logout") {
-      // TODO: gọi supabase.auth.signOut() khi làm Auth
-      router.push("/login");
+      logout.mutate(); // sẽ toast + replace('/login')
+      return;
     }
     if (info.key === "profile") {
       router.push("/settings/profile");
@@ -124,16 +101,12 @@ export default function AppHeader({
         <Space align="center" size={8} style={{ minWidth: isMdUp ? 200 : 120 }}>
           {!isMdUp && (
             <Tooltip title={collapsed ? "Mở menu" : "Thu gọn menu"}>
-              <Button
-                type="text"
-                icon={<MenuOutlined />}
-                onClick={onToggleSider}
-              />
+              <Button type="text" icon={<MenuOutlined />} onClick={onToggleSider} />
             </Tooltip>
           )}
           <Link href="/dashboard" style={{ textDecoration: "none" }}>
             <Text strong style={{ fontSize: 16 }}>
-              {isMdUp ? "Dr.Dee ERP" : "Dr.Dee"}
+              {isMdUp ? "DR DEE ERP" : "DR DEE"}
             </Text>
           </Link>
         </Space>
@@ -159,30 +132,18 @@ export default function AppHeader({
         ) : (
           <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
             <Tooltip title="Tìm kiếm">
-              <Button
-                type="text"
-                icon={<SearchOutlined />}
-                onClick={() => setSearchOpen(true)}
-              />
+              <Button type="text" icon={<SearchOutlined />} onClick={() => setSearchOpen(true)} />
             </Tooltip>
           </div>
         )}
 
         {/* RIGHT: Bell + User */}
-        <Space
-          align="center"
-          size={isMdUp ? 12 : 4}
-          style={{ minWidth: isMdUp ? 220 : 90, justifyContent: "flex-end" }}
-        >
+        <Space align="center" size={isMdUp ? 12 : 4} style={{ minWidth: isMdUp ? 220 : 90, justifyContent: "flex-end" }}>
           <Badge count={3} size="small">
             <Button type="text" shape="circle" icon={<BellOutlined />} />
           </Badge>
 
-          <Dropdown
-            trigger={["click"]}
-            placement="bottomRight"
-            menu={{ items: userMenu, onClick: onUserClick }}
-          >
+          <Dropdown trigger={["click"]} placement="bottomRight" menu={{ items: userMenu, onClick: onUserClick }}>
             {isMdUp ? (
               <div
                 style={{
@@ -193,11 +154,7 @@ export default function AppHeader({
                   maxWidth: 260,
                 }}
               >
-                <Avatar
-                  size={32}
-                  src={currentUser?.avatarUrl}
-                  icon={!currentUser?.avatarUrl ? <UserOutlined /> : undefined}
-                />
+                <Avatar size={32} src={currentUser?.avatarUrl} icon={!currentUser?.avatarUrl ? <UserOutlined /> : undefined} />
                 <div
                   style={{
                     display: "flex",
@@ -206,17 +163,10 @@ export default function AppHeader({
                     minWidth: 0,
                   }}
                 >
-                  <Text
-                    strong
-                    ellipsis={{ tooltip: displayName }}
-                    style={{ maxWidth: 140 }}
-                  >
+                  <Text strong ellipsis={{ tooltip: displayName }} style={{ maxWidth: 140 }}>
                     {displayName}
                   </Text>
-                  <Tag
-                    color={roleColor(roleLabel)}
-                    style={{ marginInlineStart: 0 }}
-                  >
+                  <Tag color={roleColor(roleLabel)} style={{ marginInlineStart: 0 }}>
                     {roleLabel}
                   </Tag>
                 </div>
@@ -234,21 +184,8 @@ export default function AppHeader({
       </Header>
 
       {/* Modal search (mobile) */}
-      <Modal
-        open={searchOpen}
-        onCancel={() => setSearchOpen(false)}
-        footer={null}
-        width={isMdUp ? 640 : "90%"}
-        title="Tìm kiếm"
-        centered
-      >
-        <Input.Search
-          placeholder="Nhập từ khoá..."
-          autoFocus
-          allowClear
-          enterButton
-          onSearch={onSearch}
-        />
+      <Modal open={searchOpen} onCancel={() => setSearchOpen(false)} footer={null} width={isMdUp ? 640 : "90%"} title="Tìm kiếm" centered>
+        <Input.Search placeholder="Nhập từ khoá..." autoFocus allowClear enterButton onSearch={onSearch} />
       </Modal>
     </>
   );

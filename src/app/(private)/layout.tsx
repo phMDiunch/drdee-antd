@@ -1,9 +1,10 @@
-import AppLayout from "@/layouts/AppLayout/AppLayout";
+// src/app/(private)/layout.tsx
 
-export default function PrivateLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <AppLayout>{children}</AppLayout>;
+import AppLayout from "@/layouts/AppLayout/AppLayout";
+import { getSessionUser } from "@/server/services/auth.service";
+
+export default async function PrivateLayout({ children }: { children: React.ReactNode }) {
+  const currentUser = await getSessionUser(); // SSR lấy user
+  console.log("PrivateLayout ~ currentUser:", currentUser);
+  return <AppLayout currentUser={currentUser ?? undefined}>{children}</AppLayout>;
 }

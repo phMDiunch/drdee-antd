@@ -6,14 +6,21 @@ import React, { useMemo, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Layout, theme } from "antd";
 import type { MenuProps } from "antd";
-import AppHeader, { type CurrentUser } from "./AppHeader";
+import AppHeader from "./AppHeader";
 import SidebarNav from "./SidebarNav";
 import { menuItems } from "./menu.config";
 import { APP_LAYOUT } from "./theme";
+import type { UserCore } from "@/shared/types/user";
 
 const { Content } = Layout;
 
 type MenuItem = NonNullable<NonNullable<MenuProps["items"]>[number]>;
+
+type Props = {
+  children: React.ReactNode;
+  /** được SSR inject từ (private)/layout.tsx */
+  currentUser?: UserCore;
+};
 
 function buildIndex(items: MenuItem[]) {
   const parentOf = new Map<string, string | null>();
@@ -32,10 +39,7 @@ function buildIndex(items: MenuItem[]) {
   return { parentOf, allKeys };
 }
 
-function findSelectedKey(
-  pathname: string,
-  allKeys: Set<string>
-): string | undefined {
+function findSelectedKey(pathname: string, allKeys: Set<string>): string | undefined {
   if (allKeys.has(pathname)) return pathname;
   const segs = pathname.split("/").filter(Boolean);
   for (let i = segs.length; i > 0; i--) {
@@ -45,10 +49,7 @@ function findSelectedKey(
   return undefined;
 }
 
-function getOpenKeys(
-  key: string | undefined,
-  parentOf: Map<string, string | null>
-): string[] {
+function getOpenKeys(key: string | undefined, parentOf: Map<string, string | null>): string[] {
   const chain: string[] = [];
   let cur = key ? parentOf.get(key) ?? null : null;
   while (cur) {
@@ -58,19 +59,13 @@ function getOpenKeys(
   return chain;
 }
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children, currentUser }: Props) {
   const { token } = theme.useToken();
   const router = useRouter();
   const pathname = usePathname() || "/";
 
-  const { parentOf, allKeys } = useMemo(
-    () => buildIndex(menuItems as MenuItem[]),
-    []
-  );
-  const selectedKey = useMemo(
-    () => findSelectedKey(pathname, allKeys),
-    [pathname, allKeys]
-  );
+  const { parentOf, allKeys } = useMemo(() => buildIndex(menuItems as MenuItem[]), []);
+  const selectedKey = useMemo(() => findSelectedKey(pathname, allKeys), [pathname, allKeys]);
 
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
@@ -83,20 +78,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (info.key.startsWith("/")) router.push(info.key);
   };
 
+  console.log("AppLayout ~ currentUser:", currentUser);
   // TODO: thay bằng dữ liệu thật từ Supabase sau khi làm Auth
-  const currentUser: CurrentUser = {
-    fullName: "Nguyễn Văn A",
-    role: "admin",
-    avatarUrl: undefined, // hoặc "/images/avatar.png"
-  };
 
   return (
     <Layout style={{ height: "100vh" }}>
-      <AppHeader
-        currentUser={currentUser}
-        collapsed={collapsed}
-        onToggleSider={() => setCollapsed((c) => !c)}
-      />
+      <AppHeader currentUser={currentUser} collapsed={collapsed} onToggleSider={() => setCollapsed((c) => !c)} />
 
       <Layout
         style={{

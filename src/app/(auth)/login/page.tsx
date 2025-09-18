@@ -1,47 +1,7 @@
+// src/app/(auth)/login/page.tsx
 import React from "react";
+import LoginView from "@/features/auth/views/LoginView";
 
-export default function Login() {
-  return (
-    <div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-      <div>login page</div>
-    </div>
-  );
+export default function LoginPage() {
+  return <LoginView />;
 }
