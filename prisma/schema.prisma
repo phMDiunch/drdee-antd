@@ -10,24 +10,26 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ===================================
 //            MODELS
 // ===================================
 
-
 model Clinic {
   id String @id @default(uuid())
 
   // Thông tin cơ bản
-  name String @unique // Tên phòng khám
-  address String // Địa chỉ phòng khám
-  phone String? // Số điện thoại liên hệ
-  email String? // Email liên hệ
-  colorCode String? // Mã màu để phân biệt phòng khám trên UI
+  clinicCode String    @unique // Mã phòng khám
+  name       String    @unique // Tên phòng khám
+  address    String // Địa chỉ phòng khám
+  phone      String? // Số điện thoại liên hệ
+  email      String? // Email liên hệ
+  colorCode  String? // Mã màu để phân biệt phòng khám trên UI
+  archivedAt DateTime? @db.Timestamptz // Ngày phòng khám ngừng hoạt động
 
   // Metadata
   createdAt DateTime @default(now()) @db.Timestamptz // Ngày tạo
@@ -45,9 +47,9 @@ model DentalService {
   description String? // Mô tả chi tiết
 
   // Thông tin phân loại
-  serviceGroup   String? // Nhóm dịch vụ, ví dụ: niềng răng invisalign, niềng răng mắc cài
-  department     String? // Bộ môn, ví dụ: niềng răng invisalign moderate, niềng răng invisalign comprehensive
-  tags String[] @default([]) // Các thẻ (tags) để phân loại dịch vụ do phòng khám tự định nghĩa
+  serviceGroup String? // Nhóm dịch vụ, ví dụ: niềng răng invisalign, niềng răng mắc cài
+  department   String? // Bộ môn, ví dụ: niềng răng invisalign moderate, niềng răng invisalign comprehensive
+  tags         String[] @default([]) // Các thẻ (tags) để phân loại dịch vụ do phòng khám tự định nghĩa
 
   // Thông tin giá & đơn vị
   unit  String // Đơn vị tính: "Răng", "Hàm", "Lần"
@@ -69,8 +71,8 @@ model DentalService {
   updatedById String // ID của người cập nhật
 
   // Liên kết đến nhân viên
-  createdBy         Employee           @relation("CreatedDentalServices", fields: [createdById], references: [id])
-  updatedBy         Employee           @relation("UpdatedDentalServices", fields: [updatedById], references: [id])
+  createdBy Employee @relation("CreatedDentalServices", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedDentalServices", fields: [updatedById], references: [id])
 
   // Liên kết đến dịch vụ tư vấn
   consultedServices ConsultedService[]
@@ -85,10 +87,10 @@ model Employee {
   role  String // Vai trò trong hệ thống: "admin", "employee"
 
   // Thông tin cơ bản
-  fullName     String //
-  dob          DateTime? @db.Date // Ngày sinh
-  gender       Gender // Giới tính
-  avatarUrl    String? //
+  fullName      String //
+  dob           DateTime? @db.Date // Ngày sinh
+  gender        String? // Giới tính
+  avatarUrl     String? //
   favoriteColor String? // Màu yêu thích để cá nhân hóa giao diện
 
   // Thông tin liên hệ
@@ -108,7 +110,7 @@ model Employee {
   bankName          String? // Tên ngân hàng
 
   // Thông tin công việc
-  employeeCode String?   @unique // Mã nhân viên
+  employeeCode     String? @unique // Mã nhân viên
   employmentStatus String  @default("Thử việc") // "Đang làm việc", "Thử việc", "Nghỉ việc"
   clinicId         String? // ID của phòng khám làm việc
   department       String? // Phòng ban
@@ -161,9 +163,9 @@ model Employee {
   updatedLogs    TreatmentLog[] @relation("UpdatedLogs")
 
   // Liên kết đến phiếu thu
-  cashierVouchers       PaymentVoucher[]       @relation("CashierVouchers")
-  createdVouchers       PaymentVoucher[]       @relation("CreatedVouchers")
-  updatedVouchers       PaymentVoucher[]       @relation("UpdatedVouchers")
+  cashierVouchers PaymentVoucher[] @relation("CashierVouchers")
+  createdVouchers PaymentVoucher[] @relation("CreatedVouchers")
+  updatedVouchers PaymentVoucher[] @relation("UpdatedVouchers")
 
   // Liên kết đến chi tiết phiếu thu
   createdVoucherDetails PaymentVoucherDetail[] @relation("CreatedVoucherDetails")
@@ -178,18 +180,13 @@ model Employee {
   updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
 }
 
-enum Gender {
-  MALE
-  FEMALE
-}
-
 model Customer {
   id String @id @default(uuid())
 
   // Thông tin cơ bản
-  fullName           String // Họ tên
-  dob                DateTime? @db.Date // Ngày sinh
-  gender             Gender // Giới tính
+  fullName String // Họ tên
+  dob      DateTime? @db.Date // Ngày sinh
+  gender   String? // Giới tính
 
   // Thông tin liên hệ
   phone    String? @unique // Số điện thoại
@@ -202,14 +199,13 @@ model Customer {
   primaryContactId      String? // ID của người liên hệ chính
 
   // Thông tin phân loại
-  customerCode       String?   @unique // Mã khách hàng
-  clinicId String? // Chi nhánh
+  customerCode String? @unique // Mã khách hàng
+  clinicId     String? // Chi nhánh
 
   occupation         String? // Nghề nghiệp
   source             String? // Nguồn khách
   sourceNotes        String? // Ghi chú nguồn
   servicesOfInterest String[] // Dịch vụ quan tâm (mảng các chuỗi)
-
 
   // Metadata  
   createdById String // ID của người tạo
@@ -222,20 +218,20 @@ model Customer {
   dependents     Customer[] @relation("PrimaryContactDependents")
 
   // Liên kết đến nhân viên
-  createdBy         Employee           @relation("CreatedCustomers", fields: [createdById], references: [id])
-  updatedBy         Employee           @relation("UpdatedCustomers", fields: [updatedById], references: [id])
+  createdBy Employee @relation("CreatedCustomers", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedCustomers", fields: [updatedById], references: [id])
 
   // Liên kết đến lịch hẹn
-  appointments      Appointment[]
+  appointments Appointment[]
 
   // Liên kết đến dịch vụ tư vấn
   consultedServices ConsultedService[]
 
   // Liên kết đến nhật ký điều trị
-  treatmentLogs     TreatmentLog[]
+  treatmentLogs TreatmentLog[]
 
   // Liên kết đến phiếu thu
-  paymentVouchers   PaymentVoucher[]
+  paymentVouchers PaymentVoucher[]
 
   // Liên kết đến chăm sóc sau điều trị (aftercare)
   treatmentCares TreatmentCare[]
@@ -268,19 +264,19 @@ model Appointment {
   updatedAt DateTime @updatedAt @db.Timestamptz
 
   // Liên kết đến khách hàng
-  customer         Customer       @relation(fields: [customerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
 
   // Liên kết đến nhân viên
-  primaryDentist   Employee       @relation("PrimaryDentistAppointments", fields: [primaryDentistId], references: [id])
-  secondaryDentist Employee?      @relation("SecondaryDentistAppointments", fields: [secondaryDentistId], references: [id])
-  createdBy        Employee       @relation("CreatedAppointments", fields: [createdById], references: [id])
-  updatedBy        Employee       @relation("UpdatedAppointments", fields: [updatedById], references: [id])
+  primaryDentist   Employee  @relation("PrimaryDentistAppointments", fields: [primaryDentistId], references: [id])
+  secondaryDentist Employee? @relation("SecondaryDentistAppointments", fields: [secondaryDentistId], references: [id])
+  createdBy        Employee  @relation("CreatedAppointments", fields: [createdById], references: [id])
+  updatedBy        Employee  @relation("UpdatedAppointments", fields: [updatedById], references: [id])
 
   // Liên kết đến dịch vụ tư vấn
   consultedServices ConsultedService[]
 
   // Liên kết đến nhật ký điều trị
-  treatmentLogs    TreatmentLog[]
+  treatmentLogs TreatmentLog[]
 }
 
 model ConsultedService {
@@ -296,7 +292,7 @@ model ConsultedService {
   // Giữ lịch sử giá và tên tại thời điểm tư vấn
   consultedServiceName String // Sao chép tên dịch vụ tại thời điểm tư vấn
   consultedServiceUnit String // Sao chép đơn vị tính
-  price             Int // Giá niêm yết gốc
+  price                Int // Giá niêm yết gốc
 
   // Thông tin Điều trị Chi tiết
   toothPositions String[] // Mảng vị trí răng, ví dụ: ["R16", "R26"]
@@ -328,7 +324,7 @@ model ConsultedService {
   updatedAt DateTime @updatedAt @db.Timestamptz
 
   // Liên kết đến khách hàng
-  customer      Customer      @relation(fields: [customerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
 
   // Liên kết đến dịch vụ nha khoa
   dentalService DentalService @relation(fields: [dentalServiceId], references: [id])
@@ -342,10 +338,10 @@ model ConsultedService {
   updatedBy Employee @relation("UpdatedConsultedServices", fields: [updatedById], references: [id])
 
   // Liên kết đến lịch hẹn
-  Appointment    Appointment?           @relation(fields: [appointmentId], references: [id])
+  Appointment Appointment? @relation(fields: [appointmentId], references: [id])
 
   // Liên kết đến nhật ký điều trị
-  treatmentLogs  TreatmentLog[]
+  treatmentLogs TreatmentLog[]
 
   // Liên kết đến phiếu thu chi tiết
   paymentDetails PaymentVoucherDetail[]
@@ -382,27 +378,27 @@ model TreatmentLog {
   updatedAt DateTime @updatedAt @db.Timestamptz
 
   // Liên kết đến khách hàng
-  customer         Customer         @relation(fields: [customerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
 
   // Liên kết đến dịch vụ tư vấn
   consultedService ConsultedService @relation(fields: [consultedServiceId], references: [id])
 
   // Liên kết đến lịch hẹn
-  appointment      Appointment?     @relation(fields: [appointmentId], references: [id])
-  dentist          Employee         @relation("DentistLogs", fields: [dentistId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  dentist     Employee     @relation("DentistLogs", fields: [dentistId], references: [id])
 
   // 
-  assistant1       Employee?        @relation("Assistant1Logs", fields: [assistant1Id], references: [id])
-  assistant2       Employee?        @relation("Assistant2Logs", fields: [assistant2Id], references: [id])
-  createdBy        Employee         @relation("CreatedLogs", fields: [createdById], references: [id])
-  updatedBy        Employee         @relation("UpdatedLogs", fields: [updatedById], references: [id])
+  assistant1 Employee? @relation("Assistant1Logs", fields: [assistant1Id], references: [id])
+  assistant2 Employee? @relation("Assistant2Logs", fields: [assistant2Id], references: [id])
+  createdBy  Employee  @relation("CreatedLogs", fields: [createdById], references: [id])
+  updatedBy  Employee  @relation("UpdatedLogs", fields: [updatedById], references: [id])
 }
 
 model PaymentVoucher {
-  id            String   @id @default(uuid())
+  id String @id @default(uuid())
 
   paymentNumber String   @unique // Số phiếu thu
-  customerId    String  // Khách hàng
+  customerId    String // Khách hàng
   paymentDate   DateTime @default(now()) @db.Date // Ngày thu tiền
   totalAmount   Int // Tổng tiền của cả phiếu thu
   notes         String? // Nội dung thu tiền: Đặt cọc, Thanh toán tiếp, Hoàn tất thanh toán

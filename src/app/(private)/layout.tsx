@@ -5,6 +5,5 @@ import { getSessionUser } from "@/server/services/auth.service";
 
 export default async function PrivateLayout({ children }: { children: React.ReactNode }) {
   const currentUser = await getSessionUser(); // SSR lấy user
-  console.log("PrivateLayout ~ currentUser:", currentUser);
   return <AppLayout currentUser={currentUser ?? undefined}>{children}</AppLayout>;
 }

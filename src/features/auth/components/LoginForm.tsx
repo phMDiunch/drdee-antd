@@ -24,13 +24,7 @@ export default function LoginForm() {
         </Title>
       </div>
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinish}
-        requiredMark={false}
-        disabled={login.isPending}
-      >
+      <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} disabled={login.isPending}>
         <Form.Item
           name="email"
           label="Email"
@@ -42,24 +36,12 @@ export default function LoginForm() {
           <Input placeholder="you@example.com" autoComplete="email" />
         </Form.Item>
 
-        <Form.Item
-          name="password"
-          label="Mật khẩu"
-          rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-        >
-          <Input.Password
-            placeholder="••••••••"
-            autoComplete="current-password"
-          />
+        <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}>
+          <Input.Password placeholder="••••••••" autoComplete="current-password" />
         </Form.Item>
 
         <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            block
-            loading={login.isPending}
-          >
+          <Button type="primary" htmlType="submit" block loading={login.isPending}>
             Đăng nhập
           </Button>
         </Form.Item>

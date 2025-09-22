@@ -1,21 +1,10 @@
 // src/features/auth/types.ts
+import type { z } from "zod";
+import { LoginRequestSchema, LoginResponseSchema, LogoutResponseSchema } from "@/shared/validation/auth.schema";
 
-export type LoginRequest = {
-  email: string;
-  password: string;
-};
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type LogoutResponse = z.infer<typeof LogoutResponseSchema>;
 
-export type LoginResponse = {
-  user: {
-    id: string;
-    email: string | null;
-  } | null;
-};
-
-export type LogoutResponse = {
-  ok: boolean;
-};
-
-export type ApiError = {
-  error: string;
-};
+// Với lỗi API, ta chỉ cần 1 shape đơn giản
+export type ApiError = { error: string };

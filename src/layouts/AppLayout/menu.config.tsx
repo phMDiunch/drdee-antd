@@ -52,5 +52,10 @@ export const menuItems: MenuItem[] = [
     ],
   },
   { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
-  { key: "/settings", icon: <SettingOutlined />, label: "Cài đặt" },
+  {
+    key: "/settings",
+    icon: <SettingOutlined />,
+    label: "Cài đặt",
+    children: [{ key: "/clinics", label: "Phòng khám" }],
+  },
 ];

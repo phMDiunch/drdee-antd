@@ -32,8 +32,6 @@ Bây giờ bạn có thể tiếp tục làm việc trên nhánh mới này.
 
 Sau khi hoàn thành code trên nhánh làm dở tại nhà và muốn nhập vào nhánh chính, bạn sẽ thực hiện một quy trình gồm 3 bước chính: cập nhật nhánh chính, nhập nhánh làm dở, và dọn dẹp.
 
-Sau khi hoàn thành code trên nhánh làm dở tại nhà và muốn nhập vào nhánh chính, bạn sẽ thực hiện một quy trình gồm 3 bước chính: cập nhật nhánh chính, nhập nhánh làm dở, và dọn dẹp.
-
 Dưới đây là các câu lệnh Git chi tiết cho bạn:
 
 Bước 1: Chuyển về nhánh chính và cập nhật (tại máy tính cá nhân)

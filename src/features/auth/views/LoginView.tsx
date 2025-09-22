@@ -1,5 +1,6 @@
 // src/features/auth/views/LoginView.tsx
 "use client";
+
 import React from "react";
 import { Layout, theme } from "antd";
 import LoginForm from "@/features/auth/components/LoginForm";

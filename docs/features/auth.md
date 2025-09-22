@@ -1,56 +1,116 @@
 # Feature: Auth (Login & Logout)
 
-## 1) Overview
+## 1) Mục tiêu & Phạm vi
 
-Đăng nhập bằng Supabase (email/password), quản lý session bằng cookie HttpOnly (SSR). Đăng xuất xóa cookie phiên. Header và các route private dùng session SSR để phân quyền.
+Xác thực người dùng bằng **Supabase (email/password)**, quản lý **session qua HttpOnly cookie** (SSR-friendly), bảo vệ khu vực `(private)` bằng **middleware**. Header lấy thông tin user theo hướng **SSR inject**.
 
-## 2) Folder structure
+## 2) Thư mục & File
 
-- `src/features/auth/types.ts` — kiểu dữ liệu LoginRequest, LoginResponse, ...
-- `src/features/auth/constants.ts` — endpoint, messages
-- `src/features/auth/api/login.ts`, `logout.ts` — API client (fetch)
-- `src/features/auth/hooks/useLogin.ts`, `useLogout.ts` — React Query mutations
-- `src/features/auth/components/LoginForm.tsx` — Form AntD (validate rule + parse tổng)
-- `src/features/auth/views/LoginView.tsx` — bố cục trang login
-- `src/app/(auth)/login/page.tsx` — page render view
-- `src/app/api/v1/auth/login/route.ts` — route đăng nhập (Supabase SSR)
-- `src/app/api/v1/auth/logout/route.ts` — route đăng xuất
-- `src/services/supabase/server.ts` — tạo Supabase SSR client (Next 15 async `cookies()`)
-- `src/services/supabase/middleware.ts` + `src/middleware.ts` — chặn truy cập khi chưa đăng nhập
-- (shared) `src/shared/types/user.ts` — UserCore dùng chung
-- (server) `src/server/services/auth.service.ts` — `getSessionUser()` phục vụ SSR inject vào Header
+```
+src/
+├── app/
+│   ├── (auth)/
+│   │   └── login/
+│   │       └── page.tsx                    # 📄 Page render LoginView
+│   └── api/v1/auth/
+│       ├── login/
+│       │   └── route.ts                    # 🚀 POST login (SSR Supabase)
+│       └── logout/
+│           └── route.ts                    # 🚀 POST logout
+│
+├── features/auth/
+│   ├── api/
+│   │   ├── login.ts                        # 🔄 fetch -> parse Zod -> LoginResponse
+│   │   └── logout.ts                       # 🔄 fetch -> parse Zod -> LogoutResponse
+│   ├── components/
+│   │   └── LoginForm.tsx                   # 🎨 AntD form, validator (Zod hoặc rule AntD)
+│   ├── hooks/
+│   │   ├── useLogin.ts                     # 🪝 React Query mutation
+│   │   └── useLogout.ts                    # 🪝 React Query mutation
+│   ├── views/
+│   │   └── LoginView.tsx                   # 📱 Bố cục trang login
+│   ├── constants.ts                        # 📋 Endpoint/messages chuẩn hoá
+│   ├── types.ts                           # 🏷️ Type suy ra từ schema Zod
+│   └── index.ts                           # 📦 Barrel exports
+│
+├── server/services/
+│   └── auth.service.ts                     # ⚙️ getSessionUser() (SSR inject Header)
+│
+├── services/supabase/
+│   ├── server.ts                          # 🗄️ createClient() (Next 15: cookies() async)
+│   └── middleware.ts                      # 🛡️ updateSession() cho src/middleware.ts
+│
+└── shared/
+    ├── validation/
+    │   └── auth.schema.ts                 # ✅ Zod schema: LoginRequest/Response...
+    ├── types/
+    │   └── user.ts                        # 👤 UserCore dùng chung toàn app
+    ├── utils/
+    │   └── guards.ts                      # 🛡️ isApiError/isLoginResponse...
+    └── constants/
+        └── routes.ts                      # 🛣️ DEFAULT_AFTER_LOGIN, sanitizeNext()
+```
 
-## 3) Data flow
+## 3) Data Flow (Login)
 
-Form → `useLogin (mutation)` → `loginApi` → `POST /api/v1/auth/login` → Supabase `auth.signInWithPassword` → set cookie → response `{ user }` → `onSuccess`: toast + redirect → Middleware cho vào `(private)` → SSR `getSessionUser()` inject header.
+1. **UI**: `LoginForm` → submit email/password.
+2. **Hook**: `useLogin` (**useMutation**) gọi `loginApi`.
+3. **Client API**: `loginApi` → `POST /api/v1/auth/login` → parse JSON bằng **Zod**.
+4. **Server API**: `login/route.ts` → validate body (Zod) → `supabase.auth.signInWithPassword()` → Supabase set **session cookie** → trả `{ user }`.
+5. **Hook onSuccess**: toast + `router.replace(next || "/dashboard")`.
+6. **Middleware**: người chưa login bị redirect về `/login?next=...`.
+7. **SSR inject**: `(private)/layout.tsx` gọi `getSessionUser()` → truyền `currentUser` cho `AppLayout`/`AppHeader`.
 
-Đăng xuất: `useLogout` → `logoutApi` → `POST /logout` → Supabase `auth.signOut` → xóa cookie → toast + `/login`.
+## 4) Data Flow (Logout)
 
-## 4) Validation & Errors
+`useLogout` → `logoutApi` → `POST /auth/logout` → `supabase.auth.signOut()` xoá cookie → toast + `router.replace("/login")`.
 
-- Client: AntD Form rule + parse tổng (không Zod theo default repo); toast lỗi từ server.
-- Server: kiểm tra required, map lỗi Supabase (“Invalid login credentials” → “Email hoặc mật khẩu không đúng.”), status chuẩn 400/401/500.
+## 5) API Contracts
 
-## 5) State management
+### `POST /api/v1/auth/login`
 
-- Dùng React Query `useMutation` cho đăng nhập/đăng xuất (loading/error/onSuccess).
-- Không lưu session trong JS (cookie HttpOnly). Header lấy user bằng SSR (`getSessionUser`).
+- **Body**: `{ email: string; password: string }` (Zod: required, email format)
+- **200**: `{ user: { id: string; email: string | null } | null }`
+- **400**: `{ error: string }` dữ liệu không hợp lệ
+- **401**: `{ error: string }` sai thông tin
+- **500**: `{ error: string }` lỗi hệ thống
 
-## 6) Security
+### `POST /api/v1/auth/logout`
+
+- **200**: `{ ok: true }`
+- **4xx/5xx**: `{ error: string }`
+
+## 6) Validation & Error Handling
+
+- **Client**:
+  - AntD Form rule hoặc Zod field-level; trước khi gọi API parse tổng thể (Zod).
+  - React Query `onError` → `message.error(err.message)`.
+- **Server**:
+  - Zod parse request; map lỗi Supabase “Invalid login credentials” → “Email hoặc mật khẩu không đúng.”
+  - Luôn trả body `{ error }` khi !ok.
+
+## 7) State Management
+
+- **React Query**: `useMutation` cho login/logout (loading/error/success).
+- **Không lưu session ở JS** (cookie HttpOnly).
+- **Header**: lấy user bằng **SSR (`getSessionUser`)**.
+
+## 8) Security
 
 - Middleware bảo vệ `(private)`.
-- Chặn open redirect: khi có `?next=` chỉ cho phép path nội bộ (bắt đầu bằng `/`).
-- Không tin bất kỳ header client tuỳ ý (role/id); quyền sẽ làm ở server sau khi có Employee.
+- `sanitizeNext()` chỉ cho phép `?next=` nội bộ (`/...`) để tránh **open redirect**.
+- Không tin dữ liệu role/id từ client.
 
-## 7) Testing checklist
+## 9) Testing Checklist
 
-- Login đúng, sai, thiếu field.
-- Khi login thành công → redirect đúng `next`/`/dashboard`.
-- Logout → redirect `/login`.
-- Middleware: vào private khi chưa login → bị chặn.
+- Login: thiếu field / sai password / đúng thông tin.
+- Redirect theo `next` hoặc `/dashboard`.
+- Logout: cookie bị xoá, redirect `/login`.
+- Middleware chặn private khi chưa login.
+- SSR Header hiển thị tên/role từ metadata hoặc (sau này) Employee.
 
-## 8) TODO
+## 10) TODO / Nâng cấp
 
-- `/api/v1/auth/me` (optional) nếu cần fetch client-side user.
+- Ghép **Employee** vào `getSessionUser()` (theo `authUserId`).
+- `/api/v1/auth/me` (nếu cần fetch client-side).
 - Role-based guard cho API quan trọng.
-- Join `Employee` vào `getSessionUser()` sau khi có module Employee.

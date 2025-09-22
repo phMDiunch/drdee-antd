@@ -2,6 +2,7 @@
 
 import { createClient } from "@/services/supabase/server";
 import type { UserCore } from "@/shared/types/user";
+import { ERR } from "./errors";
 
 // Nếu sau này dùng Prisma để đọc Employee, bạn mở comment ở dưới
 // import { prisma } from "@/server/prisma"; // đảm bảo đường dẫn prisma client của bạn
@@ -19,7 +20,7 @@ export async function getSessionUser(): Promise<UserCore | null> {
 
   // Lấy sơ bộ từ Supabase
   const meta = (u.user_metadata || {}) as Record<string, any>;
-  let user: UserCore = {
+  const user: UserCore = {
     id: u.id,
     email: u.email,
     fullName: meta.fullName ?? null,
@@ -53,4 +54,11 @@ export async function getSessionUser(): Promise<UserCore | null> {
   // }
 
   return user;
+}
+
+export function requireAdmin(user: UserCore | null | undefined) {
+  if (!user) throw ERR.UNAUTHORIZED("Bạn chưa đăng nhập.");
+  const role = (user.role || "").toString().toLowerCase();
+  if (role !== "admin")
+    throw ERR.FORBIDDEN("Chỉ admin được phép thực hiện thao tác này.");
 }
