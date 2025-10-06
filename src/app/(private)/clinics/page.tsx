@@ -1,4 +1,4 @@
-import ClinicsPageView from "@/features/clinic/views/ClinicsPageView";
+import ClinicsPageView from "@/features/clinics/views/ClinicsPageView";
 import { getSessionUser } from "@/server/services/auth.service";
 
 export default async function ClinicsPage() {

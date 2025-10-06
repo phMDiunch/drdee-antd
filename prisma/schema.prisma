@@ -111,12 +111,12 @@ model Employee {
 
   // Thông tin công việc
   employeeCode     String? @unique // Mã nhân viên
-  employmentStatus String  @default("Thử việc") // "Đang làm việc", "Thử việc", "Nghỉ việc"
+  employmentStatus String? // "Đang làm việc", "Nghỉ việc"
   clinicId         String? // ID của phòng khám làm việc
   department       String? // Phòng ban
-  division         String? // Bộ phận
+  team             String? // Bộ phận
   jobTitle         String? // Chức danh
-  position         String? // Chức vụ
+  positionTitle    String? // Chức vụ
 
   // Metadata
   createdById String? // ID của người tạo

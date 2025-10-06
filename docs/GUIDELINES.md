@@ -9,12 +9,15 @@ _Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod_
 - Không thêm thư viện khi chưa được duyệt. Ưu tiên: AntD, @tanstack/react-query, Supabase, dayjs, **Zod** (đã phê duyệt cho schema).
 - Lý do Zod: chuẩn hoá **request/response schema** dùng chung client + server, giảm bug, dễ scale.
 
-## 2) Kiến trúc & phân lớp
+## 2) Kiến trúc & phân lớp (Frontend-driven)
 
-- **Schema (Zod)** → `src/shared/validation/` (request/response DTO, có thể tái dùng cho form).
+**Luồng phát triển:** Requirements → UI/UX → Frontend → API Contract → Backend → Database
+
+- **Feature module (Frontend)** → `src/features/<feature>/{views,components,hooks,api}` + `types.ts`+`constants.ts`+`index.ts`.
+- **Schema (Zod)** → `src/shared/validation/` (API contract được định nghĩa từ frontend needs).
+- **API routes** → `/api/v1/<feature>/` (implement theo contract đã định nghĩa).
 - **Business logic (server)** → `src/server/services/` (ghép Supabase/Prisma, rule nghiệp vụ).
 - **Data access (Prisma)** → `src/server/repos/` (nếu có).
-- **Feature module** → `src/features/<feature>/{api,components,hooks,views}` + `types.ts`+`constants.ts`+`index.ts`.
 - **AppShell** → `src/layouts/AppLayout/*` (Header, Sider, Content, menu config, theme).
 
 ## 3) Next.js 15 & Supabase
@@ -84,23 +87,26 @@ _Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod_
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`.
 - PR: build ok, typecheck ok, lint ok; đính kèm ảnh/GIF UI nếu đổi UI.
 
-## 13) Khi thêm feature mới
+## 13) Khi thêm feature mới (Luồng Frontend-first)
 
-1. Viết `docs/features/<feature>.md`.
-2. Tạo schema Zod ở `shared/validation/<feature>.schema.ts` (nếu có request/response).
-3. Tạo module `features/<feature>/{api,components,hooks,views}` + `types.ts`, `constants.ts`, `index.ts`.
-4. Thêm `server/services/<feature>.service.ts` (nếu có business logic server).
-5. Route API dưới `/api/v1/<feature>/...`.
-6. Thêm test checklist; review theo guideline này.
+1. Viết `docs/requirements/<feature>.md` (yêu cầu nghiệp vụ).
+2. Viết `docs/features/<feature>.md` (spec chi tiết UI/UX, flows).
+3. **Frontend first**: tạo module `features/<feature>/{views,components,hooks,api}` + `types.ts`, `constants.ts`, `index.ts`.
+4. Định nghĩa API contract: tạo schema Zod ở `shared/validation/<feature>.schema.ts` (dựa trên frontend needs).
+5. **Backend implement theo contract**: route API dưới `/api/v1/<feature>/...`.
+6. Thêm `server/services/<feature>.service.ts` (business logic server).
+7. Thêm test checklist; review theo guideline này.
 
-## 14) Naming & Schemas (Zod, API, Types)
+## 14) Naming & Schemas (Zod, API, Types) - Frontend-driven
 
-1. Zod schemas (ở `src/shared/validation`)
+1. Zod schemas (ở `src/shared/validation`) - **được định nghĩa dựa trên frontend needs**
 
 - **Request body**: `<Feature><Action>RequestSchema`
   - Ví dụ: `LoginRequestSchema`, `CreateClinicRequestSchema`, `UpdateClinicRequestSchema`
+  - Thiết kế dựa trên form fields và business logic của frontend
 - **Response (1 item)**: `<Feature>ResponseSchema`
   - Ví dụ: `ClinicResponseSchema`, `UserResponseSchema`
+  - Thiết kế dựa trên data cần hiển thị ở UI components
 - **Response (list)**: `<Feature>ListResponseSchema` hoặc `<Feature>sResponseSchema`
   - Ví dụ: `ClinicsResponseSchema` (array của `ClinicResponseSchema`)
 - **Query/Params**: `<Action>QuerySchema`, `<Action>ParamsSchema`
