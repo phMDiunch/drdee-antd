@@ -1,10 +1,16 @@
+// src/features/clinics/components/ClinicTable.tsx
 "use client";
 
 import React from "react";
 import { Table, Tag, Tooltip, Popconfirm, Space, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, DeleteOutlined, InboxOutlined, RollbackOutlined } from "@ant-design/icons";
-import { ClinicResponse } from "@/features/clinics/types";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  InboxOutlined,
+  RollbackOutlined,
+} from "@ant-design/icons";
+import type { ClinicResponse } from "@/shared/validation/clinic.schema";
 
 type Props = {
   data: ClinicResponse[];
@@ -15,7 +21,14 @@ type Props = {
   onUnarchive: (row: ClinicResponse) => void;
 };
 
-export default function ClinicTable({ data, loading, onEdit, onDelete, onArchive, onUnarchive }: Props) {
+export default function ClinicTable({
+  data,
+  loading,
+  onEdit,
+  onDelete,
+  onArchive,
+  onUnarchive,
+}: Props) {
   const columns: ColumnsType<ClinicResponse> = [
     { title: "Mã", dataIndex: "clinicCode", key: "clinicCode", width: 140 },
     { title: "Tên phòng khám", dataIndex: "name", key: "name" },
@@ -37,7 +50,7 @@ export default function ClinicTable({ data, loading, onEdit, onDelete, onArchive
       key: "actions",
       fixed: "right",
       width: 150,
-      render: (_: any, row) => {
+      render: (_, row) => {
         const isArchived = !!row.archivedAt;
         return (
           <Space>
@@ -47,22 +60,28 @@ export default function ClinicTable({ data, loading, onEdit, onDelete, onArchive
 
             {!isArchived ? (
               <Tooltip title="Lưu trữ">
-                <Button icon={<InboxOutlined />} onClick={() => onArchive(row)} />
+                <Button
+                  icon={<InboxOutlined />}
+                  onClick={() => onArchive(row)}
+                />
               </Tooltip>
             ) : (
               <Tooltip title="Khôi phục">
-                <Button icon={<RollbackOutlined />} onClick={() => onUnarchive(row)} />
+                <Button
+                  icon={<RollbackOutlined />}
+                  onClick={() => onUnarchive(row)}
+                />
               </Tooltip>
             )}
 
             <Popconfirm
-              title="Xoá phòng khám"
-              description="Bạn chắc chắn muốn xoá? Hành động này không thể hoàn tác."
-              okText="Xoá"
-              cancelText="Huỷ"
+              title="Xóa phòng khám"
+              description="Bạn chắc chắn muốn xóa? Hành động này không thể hoàn tác."
+              okText="Xóa"
+              cancelText="Hủy"
               onConfirm={() => onDelete(row)}
             >
-              <Tooltip title="Xoá">
+              <Tooltip title="Xóa">
                 <Button danger icon={<DeleteOutlined />} />
               </Tooltip>
             </Popconfirm>
@@ -74,13 +93,13 @@ export default function ClinicTable({ data, loading, onEdit, onDelete, onArchive
 
   return (
     <Table
+      size="small"
       rowKey="id"
-      loading={loading}
-      columns={columns}
       dataSource={data}
+      columns={columns}
+      loading={loading}
       pagination={false}
       scroll={{ x: 900 }}
-      size="middle"
     />
   );
 }

@@ -2,27 +2,7 @@
 
 ## 📊 Database Model
 
-```prisma
-model Clinic {
-  id String @id @default(uuid())
-
-  // Thông tin cơ bản
-  clinicCode String @unique              // Mã phòng khám (VD: HN-01)
-  name       String @unique              // Tên phòng khám
-  address    String                      // Địa chỉ phòng khám
-  phone      String?                     // Số điện thoại liên hệ
-  email      String?                     // Email liên hệ
-  colorCode  String                      // Mã màu #RRGGBB (required)
-  archivedAt DateTime? @db.Timestamptz   // Ngày lưu trữ (null = đang hoạt động)
-
-  // Metadata
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
-
-  // Relations
-  employees Employee[]
-}
-```
+Prisma Model Clinic: src/prisma/schema.prisma
 
 ---
 
@@ -44,9 +24,9 @@ model Clinic {
 #### 📝 **Form Layout:**
 
 ```
-Hàng 1: [clinicCode] [name        ] [colorCode]
-Hàng 2: [address                              ]
-Hàng 3: [phone    ] [email                   ]
+Hàng 1: [clinicCode ] [name                    ]
+Hàng 2: [colorCode  ] [address                 ]
+Hàng 3: [phone      ] [email                   ]
 ```
 
 #### ✅ **Validation Rules:**

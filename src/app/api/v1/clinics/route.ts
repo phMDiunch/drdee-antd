@@ -4,6 +4,9 @@ import { getSessionUser } from "@/server/services/auth.service";
 import { clinicService } from "@/server/services/clinic.service";
 import { GetClinicsQuerySchema } from "@/shared/validation/clinic.schema";
 import { ServiceError } from "@/server/services/errors";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
+
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
@@ -13,10 +16,7 @@ export async function GET(req: Request) {
     const queryObj = Object.fromEntries(searchParams.entries());
     const parsed = GetClinicsQuerySchema.safeParse(queryObj);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Tham số truy vấn không hợp lệ." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: COMMON_MESSAGES.VALIDATION_INVALID }, { status: 400 });
     }
     const includeArchived = parsed.data.includeArchived === "1";
 
@@ -24,12 +24,9 @@ export async function GET(req: Request) {
     return NextResponse.json(data, { status: 200 });
   } catch (e: any) {
     if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
+      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
-    return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
+    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
   }
 }
 
@@ -41,11 +38,9 @@ export async function POST(req: Request) {
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
+      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
-    return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
+    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
   }
 }
+

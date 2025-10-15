@@ -39,21 +39,27 @@ function mapClinicToResponse(c: any) {
 }
 
 export const clinicService = {
-  /** GET /clinics */
+  /**
+   * GET /clinics
+   */
   async list(currentUser: UserCore | null, includeArchived: boolean) {
     // (Nếu cần phân quyền xem ở đây; hiện tại ai đã login cũng xem được)
     const rows = await clinicRepo.list(includeArchived);
     return ClinicsResponseSchema.parse(rows.map(mapClinicToResponse));
   },
 
-  /** GET /clinics/:id */
+  /**
+   * GET /clinics/:id
+   */
   async getById(currentUser: UserCore | null, id: string) {
     const row = await clinicRepo.getById(id);
     if (!row) throw ERR.NOT_FOUND("Phòng khám không tồn tại.");
     return mapClinicToResponse(row);
   },
 
-  /** POST /clinics (admin only) */
+  /**
+   * POST /clinics (admin only)
+   */
   async create(currentUser: UserCore | null, body: unknown) {
     requireAdmin(currentUser);
 
@@ -85,7 +91,9 @@ export const clinicService = {
     return mapClinicToResponse(created);
   },
 
-  /** PUT /clinics/:id (admin only) */
+  /**
+   *  PUT /clinics/:id (admin only)
+   */
   async update(currentUser: UserCore | null, body: unknown) {
     requireAdmin(currentUser);
 
@@ -95,6 +103,7 @@ export const clinicService = {
         parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
       );
     }
+
     const { id } = parsed.data;
 
     const existing = await clinicRepo.getById(id);
@@ -115,6 +124,7 @@ export const clinicService = {
       const dup = await clinicRepo.getByClinicCode(data.clinicCode);
       if (dup && dup.id !== id) throw ERR.CONFLICT("Mã phòng khám đã tồn tại.");
     }
+
     if (data.name && data.name !== existing.name) {
       const dup = await clinicRepo.getByName(data.name);
       if (dup && dup.id !== id)
@@ -125,7 +135,9 @@ export const clinicService = {
     return mapClinicToResponse(updated);
   },
 
-  /** DELETE /clinics/:id (admin only) */
+  /**
+   * DELETE /clinics/:id (admin only)
+   */
   async remove(currentUser: UserCore | null, id: string) {
     requireAdmin(currentUser);
 
@@ -146,7 +158,9 @@ export const clinicService = {
     return mapClinicToResponse(deleted);
   },
 
-  /** POST /clinics/:id/archive (admin only) */
+  /**
+   * POST /clinics/:id/archive (admin only)
+   */
   async archive(currentUser: UserCore | null, id: string) {
     requireAdmin(currentUser);
 
@@ -157,7 +171,9 @@ export const clinicService = {
     return mapClinicToResponse(updated);
   },
 
-  /** POST /clinics/:id/unarchive (admin only) */
+  /**
+   * POST /clinics/:id/unarchive (admin only)
+   */
   async unarchive(currentUser: UserCore | null, id: string) {
     requireAdmin(currentUser);
 

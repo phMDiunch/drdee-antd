@@ -28,10 +28,7 @@ export const menuItems: MenuItem[] = [
     key: "employees",
     icon: <TeamOutlined />,
     label: "Nhân sự",
-    children: [
-      { key: "/employees", label: "Danh sách" },
-      { key: "/employees/create", label: "Thêm mới" },
-    ],
+    children: [{ key: "/employees", label: "Danh sách" }],
   },
   {
     key: "appointments",
@@ -56,6 +53,9 @@ export const menuItems: MenuItem[] = [
     key: "/settings",
     icon: <SettingOutlined />,
     label: "Cài đặt",
-    children: [{ key: "/clinics", label: "Phòng khám" }],
+    children: [
+      { key: "/clinics", label: "Phòng khám" },
+      { key: "/dental-services", label: "Dịch vụ nha khoa" },
+    ],
   },
 ];

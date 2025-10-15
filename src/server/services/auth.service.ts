@@ -1,68 +1,94 @@
 // src/server/services/auth.service.ts
-
 import { createClient } from "@/services/supabase/server";
 import type { UserCore } from "@/shared/types/user";
 import { ERR } from "./errors";
-
-// Nếu sau này dùng Prisma để đọc Employee, bạn mở comment ở dưới
-// import { prisma } from "@/server/prisma"; // đảm bảo đường dẫn prisma client của bạn
+import { prisma } from "@/services/prisma/prisma"; // Import prisma client
 
 /**
- * Lấy thông tin user hiện tại bằng SSR (dùng cho (private)/layout.tsx).
- * Hiện tại: trả từ Supabase Auth + user_metadata (nếu có).
- * Tương lai: merge thêm từ bảng Employee (fullName/role/avatarUrl/clinicId).
+ * Lấy thông tin user hiện tại bằng SSR.
+ * Sửa lỗi: Bổ sung logic lấy thông tin từ bảng Employee để làm giàu session.
  */
 export async function getSessionUser(): Promise<UserCore | null> {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const u = data.user;
-  if (!u) return null;
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-  // Lấy sơ bộ từ Supabase
-  const meta = (u.user_metadata || {}) as Record<string, any>;
-  const user: UserCore = {
-    id: u.id,
-    email: u.email,
-    fullName: meta.fullName ?? null,
-    role: meta.role ?? null,
-    avatarUrl: meta.avatarUrl ?? null,
-    employeeId: null,
+  if (!authUser) return null;
+
+  // Khởi tạo thông tin user cơ bản từ Supabase Auth
+  let user: UserCore = {
+    id: authUser.id, // Đây là Supabase Auth user ID (uid)
+    email: authUser.email ?? null,
+    employeeId: null, // Sẽ được lấy từ bảng Employee
+    role: (authUser.user_metadata?.role as string) ?? null,
+    fullName: (authUser.user_metadata?.fullName as string) ?? null,
+    avatarUrl: (authUser.user_metadata?.avatarUrl as string) ?? null,
     clinicId: null,
   };
 
-  // ====== (Nâng cấp SAU khi có bảng Employee) ======
-  // - Khuyến nghị có cột `authUserId` trong bảng Employee để join chắc chắn.
-  // - Nếu chưa có, có thể fallback join theo email (ít an toàn hơn).
-  //
-  // try {
-  //   const employee = await prisma.employee.findFirst({
-  //     where: { authUserId: u.id },  // hoặc { email: u.email ?? undefined }
-  //     select: { id: true, fullName: true, role: true, avatarUrl: true, clinicId: true },
-  //   });
-  //   if (employee) {
-  //     user = {
-  //       ...user,
-  //       employeeId: employee.id,
-  //       fullName: employee.fullName ?? user.fullName,
-  //       role: employee.role ?? user.role,
-  //       avatarUrl: employee.avatarUrl ?? user.avatarUrl,
-  //       clinicId: employee.clinicId ?? user.clinicId,
-  //     };
-  //   }
-  // } catch {
-  //   // tránh làm vỡ render nếu DB lỗi tạm thời
-  // }
+  const metadata = authUser.user_metadata as Record<string, unknown> | null;
+  const metadataEmployeeId =
+    metadata && typeof metadata["employeeId"] === "string"
+      ? (metadata["employeeId"] as string)
+      : null;
+
+  if (metadataEmployeeId) {
+    user.employeeId = metadataEmployeeId;
+  }
+
+  try {
+    // Tìm bản ghi Employee tương ứng trong DB bằng `uid`
+    const employee = await prisma.employee.findUnique({
+      where: { uid: authUser.id },
+      select: {
+        id: true,
+        fullName: true,
+        role: true,
+        avatarUrl: true,
+        clinicId: true,
+      },
+    });
+
+    // Nếu tìm thấy, hợp nhất thông tin vào đối tượng user
+    if (employee) {
+      user = {
+        ...user,
+        employeeId: employee.id, // QUAN TRỌNG: Lấy ID từ bảng Employee
+        role: employee.role ?? user.role,
+        fullName: employee.fullName ?? user.fullName,
+        avatarUrl: employee.avatarUrl ?? user.avatarUrl,
+        clinicId: employee.clinicId ?? user.clinicId,
+      };
+    }
+  } catch (e) {
+    console.error("Lỗi khi lấy thông tin nhân viên cho session:", e);
+    // Bỏ qua lỗi để không làm sập trang nếu DB có vấn đề
+  }
 
   return user;
 }
 
+/**
+ * Yêu cầu quyền Admin.
+ * Sửa lỗi: Bổ sung kiểm tra employeeId phải tồn tại.
+ */
 export function requireAdmin(user: UserCore | null | undefined) {
   if (!user) throw ERR.UNAUTHORIZED("Bạn chưa đăng nhập.");
-  console.log("Current user:", user);
-  if (
-    user.role?.toString().toLocaleLowerCase() == "admin" ||
-    user.email?.toString().toLowerCase() == "dr.phamminhduc@gmail.com"
-  )
+
+  const isAdminByRole = user.role?.toString().toLowerCase() === "admin";
+  const isAdminByEmail =
+    user.email?.toString().toLowerCase() === "dr.phamminhduc@gmail.com";
+
+  if (isAdminByRole || isAdminByEmail) {
+    // Admin phải được liên kết với một nhân viên để thực hiện các thao tác ghi dữ liệu
+    if (!user.employeeId) {
+      throw ERR.FORBIDDEN(
+        "Tài khoản admin chưa được liên kết với một bản ghi nhân viên."
+      );
+    }
     return true;
+  }
+
   throw ERR.FORBIDDEN("Chỉ admin được phép thực hiện thao tác này.");
 }

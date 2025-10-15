@@ -3,13 +3,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/services/supabase/server";
 import { LoginRequestSchema, LoginResponseSchema } from "@/shared/validation/auth.schema";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const parsed = LoginRequestSchema.safeParse(body);
     if (!parsed.success) {
-      const msg = parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.";
+      const msg = parsed.error.issues[0]?.message ?? COMMON_MESSAGES.VALIDATION_INVALID;
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(safe, { status: 200 });
   } catch {
-    return NextResponse.json({ error: "Lỗi máy chủ. Vui lòng thử lại." }, { status: 500 });
+    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
   }
 }
+

@@ -56,9 +56,8 @@ export const clinicRepo = {
 
   // ===== liên kết để bảo vệ Delete =====
   async countLinked(clinicId: string) {
-    // Giả định đã có model Employee với field clinicId
     const employees = await prisma.employee.count({ where: { clinicId } });
-    // Sau này có Appointment/Payments... gom thêm ở đây
+    // Có thể bổ sung các liên kết khác trong tương lai
     return { employees, total: employees };
   },
 };

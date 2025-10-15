@@ -1,23 +1,23 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { App } from "antd";
+import { useNotify } from "@/shared/hooks/useNotify";
 import { archiveClinicApi } from "../api";
 import { CLINIC_MESSAGES } from "../constants";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export function useArchiveClinic() {
   const qc = useQueryClient();
-  const { message } = App.useApp();
+  const notify = useNotify();
 
   return useMutation({
     mutationFn: (id: string) => archiveClinicApi(id),
     onSuccess: () => {
-      message.success(CLINIC_MESSAGES.ARCHIVE_SUCCESS);
+      notify.success(CLINIC_MESSAGES.ARCHIVE_SUCCESS);
       qc.invalidateQueries({
         queryKey: ["clinics"],
       });
     },
-    onError: (e: any) =>
-      message.error(e?.message || CLINIC_MESSAGES.UNKNOWN_ERROR),
+    onError: (e: any) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
 }

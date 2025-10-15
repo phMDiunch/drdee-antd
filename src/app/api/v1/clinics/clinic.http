@@ -1,0 +1,117 @@
+// src/app/api/v1/clinics/clinic.http
+
+// Biến cho host, bạn có thể thay đổi nếu cần
+@host = http://localhost:3000
+
+// Biến để lưu ID của phòng khám sau khi tạo để test các API khác
+@clinicId = 00784555-33d8-476e-95bd-6a7830db6ebe
+
+###
+# @name login
+# Chạy request này đầu tiên để lấy cookie xác thực
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "dr.phamminhduc@gmail.com",
+  "password": "123123"
+}
+
+###
+# Lấy danh sách phòng khám (bao gồm cả những phòng khám đã archive)
+GET {{host}}/api/v1/clinics
+
+###
+# Tìm kiếm phòng khám theo tên
+GET {{host}}/api/v1/clinics?search=Nha Khoa
+
+###
+# Lọc chỉ những phòng khám đang hoạt động (chưa archive)
+GET {{host}}/api/v1/clinics?archived=false
+
+###
+# Lọc chỉ những phòng khám đã archive
+GET {{host}}/api/v1/clinics?archived=true
+
+###
+# Lấy chi tiết một phòng khám theo ID
+GET {{host}}/api/v1/clinics/{{clinicId}}
+
+###
+# Tạo một phòng khám mới
+POST {{host}}/api/v1/clinics
+Content-Type: application/json
+
+{
+  "clinicCode": "NK001",
+  "name": "Nha Khoa Test Clinic",
+  "address": "123 Đường ABC, Quận 1, TP.HCM",
+  "phone": "0912345678",
+  "email": "testclinic@example.com",
+  "colorCode": "#FF5722"
+}
+
+###
+# Cập nhật thông tin một phòng khám
+PUT {{host}}/api/v1/clinics/{{clinicId}}
+Content-Type: application/json
+
+{
+  "clinicCode": "NK001-UPDATED",
+  "name": "Nha Khoa Test Clinic (Đã cập nhật)",
+  "address": "456 Đường XYZ, Quận 2, TP.HCM",
+  "phone": "0987654321",
+  "email": "updated.testclinic@example.com",
+  "colorCode": "#2196F3"
+}
+
+###
+# Archive một phòng khám (ngừng hoạt động)
+POST {{host}}/api/v1/clinics/{{clinicId}}/archive
+
+###
+# Unarchive một phòng khám (khôi phục hoạt động)
+POST {{host}}/api/v1/clinics/{{clinicId}}/unarchive
+
+###
+# Xóa một phòng khám (chỉ được phép nếu không có dữ liệu liên kết)
+# Thường sẽ thất bại vì phòng khám có nhân viên liên kết
+DELETE {{host}}/api/v1/clinics/{{clinicId}}
+
+###
+# Test tạo phòng khám với dữ liệu không hợp lệ (sẽ trả về lỗi 400)
+POST {{host}}/api/v1/clinics
+Content-Type: application/json
+
+{
+  "clinicCode": "",
+  "name": "",
+  "address": "",
+  "phone": "invalid-phone",
+  "email": "invalid-email",
+  "colorCode": "invalid-color"
+}
+
+###
+# Test tạo phòng khám với mã đã tồn tại (sẽ trả về lỗi 409)
+POST {{host}}/api/v1/clinics
+Content-Type: application/json
+
+{
+  "clinicCode": "NK001",
+  "name": "Phòng khám trùng mã",
+  "address": "123 Test Street",
+  "colorCode": "#FF0000"
+}
+
+###
+# Test cập nhật phòng khám không tồn tại (sẽ trả về lỗi 404)
+PUT {{host}}/api/v1/clinics/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "clinicCode": "NOT_EXIST",
+  "name": "Phòng khám không tồn tại",
+  "address": "Test Address",
+  "colorCode": "#000000"
+}

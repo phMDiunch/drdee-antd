@@ -1,4 +1,5 @@
-import { CLINIC_ENDPOINTS, CLINIC_MESSAGES } from "../constants";
+import { CLINIC_ENDPOINTS } from "../constants";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 import { ClinicResponseSchema } from "@/shared/validation/clinic.schema";
 
 export async function archiveClinicApi(id: string) {
@@ -7,7 +8,7 @@ export async function archiveClinicApi(id: string) {
     cache: "no-store",
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json?.error || CLINIC_MESSAGES.UNKNOWN_ERROR);
+  if (!res.ok) throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
 
   const parsed = ClinicResponseSchema.safeParse(json);
   if (!parsed.success) throw new Error("Phản hồi archive không hợp lệ.");

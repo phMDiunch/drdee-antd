@@ -47,10 +47,10 @@ DELETE /api/v1/[feature]/:id           # Delete
 UI Components → Custom Hooks → API Client → Routes → Services → Repository → Database
 ```
 
-### 📊 **Zod Schemas:**
+### 📊 **Zod Schemas (Single Source of Truth):**
 
 ```typescript
-// Request/Response schemas in src/shared/validation/[feature].schema.ts
+// Định nghĩa trong src/shared/validation/[feature].schema.ts
 export const Create[Feature]RequestSchema = z.object({
   name: z.string().min(1).max(100),
   // Other required fields
@@ -63,6 +63,11 @@ export const [Feature]ResponseSchema = z.object({
 });
 
 export const [Feature]ListResponseSchema = z.array([Feature]ResponseSchema);
+
+// Types sử dụng trực tiếp (không cần file types.ts riêng)
+import type { z } from "zod";
+type CreateRequest = z.infer<typeof Create[Feature]RequestSchema>;
+type [Feature] = z.infer<typeof [Feature]ResponseSchema>;
 ```
 
 ---
@@ -169,16 +174,28 @@ export const [Feature]ListResponseSchema = z.array([Feature]ResponseSchema);
 ### 📊 **React Query Integration:**
 
 ```typescript
-// Query hooks
-use[Feature]s() → useQuery(['[feature]s'], get[Feature]sApi)
-use[Feature]ById(id) → useQuery(['[feature]', id], get[Feature]ByIdApi)
+// Constants (trong features/[feature]/constants.ts)
+export const [FEATURE]_ENDPOINTS = {
+  ROOT: "/api/v1/[feature]",
+  BY_ID: (id: string) => `/api/v1/[feature]/${id}`,
+} as const;
 
-// Mutation hooks
+export const [FEATURE]_QUERY_KEYS = {
+  list: (filters?: any) => ['[feature]s', filters] as const,
+  byId: (id: string) => ['[feature]', id] as const,
+} as const;
+
+// Query hooks (export từ hooks/index.ts)
+use[Feature]s() → useQuery([FEATURE]_QUERY_KEYS.list(), get[Feature]sApi)
+use[Feature]ById(id) → useQuery([FEATURE]_QUERY_KEYS.byId(id), get[Feature]ByIdApi)
+
+// Mutation hooks với useNotify()
 useCreate[Feature]() → useMutation(create[Feature]Api, {
   onSuccess: () => {
-    message.success('Tạo thành công');
-    queryClient.invalidateQueries(['[feature]s']);
-  }
+    notify.success([FEATURE]_MESSAGES.CREATE_SUCCESS);
+    queryClient.invalidateQueries([FEATURE]_QUERY_KEYS.list());
+  },
+  onError: (e) => notify.error(e, { fallback: [FEATURE]_MESSAGES.UNKNOWN_ERROR })
 })
 
 useUpdate[Feature]() → useMutation(update[Feature]Api, ...)
@@ -198,30 +215,38 @@ useDelete[Feature]() → useMutation(delete[Feature]Api, ...)
 ### 📥 **Create/Update Request:**
 
 ```typescript
-{
-  name: string;           // Required
-  description?: string;   // Optional
-  status: 'active' | 'inactive';
-  // Other fields
-}
+// Định nghĩa trong src/shared/validation/[feature].schema.ts
+export const Create[Feature]RequestSchema = z.object({
+  name: z.string().min(1, "Vui lòng nhập tên"),
+  description: z.string().optional(),
+  status: z.enum(['active', 'inactive']).default('active'),
+});
+
+export const Update[Feature]RequestSchema = Create[Feature]RequestSchema.extend({
+  id: z.string().uuid("ID không hợp lệ"),
+});
+
+// Sử dụng trong components/hooks
+import type { z } from "zod";
+type CreateRequest = z.infer<typeof Create[Feature]RequestSchema>;
 ```
 
 ### 📤 **Response Format:**
 
 ```typescript
-// Success responses
-{
-  id: string;
-  name: string;
-  status: "active" | "inactive";
-  createdAt: string; // ISO date
-  updatedAt: string; // ISO date
-}
+// Trong schema file
+export const [Feature]ResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.enum(['active', 'inactive']),
+  createdAt: z.string(), // ISO date
+  updatedAt: z.string(), // ISO date
+});
 
-// Error responses
-{
-  error: string; // User-friendly message
-}
+export const [Feature]ListResponseSchema = z.array([Feature]ResponseSchema);
+
+// Error response (standardized)
+// { error: string } - handled by API client + useNotify
 ```
 
 ---

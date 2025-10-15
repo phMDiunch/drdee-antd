@@ -1,7 +1,7 @@
 // src/features/clinics/views/ClinicsPageView.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Typography, Switch, Space, Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useClinics } from "@/features/clinics/hooks/useClinics";
@@ -16,7 +16,7 @@ import type {
   ClinicResponse,
   CreateClinicRequest,
   UpdateClinicRequest,
-} from "@/features/clinics/types";
+} from "@/shared/validation/clinic.schema";
 
 const { Title, Text } = Typography;
 
@@ -38,37 +38,73 @@ export default function ClinicsPageView({ isAdmin }: Props) {
 
   const list = useMemo(() => data ?? [], [data]);
 
-  const openCreate = () => {
+  const closeModal = useCallback(() => setModalOpen(false), []);
+
+  const openCreate = useCallback(() => {
     setMode("create");
     setEditing(null);
     setModalOpen(true);
-  };
+  }, []);
 
-  const openEdit = (row: ClinicResponse) => {
+  const openEdit = useCallback((row: ClinicResponse) => {
     setMode("edit");
     setEditing(row);
     setModalOpen(true);
-  };
+  }, []);
 
-  const handleSubmit = (payload: CreateClinicRequest | UpdateClinicRequest) => {
-    if (mode === "create") {
-      create.mutate(payload as CreateClinicRequest, {
-        onSuccess: () => setModalOpen(false),
-      });
-    } else if (mode === "edit" && editing) {
-      update.mutate(payload as UpdateClinicRequest, {
-        onSuccess: () => setModalOpen(false),
-      });
-    }
-  };
+  const handleSubmit = useCallback(
+    (payload: CreateClinicRequest | UpdateClinicRequest) => {
+      if (mode === "create") {
+        create.mutate(payload as CreateClinicRequest, {
+          onSuccess: closeModal,
+        });
+      } else if (mode === "edit" && editing) {
+        update.mutate(payload as UpdateClinicRequest, {
+          onSuccess: closeModal,
+        });
+      }
+    },
+    [mode, create, update, editing, closeModal]
+  );
 
-  const loadingAny =
-    isLoading ||
-    create.isPending ||
-    update.isPending ||
-    del.isPending ||
-    archive.isPending ||
-    unarchive.isPending;
+  const handleDelete = useCallback(
+    (row: ClinicResponse) => {
+      del.mutate(row.id);
+    },
+    [del]
+  );
+
+  const handleArchive = useCallback(
+    (row: ClinicResponse) => {
+      archive.mutate(row.id);
+    },
+    [archive]
+  );
+
+  const handleUnarchive = useCallback(
+    (row: ClinicResponse) => {
+      unarchive.mutate(row.id);
+    },
+    [unarchive]
+  );
+
+  const loadingAny = useMemo(
+    () =>
+      isLoading ||
+      create.isPending ||
+      update.isPending ||
+      del.isPending ||
+      archive.isPending ||
+      unarchive.isPending,
+    [
+      isLoading,
+      create.isPending,
+      update.isPending,
+      del.isPending,
+      archive.isPending,
+      unarchive.isPending,
+    ]
+  );
 
   return (
     <div>
@@ -87,7 +123,7 @@ export default function ClinicsPageView({ isAdmin }: Props) {
         </div>
 
         <Space>
-          <Text>Hiện cả archived</Text>
+          <Text>Hiển thị đã lưu trữ</Text>
           <Switch checked={includeArchived} onChange={setIncludeArchived} />
           {isAdmin && (
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
@@ -101,23 +137,20 @@ export default function ClinicsPageView({ isAdmin }: Props) {
         data={list}
         loading={loadingAny}
         onEdit={openEdit}
-        onDelete={(row) => del.mutate(row.id)}
-        onArchive={(row) => archive.mutate(row.id)}
-        onUnarchive={(row) => unarchive.mutate(row.id)}
+        onDelete={handleDelete}
+        onArchive={handleArchive}
+        onUnarchive={handleUnarchive}
       />
 
-      {/* Chỉ mount modal khi mở để tránh cảnh báo useForm/Modal */}
-      {modalOpen && (
-        <ClinicFormModal
-          open
-          mode={mode}
-          isAdmin={isAdmin}
-          initial={editing || undefined}
-          confirmLoading={create.isPending || update.isPending}
-          onCancel={() => setModalOpen(false)}
-          onSubmit={handleSubmit}
-        />
-      )}
+      <ClinicFormModal
+        open={modalOpen}
+        mode={mode}
+        isAdmin={isAdmin}
+        initial={editing || undefined}
+        confirmLoading={create.isPending || update.isPending}
+        onCancel={closeModal}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }

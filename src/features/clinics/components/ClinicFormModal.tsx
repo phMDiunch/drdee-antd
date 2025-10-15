@@ -11,7 +11,7 @@ import {
   ClinicResponse,
   CreateClinicRequest,
   UpdateClinicRequest,
-} from "@/features/clinics/types";
+} from "@/shared/validation/clinic.schema";
 import {
   CreateClinicRequestSchema,
   UpdateClinicRequestSchema,
@@ -31,8 +31,8 @@ const defaultClinicFormValues: CreateClinicRequest = {
   clinicCode: "",
   name: "",
   address: "",
-  phone: undefined, // hoặc null
-  email: undefined, // hoặc null
+  phone: undefined,
+  email: undefined,
   colorCode: "#28B463",
 };
 
@@ -45,14 +45,12 @@ export default function ClinicFormModal({
   onCancel,
   onSubmit,
 }: Props) {
-  // Chọn schema theo mode
   const schema = useMemo(
     () =>
       mode === "create" ? CreateClinicRequestSchema : UpdateClinicRequestSchema,
     [mode]
   );
 
-  // RHF form
   const {
     control,
     handleSubmit,
@@ -73,10 +71,9 @@ export default function ClinicFormModal({
             email: initial.email ?? undefined,
             colorCode: initial.colorCode,
           }
-        : defaultClinicFormValues, // không set default để colorCode bắt buộc có tác dụng
+        : defaultClinicFormValues,
   });
 
-  // Reset khi mở modal hoặc đổi mode/initial
   useEffect(() => {
     if (!open) return;
     if (mode === "edit" && initial) {
@@ -94,10 +91,8 @@ export default function ClinicFormModal({
     }
   }, [open, mode, initial, reset]);
 
-  // Submit (RHF đã validate qua zodResolver)
   const onValid = (values: CreateClinicRequest & { id?: string }) => {
     if (mode === "edit") {
-      // zod yêu cầu id trong Update; nếu schema đã enforce id, values.id sẽ tồn tại
       const payload: UpdateClinicRequest = {
         id: values.id || (initial?.id as string),
         clinicCode: values.clinicCode,
@@ -106,7 +101,6 @@ export default function ClinicFormModal({
         phone: values.phone,
         email: values.email,
         colorCode: values.colorCode,
-        // archivedAt: giữ nguyên theo server; không gửi ở form edit
       };
       onSubmit(payload);
     } else {
@@ -122,8 +116,6 @@ export default function ClinicFormModal({
     }
   };
 
-  // Width responsive + body scroll (header/footer giữ nguyên)
-
   return (
     <Modal
       open={open}
@@ -137,10 +129,10 @@ export default function ClinicFormModal({
         content: { maxHeight: "85vh" },
         body: { maxHeight: "60vh", overflowY: "auto", paddingInline: 16 },
       }}
+      destroyOnHidden
+      maskClosable={false}
     >
-      {/* AntD Form chỉ để layout, label, requiredMark, help, validateStatus */}
       <Form layout="vertical" requiredMark>
-        {/* HÀNG 1: clinicCode, name */}
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
@@ -176,7 +168,7 @@ export default function ClinicFormModal({
             />
           </Col>
         </Row>
-        {/* HÀNG 2: colorCode, địa chỉ */}
+
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
@@ -192,7 +184,7 @@ export default function ClinicFormModal({
                   <ColorPicker
                     disabledAlpha
                     format="hex"
-                    showText={true}
+                    showText
                     value={field.value || undefined}
                     onChange={(c) =>
                       field.onChange(c.toHexString().toLowerCase())
@@ -220,7 +212,7 @@ export default function ClinicFormModal({
             />
           </Col>
         </Row>
-        {/* HÀNG 3: phone, email */}
+
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
@@ -263,7 +255,6 @@ export default function ClinicFormModal({
           </Col>
         </Row>
 
-        {/* Thông tin hệ thống (Admin + edit) */}
         {mode === "edit" && isAdmin && initial && (
           <Row gutter={12}>
             <Col xs={24} md={12}>

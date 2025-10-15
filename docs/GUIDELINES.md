@@ -1,128 +1,94 @@
 # Project Guidelines (Single Source of Truth)
 
-_Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod_
+Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
 
 ---
 
-## 1) Chính sách dependency
+## 1) Chính Sách Dependency
 
-- Không thêm thư viện khi chưa được duyệt. Ưu tiên: AntD, @tanstack/react-query, Supabase, dayjs, **Zod** (đã phê duyệt cho schema).
-- Lý do Zod: chuẩn hoá **request/response schema** dùng chung client + server, giảm bug, dễ scale.
+- Không thêm thư viện khi chưa được duyệt. Ưu tiên: AntD, @tanstack/react-query, Supabase, dayjs, Zod.
+- Dùng Zod để chuẩn hóa request/response schema dùng chung client + server (giảm bug, dễ scale).
 
-## 2) Kiến trúc & phân lớp (Frontend-driven)
+## 2) Kiến Trúc & Luồng Phát Triển
 
-**Luồng phát triển:** Requirements → UI/UX → Frontend → API Contract → Backend → Database
+- API‑first (mặc định): Requirements → Database → API Contract → Backend → Frontend.
+- Frontend‑driven (khi cần): Requirements → UI/UX → Frontend → API Contract → Backend → Database.
 
-- **Feature module (Frontend)** → `src/features/<feature>/{views,components,hooks,api}` + `types.ts`+`constants.ts`+`index.ts`.
-- **Schema (Zod)** → `src/shared/validation/` (API contract được định nghĩa từ frontend needs).
-- **API routes** → `/api/v1/<feature>/` (implement theo contract đã định nghĩa).
-- **Business logic (server)** → `src/server/services/` (ghép Supabase/Prisma, rule nghiệp vụ).
-- **Data access (Prisma)** → `src/server/repos/` (nếu có).
-- **AppShell** → `src/layouts/AppLayout/*` (Header, Sider, Content, menu config, theme).
+## 3) Cấu Trúc Thư Mục
 
-## 3) Next.js 15 & Supabase
+- Zod schemas: `src/shared/validation/*` (request/response, types via `z.infer`, tái dùng FE/BE).
+- Business logic: `src/server/services/*` (Supabase/Prisma + rule nghiệp vụ).
+- Data access: `src/server/repos/*` (Prisma thuần).
+- Feature module: `src/features/<feature>/{api,components,hooks,views}` + `constants.ts` (không cần `types.ts`, `index.ts` chính).
+- Barrel exports: `src/features/<feature>/{api,hooks}/index.ts` (export từ subfolder).
+- Layout: `src/layouts/AppLayout/*` (Header, Sider, Content, menu, theme).
 
-- `cookies()` là **async** → ở server/route luôn `const supabase = await createClient()`.
-- Session do Supabase quản lý qua **HttpOnly cookie** (không lưu token ở JS).
-- `(private)/layout.tsx` là **SSR**: gọi `getSessionUser()` để inject `currentUser` cho Header/AppLayout.
-- **Middleware** bảo vệ `(private)`; không cho truy cập nếu chưa login.
+## 4) Next.js & Supabase
 
-## 4) Auth
+- `cookies()` là async; trong server/route luôn `const supabase = await createClient()`.
+- Session Supabase qua HttpOnly cookie (không lưu token ở JS).
+- `(private)/layout.tsx` (SSR) gọi `getSessionUser()` để inject `currentUser`.
+- Middleware bảo vệ `(private)`; chặn truy cập nếu chưa đăng nhập.
 
-- **Login**: `POST /api/v1/auth/login` → validate body bằng Zod → `supabase.auth.signInWithPassword` → Supabase set cookie → trả `{ user }`.
-- **Logout**: `POST /api/v1/auth/logout` → `supabase.auth.signOut()` → xóa cookie.
-- **Header**: **SSR inject** user (khuyến nghị). `/api/v1/auth/me` là optional khi cần client fetch.
-- Chặn **open redirect** bằng `sanitizeNext()` – chỉ cho phép `?next=` bắt đầu bằng `/`.
+## 5) Auth
 
-## 5) API conventions
+- Login: `POST /api/v1/auth/login` (Zod validate) → `supabase.auth.signInWithPassword` → set cookie → trả `{ user }`.
+- Logout: `POST /api/v1/auth/logout` → `supabase.auth.signOut()`.
+- Chặn open‑redirect bằng `sanitizeNext()` (chỉ chấp nhận đường dẫn nội bộ).
+
+## 6) API Conventions
 
 - Mọi route dưới `/api/v1/...`:
-  - **Parse request** bằng Zod → `400` nếu invalid.
-  - Map lỗi dịch vụ → `{ error: string }` với status hợp lý (401/403/404/409/500…).
+  - Parse request bằng Zod → trả 400 nếu invalid.
+  - Map lỗi dịch vụ → `{ error: string }` + status phù hợp (401/403/404/409/500).
   - Không redirect trong API; redirect ở UI/hook.
-- **API client** (trong `features/<feature>/api`):
-  - `fetch` → **parse response** bằng Zod; nếu !ok ném `Error(message)`.
+- API client (`features/<feature>/api`): `fetch` + parse response bằng Zod; nếu `!ok` ném `Error(message)`.
 
-## 6) React Query vs Zustand
+## 7) React Query vs Zustand
 
-- **React Query** (server-state):
-  - `useQuery` cho GET, `useMutation` cho POST/PUT/PATCH/DELETE.
-  - Quản lý loading/error/success + invalidate/prefetch.
-  - Đừng dùng Zustand/Context để cache dữ liệu server.
-- **Zustand** (UI-state): chỉ cho trạng thái giao diện cục bộ (toggle sider, filters, modal…). Không giữ session/dữ liệu server.
+- React Query (server‑state): `useQuery` cho GET, `useMutation` cho ghi; quản lý loading/error/success + invalidate.
+- Không dùng Zustand/Context để cache dữ liệu server. Zustand chỉ cho UI‑state cục bộ (toggle, filters, modal…).
 
-## 7) Ant Design & UI
+## 8) Ant Design & UI
 
-- Hạn chế CSS ngoài; ưu tiên **token** của AntD trong `ConfigProvider`.
-- Header **sticky**; Sider/Content **scroll độc lập**.
-- Responsive: `Grid.useBreakpoint()`; mobile có hamburger + modal search.
-- Menu: icon cấp 1; **children không icon**; `key` = path để sync `selectedKeys/openKeys`.
+- Hạn chế CSS ngoài; ưu tiên token trong `ConfigProvider`.
+- Header sticky; Sider/Content scroll độc lập. Responsive bằng `Grid.useBreakpoint()`.
+- Menu: icon cấp 1; children không icon; `key` = path để sync state.
 
-## 8) Validation & Error UX
+## 9) Validation & Error UX
 
-- Client: form AntD có thể dùng rule + (tuỳ chọn) Zod field-level; trước khi gọi API nên parse Zod form-level.
+- Client: Form AntD có rule + (tuỳ chọn) Zod field‑level; trước khi gọi API nên parse Zod form‑level.
 - Server: mọi request parse bằng Zod; map lỗi Supabase/DB → thông điệp tiếng Việt thân thiện.
-- Dùng `App.useApp().message` cho toast; tránh spam.
 
-## 9) Tên, Imports, Tổ chức file
+## 10) Thông Báo & Lỗi (Client)
 
-- Component: PascalCase (`LoginForm.tsx`), hook: camelCase (`useLogin.ts`).
-- Dùng alias `@/` (không `../../..`) – cấu hình trong `tsconfig.json`.
-- Mỗi feature có `index.ts` (barrel exports).
+- Luôn dùng `useNotify()` (không gọi trực tiếp `App.useApp().message`).
+- `useNotify` chuẩn hoá:
+  - Ngôn ngữ: tiếng Việt end‑user; thời lượng mặc định 2.5s; dedupe ~2.5s.
+  - API: `notify.success/info/warning(text)`, `notify.error(errOrText, { fallback?, duration? })`.
+  - `notify.error` tự trích message từ `Error`, `{ error, code }`, `ZodError`, …
+- Mẫu dùng với React Query:
+  - `onSuccess: () => notify.success(MESSAGES.XYZ_SUCCESS)`
+  - `onError: (e) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR })`
 
-## 10) Bảo mật
+## 11) Thông Báo & Lỗi (Server)
 
-- Không gửi secrets về client.
-- Tránh **open redirect**.
-- Role-based guard ở server (`requireRole()`), không tin role từ client.
-- Log lỗi server hợp lý; không trả lỗi raw DB xuống client.
+- Ném `ServiceError(code, message, httpStatus)` cho lỗi nghiệp vụ.
+- API Routes:
+  - Nếu `ServiceError` → `{ error, code }` + `status = httpStatus`.
+  - Lỗi không xác định → `{ error: COMMON_MESSAGES.SERVER_ERROR }`, `status = 500`.
+  - Lỗi validation (Zod) → `COMMON_MESSAGES.VALIDATION_INVALID` hoặc `issues[0].message`.
 
-## 11) Ngày giờ
+## 12) Quy Ước Khi Implement Mới
 
-- DB lưu UTC; UI format theo `vi` (dayjs). Không hardcode offset; timezone mặc định: Asia/Bangkok.
+- Không hardcode thông báo ở view/component; dùng constants theo domain hoặc truyền `fallback` cho `notify.error`.
+- Dùng `COMMON_MESSAGES` cho thông điệp chung (`src/shared/constants/messages.ts`).
+- Employees/Clinics: ưu tiên hooks đã chuẩn hoá; mutation mới follow pattern hiện có.
 
-## 12) Testing & PR
+## 13) Naming & Zod Schemas
 
-- Mỗi feature có `docs/features/<feature>.md` (overview, flow, API, validate, checklist).
-- **Conventional commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`.
-- PR: build ok, typecheck ok, lint ok; đính kèm ảnh/GIF UI nếu đổi UI.
-
-## 13) Khi thêm feature mới (Luồng Frontend-first)
-
-1. Viết `docs/requirements/<feature>.md` (yêu cầu nghiệp vụ).
-2. Viết `docs/features/<feature>.md` (spec chi tiết UI/UX, flows).
-3. **Frontend first**: tạo module `features/<feature>/{views,components,hooks,api}` + `types.ts`, `constants.ts`, `index.ts`.
-4. Định nghĩa API contract: tạo schema Zod ở `shared/validation/<feature>.schema.ts` (dựa trên frontend needs).
-5. **Backend implement theo contract**: route API dưới `/api/v1/<feature>/...`.
-6. Thêm `server/services/<feature>.service.ts` (business logic server).
-7. Thêm test checklist; review theo guideline này.
-
-## 14) Naming & Schemas (Zod, API, Types) - Frontend-driven
-
-1. Zod schemas (ở `src/shared/validation`) - **được định nghĩa dựa trên frontend needs**
-
-- **Request body**: `<Feature><Action>RequestSchema`
-  - Ví dụ: `LoginRequestSchema`, `CreateClinicRequestSchema`, `UpdateClinicRequestSchema`
-  - Thiết kế dựa trên form fields và business logic của frontend
-- **Response (1 item)**: `<Feature>ResponseSchema`
-  - Ví dụ: `ClinicResponseSchema`, `UserResponseSchema`
-  - Thiết kế dựa trên data cần hiển thị ở UI components
-- **Response (list)**: `<Feature>ListResponseSchema` hoặc `<Feature>sResponseSchema`
-  - Ví dụ: `ClinicsResponseSchema` (array của `ClinicResponseSchema`)
-- **Query/Params**: `<Action>QuerySchema`, `<Action>ParamsSchema`
-  - Ví dụ: `GetClinicsQuerySchema`, `ClinicIdParamsSchema`
-- **Tên type**: dùng `z.infer` để sinh `Request/Response` tương ứng
-  - Ví dụ: `export type ClinicResponse = z.infer<typeof ClinicResponseSchema>`
-
-> Ghi chú: Tránh dùng hậu tố `Dto` cho Zod schema ở lớp API — vì `DTO` quá rộng. Nếu thật sự cần `DTO` (cho lớp service/repo), đặt ở **`server/`** và **không** dùng chung với schema API.
-
-2. File đặt tên
-
-- Schema theo feature: `src/shared/validation/clinic.schema.ts`, `auth.schema.ts`, ...
-- Mỗi feature FE: `api/`, `components/`, `hooks/`, `views/`, `types.ts`, `constants.ts`, `index.ts`.
-- Endpoint constants: `CLINIC_ENDPOINTS.*`, Query Keys: `CLINIC_QUERY_KEYS.*`.
-
-3. Response chuẩn
-
-- API trả về **response object** theo `<Feature>ResponseSchema`.
-- Thông báo lỗi chuẩn: `{ error: string }` với status phù hợp (400/401/403/409/500).
+- Request: `<Feature><Action>RequestSchema` (vd: `CreateClinicRequestSchema`).
+- Response (1 item): `<Feature>ResponseSchema`.
+- Response (list): `<Feature>ListResponseSchema` hoặc `<Feature>sResponseSchema`.
+- Query/Params: `<Action>QuerySchema`, `<Action>ParamsSchema`.
+- Types: `import type { z } from "zod"; type X = z.infer<typeof XSchema>` (dùng trực tiếp trong component/hook, không tạo file types.ts riêng).

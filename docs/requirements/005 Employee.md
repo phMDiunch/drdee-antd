@@ -1,181 +1,463 @@
-1. List employees
+# 🏥 Requirements: Employee Management System
+
+## 📊 Tham khảo
+
+Prisma Model Employee: src/prisma/schema.prisma
+Sơ đồ tổ chức công ty: src/data/organizationalStructure.ts
+
+## 🎯 Core Requirements
+
+### 1. ➕ **Tạo nhân viên (Create)**
+
+#### 🔐 **Permissions:**
+
+- Chỉ có **Admin** và **Back office** mới được tạo nhân viên
+- Kiểm tra quyền ở cả client và server
+
+#### 🎨 **UI/UX:**
+
+- **Modal form** responsive (85% width mobile, 65% width desktop)
+- **Color picker** cho favoriteColor (hiển thị mã hex)
+- **Real-time validation** với error feedback
+
+#### 📝 **Form Layout:**
 
 ```
-model Employee {
-  id String @id @default(uuid())
+Hàng 1: [fullName            ] [email                    ]
+Hàng 2: [phone        ] [role       ] [employeeStatus    ]
+Hàng 3: [employeeCode        ] [clinicId                 ]
+Hàng 4: [department          ] [team                     ]
+Hàng 5: [jobTitle            ] [positionTitle            ]
+```
 
-  // Thông tin tài khoản
-  uid   String? @unique // User ID từ Supabase Auth để liên kết
-  email String  @unique // Email đăng nhập
-  role  String // Vai trò trong hệ thống: "admin", "employee"
+#### ✅ **Validation Rules:**
 
-  // Thông tin cơ bản
-  fullName      String //
-  dob           DateTime? @db.Date // Ngày sinh
-  gender        String? // Giới tính
-  avatarUrl     String? //
-  favoriteColor String? // Màu yêu thích để cá nhân hóa giao diện
+- `employeeCode`: Optional, unique
+- `fullName`: Required,
+- `email`: Optional, unique, email format,
+- `phone`: Optional, unique, VN format `/^(0)\d{9}$/`
+- `role`: Required
+- `clinicId`: Required, dựa vào model clinic
+- `department`: Required, dựa vào organizationalStructure.ts
+- `jobTitle`: Required, dựa vào organizationalStructure.ts
+- `team`: Optional, dựa vào organizationalStructure.ts
+- `positionTitle`: Optional, dựa vào organizationalStructure.ts
+- `employeeStatus`: Required, mặc định là `WORKING`
 
-  // Thông tin liên hệ
-  phone          String  @unique
-  currentAddress String? // Địa chỉ hiện tại
-  hometown       String? // Quê quán
+---
 
-  // Thông tin pháp lý & BH
-  nationalId           String?   @unique // Số CCCD
-  nationalIdIssueDate  DateTime? @db.Date // Ngày cấp
-  nationalIdIssuePlace String? // Nơi cấp
-  taxId                String?   @unique // Mã số thuế
-  insuranceNumber      String?   @unique // Số sổ BHXH
+**Sau khi tạo**: Nếu có email thì supabase sẽ gửi link đến nhân viên, nhân viên truy cập `/complete-profile` để hoàn thiện hồ sơ.
 
-  // Thông tin ngân hàng
-  bankAccountNumber String? // Số tài khoản ngân hàng
-  bankName          String? // Tên ngân hàng
+### 2. ➕ **Hoàn thiện hồ sơ (Profile)**
 
-  // Thông tin công việc
-  employeeCode     String? @unique // Mã nhân viên
-  employmentStatus String? // "Đang làm việc", "Nghỉ việc"
-  clinicId         String? // ID của phòng khám làm việc
-  department       String? // Phòng ban
-  team             String? // Bộ phận
-  jobTitle         String? // Chức danh
-  positionTitle    String? // Chức vụ
+#### 🔐 **Permissions:**
 
-  // Metadata
-  createdById String? // ID của người tạo
-  updatedById String? // ID của người cập nhật cuối
+Truy cập công khai qua public API endpoints (không cần authentication trước). Sau khi hoàn tất → chuyển đến dashboard với authentication.
 
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
+#### 🎨 **UI/UX:**
 
-  // Liên kết đến nhân viên
-  createdBy        Employee?  @relation("CreatedEmployees", fields: [createdById], references: [id])
-  updatedBy        Employee?  @relation("UpdatedEmployees", fields: [updatedById], references: [id])
-  createdEmployees Employee[] @relation("CreatedEmployees")
-  updatedEmployees Employee[] @relation("UpdatedEmployees")
+Trang riêng biệt `/complete-profile`
 
-  // Liên kết đến phòng khám
-  clinic Clinic? @relation(fields: [clinicId], references: [id])
+#### 📝 **Form Layout:**
 
-  // Liên kết đến khách hàng
-  createdCustomers Customer[] @relation("CreatedCustomers")
-  updatedCustomers Customer[] @relation("UpdatedCustomers")
+```
+Hàng 1: [fullName            ] [dob                             ]
+Hàng 2: [gender              ] [favoriteColor                   ]
+Hàng 3: [password            ] [confirmPassword                 ]
+Hàng 4: [currentAdress       ] [hometown                        ]
+Hàng 5: [nationalId] [nationalIdIssueDate] [nationalIdIssuePlace]
+Hàng 6: [taxId               ] [insuranceNumber                 ]
+Hàng 7: [bankAccountNumber   ] [bankName                        ]
+```
 
-  // Liên kết đến dịch vụ nha khoa
-  createdDentalServices DentalService[] @relation("CreatedDentalServices")
-  updatedDentalServices DentalService[] @relation("UpdatedDentalServices")
+#### ✅ **Validation Rules:**
 
-  // Liên kết đến lịch hẹn
-  primaryDentistAppointments   Appointment[] @relation("PrimaryDentistAppointments")
-  secondaryDentistAppointments Appointment[] @relation("SecondaryDentistAppointments")
-  createdAppointments          Appointment[] @relation("CreatedAppointments")
-  updatedAppointments          Appointment[] @relation("UpdatedAppointments")
+- `fullName`: Required
+- `dob`: Required
+- `gender`: Required
+- `favoriteColor`: Required
+- `password`: Required, min 6 characters
+- `confirmPassword`: Required, must match password
+- `currentAdress`: Required
+- `hometown`: Required
+- `nationalId`: Required, unique
+- `nationalIdIssueDate`: Required
+- `nationalIdIssuePlace`: Required
+- `taxId`: Optional
+- `insuranceNumber`: Optional
+- `bankAccountNumber`: Optional
+- `bankName`: Optional
 
-  // Liên kết đến dịch vụ tư vấn
-  consultingDoctorServices ConsultedService[] @relation("ConsultingDoctorServices")
-  consultingSaleServices   ConsultedService[] @relation("ConsultingSaleServices")
-  treatingDoctorServices   ConsultedService[] @relation("TreatingDoctorServices")
-  createdConsultedServices ConsultedService[] @relation("CreatedConsultedServices")
-  updatedConsultedServices ConsultedService[] @relation("UpdatedConsultedServices")
+**Business Rules:**
 
-  // Liên kết đến nhật ký điều trị
-  dentistLogs    TreatmentLog[] @relation("DentistLogs")
-  assistant1Logs TreatmentLog[] @relation("Assistant1Logs")
-  assistant2Logs TreatmentLog[] @relation("Assistant2Logs")
-  createdLogs    TreatmentLog[] @relation("CreatedLogs")
-  updatedLogs    TreatmentLog[] @relation("UpdatedLogs")
+- Sử dụng public API endpoints để truy cập và cập nhật thông tin
+- Password được set thông qua Supabase admin client
+- Sau khi hoàn tất profile, chuyển hướng đến login để authentication
+- Email hết hạn trong 12h
+- Admin/BackOffice có thể gửi lại email mời
+- Không nhập email = không tạo Supabase auth
+- Sau này có thể thêm email và gửi lời mời
 
-  // Liên kết đến phiếu thu
-  cashierVouchers PaymentVoucher[] @relation("CashierVouchers")
-  createdVouchers PaymentVoucher[] @relation("CreatedVouchers")
-  updatedVouchers PaymentVoucher[] @relation("UpdatedVouchers")
+---
 
-  // Liên kết đến chi tiết phiếu thu
-  createdVoucherDetails PaymentVoucherDetail[] @relation("CreatedVoucherDetails")
+### 3. 📋 **Danh sách nhân viên (List)**
 
-  // Liên kết đến chăm sóc sau điều trị (aftercare)
-  careStaffTreatmentCares TreatmentCare[]
-  createdTreatmentCares   TreatmentCare[] @relation("CreatedTreatmentCares")
-  updatedTreatmentCares   TreatmentCare[] @relation("UpdatedTreatmentCares")
+#### 🔧 **Structure:**
 
-  // Liên kết đến nhà cung cấp
-  createdSuppliers Supplier[] @relation("CreatedSuppliers")
-  updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
+- `EmployeesListView.tsx` - Main page wrapper
+  -- Tilte: có font tương tự các feature khác
+  -- `EmployeeStats.tsx` - Reusable statistics component
+  -- Search Input (Left) + Add button (right)
+  -- `EmployeeTable.tsx` - Reusable table component
+
+#### **Statistics Component**
+
+- Tổng số nhân viên đang làm việc
+- Phân chia theo từng cơ sở
+
+#### **Search & Controls:**
+
+- Search theo tên nhân viên (fullName)
+- Search tất cả nhân viên (gồm cả nghỉ việc và đang làm việc)
+- Trigger search khi Enter hoặc click button
+
+#### **Table Component**
+
+##### 📊 **_Table Features:_**
+
+- **No Pagination**: mặc định sẽ tải tất cả employee có employeeStatus = "WORKING", nên không cần phân trang. Nếu người dùng tìm kiếm ở ô search input thì sẽ hiển thị dữ liệu từ việc tìm kiếm.
+- **Frontend Filters** phía frontend bằng tính năng sẵn có của antd
+- **Action buttons**: Edit, Đang làm việc/Nghỉ việc, Delete với tooltips. Với user đã nghỉ việc thì sẽ hiển thị button Đang Làm việc, ngược lại với user đang làm việc thì sẽ hiển thị button Nghỉ việc
+- **Employee Status Display**: Hiển thị bằng Tag với màu sắc: WORKING (green), RESIGNED (red)
+- Cần tải thêm dữ liệu từ route clinic: id, clinicCode và colorCode để hiển thị trên table
+
+##### 🗂️ **_Table Columns:_**
+
+```
+| Column         | Width | Type    || Filter/Sort  | Description                    |
+| -------------- | ----- | ------- || ------------ | ------------------------------ |
+| Tên nhân viên  | 140px | Text    || Filter + Sort| fullName (cố định)             |
+| Mã nhân viên   | Auto  | Text    || Sort         | employeeCode                   |
+| Điện thoại     | Auto  | Text    ||              | phone                          |
+| Vai trò        | Auto  | Tag     || Sort         | role                           |
+| Chi nhánh      | Auto  | Tag     || Sort         | colorCode với background color |
+| Trạng thái     | Auto  | Tag     || Sort         | WORKING (green), RESIGNED (red)|
+| Phòng ban      | Auto  | Text    || Sort         | department                     |
+| Chức danh      | Auto  | Text    || Sort         | jobTitle                       |
+| Thao tác       | Auto  | Actions || Actions      | Edit/Working/Delete buttons    |
+```
+
+### 4. 👥 **Working Employees API**
+
+**Mục đích**: API cho các feature khác sử dụng (appointments, treatments, consultations...)
+
+#### 📡 **Endpoint:** `GET /api/v1/employees/working`
+
+#### 📊 **Response Format:**
+
+```typescript
+{
+  id: string;
+  fullName: string;
+  employeeCode: string | null;
+  jobTitle: string | null;
+  role: "admin" | "employee";
+  department: string;
+  clinicId: string;
+}
+[];
+```
+
+#### ⚡ **Caching Strategy:**
+
+- **React Query cache**: 30 phút
+- **Query key**: `["employees", "working"]`
+- **Invalidation**: Khi có mutation create/update/toggle status employee
+
+### 5. ✏️ **Chỉnh sửa employee (Edit)**
+
+#### 🎨 **UI/UX:**
+
+- **Separate edit page**: `/employees/[id]/edit`
+- **Pre-populated data** từ selected employee
+
+#### 🔐 **Field-level Permissions:**
+
+- **Admin**: Xem/sửa tất cả thông tin + metadata của tất cả users
+- **BackOffice**: Xem/sửa thông tin users, ngoại trừ role/email. Không xem metadata
+- **Employee**: Chỉ sửa thông tin của chính mình, ngoại trừ role/email/employeeStatus/clinicId/department/team/jobTitle/positionTitle
+
+**Không ai có thể thay đổi email**
+
+---
+
+### 6. 🗄️ **Nghỉ việc/Đang làm việc/Delete Operations**
+
+#### 📦 **Business Logic:**
+
+- **Nghỉ việc**: set `employeeStatus = "RESIGNED"` → không truy cập webapp + không xuất hiện trong dropdowns
+- **Đang làm việc**: set `employeeStatus = "WORKING"`
+- **Delete**: Hard delete khi không có linked data, báo lỗi nếu có
+
+#### 🎯 **UI Actions:**
+
+- **Toggle button**: Hiển thị "Đang làm việc" nếu RESIGNED, "Nghỉ việc" nếu WORKING
+- **Delete button**: `<DeleteOutlined />` + Popconfirm
+
+### 7. 🎨 **Layout Integration**
+
+#### 🏷️ **Header Configuration:**
+
+- **Breadcrumb**: `Dashboard > Nhân viên > [Danh sách | Chỉnh sửa]`
+- **Page Title**: "Quản lý nhân viên" với icon `<TeamOutlined />`
+- **User Avatar**:
+  - Nam: `<UserOutlined />` với background blue
+  - Nữ: `<UserOutlined />` với background pink
+  - Fallback: `<UserOutlined />` với background gray
+
+#### 📁 **Sidebar Navigation:**
+
+```typescript
+{
+  key: '/employees',
+  icon: <TeamOutlined />,
+  label: 'Nhân viên',
+  // Không có submenu - single page
 }
 ```
 
-Xem file sơ đồ tổ chức công ty: organizationalStructure.ts
+**Navigation Rules:**
 
-1. List employeees
+- Hiển thị cho tất cả user roles
+- Admin/BackOffice: Full access (CRUD)
+- Employee: View only + Edit self profile
 
-- Chỉ có admin và employee thuộc phòng back office mới có thể truy cập tính năng này
-- Nhân viên có 2 trạng thái (employeeStatus): đang làm việc (WORKING), nghỉ việc (RESIGNED). Mặc định sẽ tải các nhân viên có trạng thái: đang làm việc. Có toggle bật tắt để tải các nhân viên nghỉ việc.
+---
 
-  Phân trang phía server (server-side pagination)
-  Lọc, sắp xếp, tìm kiếm thực hiện ở server.
-  Khi người dùng nhập và ấn enter thì mới thực hiện tìm kiếm
+## 🛠️ Technical Implementation
 
-  Trong các module/feature khác sẽ cần đến danh sách nhân viên đang làm việc để chọn trong các ô form input (VD: lịch hẹn cho bác sĩ nào, nhân viên nào tư vấn, nhân viên nào điều trị cho khách hàng ....). Danh sách này (WorkingEmployee) sẽ được tạo route riêng. Sử dụng reactquery để cache WorkingEmployee với thời gian tầm 30 phút, trả về các trường giống như lúc tạo nhân viên (xem bên dưới)
+### 📡 **API Endpoints:**
 
-- Thiết kế phần giao diện của trang gồm
-  --- Phần thông tin trang: tiêu đè
-  --- Phần statistics: các chỉ số tổng quan
-  ------ Tổng số nhân viên đang làm việc
-  ------ Nhân viên mới trong tháng: Số lượng nhân viên có createAt trong tháng
-  ------ Phân bổ theo phòng ban: Biểu đồ tròn thể hiện tỷ lệ nhân viên theo department
-  Phân bổ theo chi nhánh: Biểu đồ cột thể hiện số lượng nhân viên ở mỗi clinicId
-  --- Phần filter + button toggle + button add
-  ------ Select để lọc theo Chi nhánh (clinicId).
-  ------ Select để lọc theo Phòng ban (department).
-  --- Phần table gồm các cột: employeeCode, fullName, phone (hiển thị nút gọi), clinicId (tag, màu tag là colorCode của clinic) , department, jobTitle, role
-  --- Table có cột action là các button edit, delete. Hiển thị icon và Tooltip, ấn vào nút delete sẽ hiển thị Popconfirm. Chỉ xoá được khi không có dữ liệu nào gắn với employee đó.
+```typescript
+export const EMPLOYEE_ENDPOINTS = {
+  ROOT: "/api/v1/employees",
+  BY_ID: (id: string) => `/api/v1/employees/${id}`,
+  WORKING: "/api/v1/employees/working",
+  SET_STATUS: (id: string) => `/api/v1/employees/${id}/status`,
+  INVITE: (id: string) => `/api/v1/employees/${id}/invite`,
+  COMPLETE_PROFILE: "/api/v1/employees/complete-profile",
+  // Public endpoints for complete profile flow
+  PUBLIC_BY_ID: (id: string) => `/api/public/employees/${id}`,
+  PUBLIC_COMPLETE_PROFILE: (id: string) =>
+    `/api/public/employees/${id}/complete-profile`,
+} as const;
+```
 
-2. Tạo employee
+**API Routes:**
 
-- Bussiness logic:
+```
+GET    /api/v1/employees?search=&status=         # List employees
+POST   /api/v1/employees (Admin/BackOffice only) # Create employee
+GET    /api/v1/employees/working                 # Working employees for dropdowns
+GET    /api/v1/employees/:id                     # Get employee details
+PUT    /api/v1/employees/:id                     # Update employee
+DELETE /api/v1/employees/:id                     # Delete employee
+PUT    /api/v1/employees/:id/status              # Toggle working/resigned
+POST   /api/v1/employees/:id/invite              # Resend invitation
+POST   /api/v1/employees/complete-profile        # Complete profile after invitation
 
-* Admin / employee phòng BO tạo nhân viên mới. Nhập các trường bắt buộc sau:
-  --- email: đúng định dạng, không trùng
-  --- role: admin hoặc user,
-  --- fullname
-  --- phone: đúng định dạng: 10 chữ số, với số 0 ở đầu; không trùng
-  --- employeeStatus: để mặc định là đang làm việc
-  --- clinicId: dựa vào table clinic
-  --- department, jobTitle, positionTitle: dựa vào file sơ đồ tổ chức: organizationalStructure.ts
+# Public endpoints for complete profile flow
+GET    /api/public/employees/:id                 # Get employee for profile completion (public)
+POST   /api/public/employees/:id/complete-profile # Complete profile with password (public)
+```
 
-- Gửi email về mail user, user bấm vào link truy cập vào trang điền thông tin, cập nhật các thông tin bắt buộc sau: fullname, dob, gender, favoriteColor, currentAdress, hometown, nationalId, nationalIdIssueDate, nationalIdIssuePlace, các thông tin còn lại tuỳ chọn.
+### 🏗️ **Architecture:**
 
-  Trang điền thông tin là trang "Hoàn tất hồ sơ" (/complete-profile) riêng biệt.
-  Trang này chỉ có thể truy cập khi người dùng đã xác thực qua email nhưng chưa hoàn thành thông tin bắt buộc. Sau khi hoàn tất, họ sẽ được chuyển đến trang dashboard.
+```
+UI Components → Custom Hooks → API Client → Routes → Services → Repository → Database
+```
 
-- Sau khi cập nhật thông tin thì sẽ truy cập được vào webapp. Thông tin và vai trò của user sẽ được hiển thị trên header, avatar nếu không có thì sẽ lấy avatar mặc định cho nam riêng và nữ riêng (antd icons)
+**Feature Structure:**
 
-- Email sẽ hết hạn trong 12h, admin / phòng BO có thể gửi lại email mời
-- Trường hợp không nhập mail thì sẽ không tạo tài khoản (supabase auth). Sau này nhập lại email thì sẽ có nút mời nếu chưa có tài khoản (supabase auth)
+```
+src/features/employees/
+├── api/           # API client functions
+├── components/    # EmployeeTable, EmployeeFormModal, EmployeeStats
+├── hooks/         # useEmployees, useCreateEmployee, useUpdateEmployee
+├── views/         # EmployeesPageView, CompleteProfileView
+├── types.ts       # TypeScript interfaces
+├── constants.ts   # Endpoints, query keys, messages
+└── index.ts       # Barrel exports
+```
 
-* Giao diện
+### 🔄 **State Management:**
 
-- Tạo bằng trang riêng
+- **React Query** cho server state
+- **Component local state** cho UI state
+- **Query keys**:
+  ```typescript
+  export const EMPLOYEE_QUERY_KEYS = {
+    list: (search?: string, status?: string) =>
+      ["employees", { search, status }] as const,
+    working: () => ["employees", "working"] as const,
+    byId: (id: string) => ["employee", id] as const,
+  } as const;
+  ```
 
-3. Edit / view employee
+### ✅ **Validation Requirements:**
 
-- admin có thể xem sửa được tất cả các thông tin, cả thông tin metadata của tất cả các user
-- user thuộc phòng backoffice có thể xem sửa được các thông tin của các user, ngoại trừ các thông tin: role, email của tất cả các users. Không xem sửa được thông tin metadata
-- user không thuộc phòng backoffice thì chỉ có thể sửa các thông tin của chính mình ngoại trừ các thông tin: role, email, employmentStatus, clinicid, department, team, jobtitle, positonTitle. Không xem sửa được thông tin metadata
+**Field Validation Rules:**
 
-Không cho bất cứ ai có thể thay đổi email?
+- `fullName`: Required, min 1 character
+- `email`: Optional, valid email format, unique (không thể thay đổi sau khi tạo)
+- `phone`: Optional, Vietnamese format `/^(0)\d{9}$/`, unique
+- `employeeCode`: Optional, unique
+- `role`: Required (`admin` | `employee`)
+- `clinicId`: Required, must exist
+- `department`: Required, dựa vào organizationalStructure.ts
+- `jobTitle`: Required, dựa vào organizationalStructure.ts
+- `team`, `jobTitle`: Optional, dựa vào organizationalStructure.ts
+- `employeeStatus`: Required, default `WORKING`
 
-4. Delete nhân viên
+**Complete Profile Validation:**
 
-- Chỉ cho xoá nhân viên khi không còn dữ liệu nào gắn với nhân viên đó.
-- Nếu nhân viên không còn làm việc nữa thì có thể chuyển trạng thái nhân viên sang nghỉ việc. Lúc đó nhân viên cũng ko truy cập được vào webapp và không xuất hiện trong các option để chọn lựa cho các form input.
+- `fullName`: Required, min 1 character
+- `dob`: Required, valid date
+- `gender`: Required (`MALE` | `FEMALE` | `OTHER`)
+- `favoriteColor`: Required, hex color format
+- `password`: Required, min 6 characters
+- `confirmPassword`: Required, must match password
+- `currentAddress`: Required, min 1 character
+- `hometown`: Required, min 1 character
+- `nationalId`: Required, Vietnamese CMND/CCCD format, unique
+- `nationalIdIssueDate`: Required, valid date
+- `nationalIdIssuePlace`: Required, min 1 character
+- `taxId`, `insuranceNumber`, `bankAccountNumber`, `bankName`: Optional
 
-5. Tính năng nâng cao khác
+**Technical Stack:**
 
-- Audit log (ai sửa gì, khi nào) cho Employee
-- Role/Permission chi tiết (CASL) theo action + field (field-level access server/FE)
-- Hồ sơ nhân sự: đính kèm hợp đồng, chứng chỉ: cho phép tải lên và quản lý các hợp đồng lao động, phụ lục hợp đồng, theo dõi ngày bắt đầu, ngày kết thúc.
-- Chấm công / Ca làm / Lịch trực tích hợp Appointment/Room
-- Quản lý nghỉ phép: Nhân viên có thể tạo yêu cầu nghỉ phép, quản lý có thể duyệt/từ chối. Hệ thống tự động tính toán số ngày phép còn lại.
-- KPI/OKR theo phòng ban (Marketing/Sales/Treatment): đánh giá hiệu suất (Performance Review): Xây dựng quy trình đánh giá nhân viên định kỳ (hàng quý, hàng năm) với các tiêu chí và feedback.
-- Thông báo (email/Telegram) khi: nhân sự mới, thay đổi clinic, đổi ca…
+- Client: React Hook Form + Zod resolver
+- Server: Zod schemas validation
+- Database: Prisma constraints
+
+---
+
+## 🔐 Security & Permissions
+
+### 👨‍� **Permission Matrix:**
+
+| **Action**      | **Admin** | **BackOffice** | **Employee (Self)** | **Employee (Others)** |
+| --------------- | --------- | -------------- | ------------------- | --------------------- |
+| Create          | ✅        | ✅             | ❌                  | ❌                    |
+| View List       | ✅        | ✅             | ✅                  | ✅                    |
+| View Details    | ✅        | ✅             | ✅ (self)           | ❌                    |
+| Edit Basic Info | ✅        | ✅             | ✅ (self)           | ❌                    |
+| Edit Role/Email | ✅        | ❌             | ❌                  | ❌                    |
+| Toggle Status   | ✅        | ✅             | ❌                  | ❌                    |
+| Delete          | ✅        | ✅             | ❌                  | ❌                    |
+| View Metadata   | ✅        | ❌             | ❌                  | ❌                    |
+
+### 🛡️ **Security Measures:**
+
+- **Complete Profile Authentication**: Public API endpoints cho profile completion flow
+- **Password Security**: Supabase admin client để set password an toàn
+- **Role-based access**: Server-side validation với `requireRole()`
+- **Field-level permissions**: Conditional form fields based on user role
+- **Session validation**: Middleware protection cho routes
+- **Input sanitization**: Zod validation + Prisma type safety
+- **Auto logout on RESIGNED**: Middleware check `employeeStatus` → redirect login nếu RESIGNED
+- **Resend invitation**: Chỉ Admin + BackOffice có quyền gửi lại email mời
+- **Public Endpoint Security**: Validate employee ID và email match trước khi complete profile
+
+---
+
+## 📈 **Performance & Technical**
+
+### ⚡ **Caching Strategy:**
+
+- `useEmployees()`: 60s cache, refetch on window focus
+- `useWorkingEmployees()`: 30min cache cho dropdown selections
+- `useEmployeeById()`: 5min cache
+- **Invalidation**: Create/update/delete employee → invalidate all employee caches
+
+### 🔄 **Data Optimization:**
+
+- **Default sorting**: createdAt DESC (mới nhất trước)
+- **Search**: Debounced input, chỉ search theo fullName
+- **Include relations**: Clinic data cho table display
+- **Conditional metadata**: Chỉ admin xem được metadata
+
+### 🗑️ **Delete Logic:**
+
+- **Hard delete**: Chỉ khi không có linked data (appointments, treatments, consultations)
+- **Soft delete**: Set status = RESIGNED nếu có linked data
+- **Error handling**: Thông báo rõ ràng khi không thể delete
+
+### 🔄 **Authentication & Onboarding:**
+
+**Business Flow:**
+
+1. Admin/BackOffice tạo employee → Gửi magic link (nếu có email)
+2. Employee click link → Redirect `/complete-profile` (public access)
+3. Hoàn thành profile với password → Supabase admin set password
+4. Complete profile xong → Redirect `/login` để authenticate
+5. Employee login với email/password → Access dashboard
+
+**System States:**
+
+- **No Auth**: Chưa tạo auth account (không có email)
+- **Pending**: Magic link sent, chờ complete profile
+- **Active**: Profile completed với password, có thể login
+- **Expired**: Link hết hạn, cần resend
+
+**Alternative Flow:**
+
+- Nếu nhân viên quên password sau khi complete profile → Sử dụng forgot password flow
+
+---
+
+## ✅ **Acceptance Criteria**
+
+### 🧪 **Testing Checklist:**
+
+**Core Functions:**
+
+- [ ] Admin/BackOffice có thể tạo nhân viên
+- [ ] Employee không thể tạo nhân viên khác
+- [ ] Magic link authentication hoạt động đúng
+- [ ] Complete profile flow với password hoạt động
+- [ ] Public API endpoints cho complete profile accessible
+- [ ] Password được set thông qua Supabase admin client
+- [ ] Redirect về login page sau complete profile
+- [ ] Resend invitation hoạt động
+
+**Employee Management:**
+
+- [ ] Toggle working/resigned status hoạt động
+- [ ] Delete logic check linked data đúng
+- [ ] Search employees theo tên hoạt động
+- [ ] Working employees API cache đúng thời gian
+
+**Permissions:**
+
+- [ ] Field-level permissions theo role
+- [ ] Employee chỉ sửa được profile của mình
+- [ ] Admin xem được metadata, others không
+- [ ] Email không thể sửa bởi ai
+
+**UI/UX:**
+
+- [ ] Responsive design works
+- [ ] Color picker cho favoriteColor
+- [ ] Clinic tags hiển thị đúng màu
+- [ ] Loading states smooth
+- [ ] Error handling graceful
+
+### 🎯 **Quality Standards:**
+
+- TypeScript strict mode
+- Zod validation everywhere
+- Error boundaries
+- Accessibility compliance
+- Performance optimization
+- Clean code architecture

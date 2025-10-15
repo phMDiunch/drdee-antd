@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/services/supabase/server";
 import { LogoutResponseSchema } from "@/shared/validation/auth.schema";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export async function POST() {
   try {
@@ -12,6 +13,7 @@ export async function POST() {
     const safe = LogoutResponseSchema.parse({ ok: true });
     return NextResponse.json(safe, { status: 200 });
   } catch {
-    return NextResponse.json({ error: "Không thể đăng xuất." }, { status: 500 });
+    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
   }
 }
+

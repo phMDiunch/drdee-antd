@@ -1,5 +1,6 @@
 import { CLINIC_ENDPOINTS } from "../constants";
 import { ClinicsResponseSchema } from "@/shared/validation/clinic.schema";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export async function getClinicsApi(includeArchived?: boolean) {
   const qs = includeArchived ? "?includeArchived=1" : "";
@@ -7,8 +8,7 @@ export async function getClinicsApi(includeArchived?: boolean) {
     cache: "no-store",
   });
   const json = await res.json();
-  if (!res.ok)
-    throw new Error(json?.error || "Không lấy được danh sách phòng khám.");
+  if (!res.ok) throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
   const parsed = ClinicsResponseSchema.safeParse(json);
   if (!parsed.success)
     throw new Error("Phản hồi danh sách phòng khám không hợp lệ.");

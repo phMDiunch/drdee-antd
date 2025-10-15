@@ -4,6 +4,8 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// src/prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
   // output   = "../src/generated/prisma"
@@ -52,8 +54,9 @@ model DentalService {
   tags         String[] @default([]) // Các thẻ (tags) để phân loại dịch vụ do phòng khám tự định nghĩa
 
   // Thông tin giá & đơn vị
-  unit  String // Đơn vị tính: "Răng", "Hàm", "Lần"
-  price Int // Đơn giá, lưu dạng Int để tránh sai số
+  unit     String // Đơn vị tính: "Răng", "Hàm", "Lần"
+  price    Int // Giá niêm yết, lưu dạng Int để tránh sai số
+  minPrice Int? // Giá tối thiểu (nếu có)
 
   // Thông tin chi tiết & bảo hành
   officialWarranty     String? // Bảo hành chính hãng
@@ -63,9 +66,9 @@ model DentalService {
   avgTreatmentSessions Int? // Số buổi điều trị trung bình
 
   // Metadata
-  isActive  Boolean  @default(true) // Trạng thái dịch vụ
-  createdAt DateTime @default(now()) @db.Timestamptz // Ngày tạo
-  updatedAt DateTime @updatedAt @db.Timestamptz // Ngày cập nhật cuối
+  archivedAt DateTime? @db.Timestamptz // Ngày dịch vụ ngừng hoạt động
+  createdAt  DateTime  @default(now()) @db.Timestamptz // Ngày tạo
+  updatedAt  DateTime  @updatedAt @db.Timestamptz // Ngày cập nhật cuối
 
   createdById String // ID của người tạo
   updatedById String // ID của người cập nhật
@@ -83,7 +86,7 @@ model Employee {
 
   // Thông tin tài khoản
   uid   String? @unique // User ID từ Supabase Auth để liên kết
-  email String  @unique // Email đăng nhập
+  email String? @unique // Email đăng nhập
   role  String // Vai trò trong hệ thống: "admin", "employee"
 
   // Thông tin cơ bản
@@ -94,7 +97,7 @@ model Employee {
   favoriteColor String? // Màu yêu thích để cá nhân hóa giao diện
 
   // Thông tin liên hệ
-  phone          String  @unique
+  phone          String? @unique
   currentAddress String? // Địa chỉ hiện tại
   hometown       String? // Quê quán
 
@@ -110,13 +113,13 @@ model Employee {
   bankName          String? // Tên ngân hàng
 
   // Thông tin công việc
-  employeeCode     String? @unique // Mã nhân viên
-  employmentStatus String? // "Đang làm việc", "Nghỉ việc"
-  clinicId         String? // ID của phòng khám làm việc
-  department       String? // Phòng ban
-  team             String? // Bộ phận
-  jobTitle         String? // Chức danh
-  positionTitle    String? // Chức vụ
+  employeeCode   String? @unique // Mã nhân viên
+  employeeStatus String? // "Đang làm việc", "Nghỉ việc"
+  clinicId       String? // ID của phòng khám làm việc
+  department     String? // Phòng ban
+  team           String? // Bộ phận
+  jobTitle       String? // Chức danh
+  positionTitle  String? // Chức vụ
 
   // Metadata
   createdById String? // ID của người tạo

@@ -74,10 +74,12 @@
 │   │   │   ├── validation.ts                  # Validation rules
 │   │   │   └── index.ts                       # Constant exports
 │   │   │
-│   │   ├── ✅ validation/                     # Common Zod schemas
-│   │   │   ├── common.schema.ts               # Shared validation schemas
-│   │   │   ├── api.schema.ts                  # API request/response schemas
-│   │   │   └── index.ts                       # Validation exports
+│   │   ├── ✅ validation/                     # Zod schemas (single source of truth)
+│   │   │   ├── auth.schema.ts                 # Auth validation schemas & types (z.infer)
+│   │   │   ├── employee.schema.ts             # Employee schemas & types
+│   │   │   ├── clinic.schema.ts               # Clinic schemas & types
+│   │   │   ├── dental-service.schema.ts       # Service schemas & types
+│   │   │   └── common.schema.ts               # Shared validation schemas
 │   │   │
 │   │   ├── 🔧 providers/                      # React context providers
 │   │   │   ├── antd.tsx                       # Ant Design theme provider
@@ -101,44 +103,34 @@
 │   │   │   ├── 🔄 api/                        # Domain API (React Query hooks)
 │   │   │   │   ├── queries.ts                 # useEmployeesQuery, useEmployeeQuery
 │   │   │   │   ├── mutations.ts               # useCreateEmployee, useUpdateEmployee
-│   │   │   │   └── index.ts                   # API exports
+│   │   │   │   └── index.ts                   # API exports (barrel)
 │   │   │   ├── 🧩 components/                 # Domain-specific components
 │   │   │   │   ├── EmployeeForm.tsx           # Employee form component
 │   │   │   │   ├── EmployeeTable.tsx          # Employee table component
-│   │   │   │   ├── EmployeeCard.tsx           # Employee card component
-│   │   │   │   └── index.ts                   # Component exports
+│   │   │   │   └── EmployeeCard.tsx           # Employee card component
 │   │   │   ├── 🪝 hooks/                      # Domain-specific hooks
 │   │   │   │   ├── useEmployeeValidation.ts   # Employee validation
 │   │   │   │   ├── useEmployeeFilters.ts      # Employee filters
-│   │   │   │   └── index.ts                   # Hook exports
+│   │   │   │   └── index.ts                   # Hook exports (barrel)
 │   │   │   ├── 📱 views/                      # Page-level components
 │   │   │   │   ├── EmployeeListView.tsx       # Employee list page
 │   │   │   │   ├── EmployeeDetailView.tsx     # Employee detail page
-│   │   │   │   ├── EmployeeCreateView.tsx     # Employee creation page
-│   │   │   │   └── index.ts                   # View exports
-│   │   │   ├── 🏷️ types.ts                    # Domain types
-│   │   │   ├── 📋 constants.ts                # Domain constants
-│   │   │   └── 📦 index.ts                    # Feature barrel export
+│   │   │   │   └── EmployeeCreateView.tsx     # Employee creation page
+│   │   │   └── 📋 constants.ts                # Domain constants, endpoints, query keys
 │   │   │
 │   │   ├── 👤 customers/                      # Customer management
 │   │   │   ├── api/                           # Customer APIs
 │   │   │   ├── components/                    # Customer components
 │   │   │   ├── hooks/                         # Customer hooks
 │   │   │   ├── views/                         # Customer views
-│   │   │   ├── types.ts                       # Customer types
-│   │   │   ├── constants.ts                   # Customer constants
-│   │   │   └── index.ts                       # Customer exports
+│   │   │   └── constants.ts                   # Customer constants
 │   │   │
-│   │   ├── 🦷 consulted-services/             # Dental consultation services
+│   │   ├── 🦷 dental-services/                # Dental service catalog
 │   │   │   ├── api/                           # Service APIs
-│   │   │   ├── components/
-│   │   │   │   └── ToothSelectionModal.tsx    # Tooth selection modal
+│   │   │   ├── components/                    # Service components
 │   │   │   ├── hooks/                         # Service hooks
-│   │   │   ├── views/
-│   │   │   │   └── DailyView.tsx              # Daily consultation view
-│   │   │   ├── types.ts                       # Service types
-│   │   │   ├── constants.ts                   # Service constants
-│   │   │   └── index.ts                       # Service exports
+│   │   │   ├── views/                         # Service views
+│   │   │   └── constants.ts                   # Service constants
 │   │   │
 │   │   ├── 📅 appointments/                   # Appointment management
 │   │   ├── 🦷 dental-services/                # Dental service catalog

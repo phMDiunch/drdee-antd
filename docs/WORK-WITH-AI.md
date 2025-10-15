@@ -1,167 +1,147 @@
-# Quy tắc & Yêu cầu làm việc với AI (Project: Phần mềm quản lý nha khoa)
+# Quy Tắc & Yêu Cầu Làm Việc Với AI
 
-Tài liệu này tóm tắt cách mình (AI) và bạn phối hợp để code nhanh, đúng chuẩn và dễ bảo trì. Dùng làm “checklist” trước khi bắt đầu mỗi task.
+Tài liệu này giúp đội ngũ và AI phối hợp hiệu quả: code nhanh, chuẩn, dễ bảo trì. Dùng như checklist trước khi bắt đầu task.
 
-## 1. Mục tiêu & Phạm vi hợp tác
+## 1. Mục Tiêu & Phạm Vi
 
-- Giảm trao đổi rườm rà, ra code theo chuẩn thống nhất.
-- Mọi thay đổi đều bám theo docs trong repo (requirements, guideline, structure).
-- Ưu tiên an toàn & khả năng bảo trì hơn “hack nhanh”.
+- Giảm trao đổi rườm rà; ra code theo chuẩn nhất quán.
+- Mọi thay đổi bám theo docs trong repo (requirements, guidelines, structure).
+- Ưu tiên an toàn & khả năng bảo trì thay vì “hack nhanh”.
 
-## 2. Cách giao tiếp (Communication Rules)
+## 2. Cách Giao Tiếp
 
-- Bạn giao task theo nhóm nhỏ (ví dụ: UI/views → components → hooks → api → backend).
-  Mình gửi từng nhóm file theo thứ tự frontend-first, chờ bạn xác nhận rồi mới gửi nhóm kế tiếp.
-- Khi báo lỗi, vui lòng đính kèm log ngắn + code frame để mình fix nhanh.
-- Nếu cần thêm thư viện mới → mình sẽ hỏi. Bạn đồng ý thì mới tích hợp.
-- Tránh khối lượng lớn trong một lần trả lời; ưu tiên ngắn-gọn-rõ.
+- Giao task theo nhóm nhỏ và chọn luồng phát triển phù hợp:
+  - API‑first (mặc định): requirements → database → API → backend → frontend
+  - Frontend‑driven (khi cần): UI/UX → frontend → API contract → backend
+- AI thực hiện theo luồng đã chọn; gửi đúng nhóm file theo thứ tự; chờ xác nhận trước khi làm tiếp nếu mơ hồ.
+- Khi báo lỗi, vui lòng kèm log ngắn + code frame để AI xử lý nhanh.
+- Cần thêm thư viện mới: phải hỏi. Không tự ý thêm.
+- Trả lời ngắn‑gọn‑rõ, ưu tiên kết quả.
 
-## 3. Tech Stack & Quy ước bắt buộc
+## 3. Tech Stack & Quy Ước Bắt Buộc
 
-- Ant Design: dùng UI-only (layout, components, icons).
-  Hạn chế CSS ngoài; ưu tiên props & token có sẵn của AntD.
-- React Hook Form + Zod: form state & validation.
-  --- Không dùng Form.Item rules của AntD để validate (trừ required để hiển thị dấu \*).
-  --- Dùng zodResolver(schema); message lỗi lấy từ Zod.
-- React Query: quản lý server-state (queries/mutations).
-  --- Không dùng Zustand cho server-state; Zustand chỉ cho UI state cục bộ (nếu thật sự cần).
-- SSR: (private)/layout.tsx inject currentUser và dữ liệu layout-wide (ví dụ currentClinic cho Header).
-- Prisma + Supabase: DB & auth session bên server.
-- Tương thích AntD v5 + React 19: tuân thủ cảnh báo/khuyến nghị của AntD (vd: destroyOnHidden thay destroyOnClose).
+- Ant Design: UI‑only (layout, components, icons). Hạn chế CSS ngoài; ưu tiên props & token.
+- React Hook Form + Zod: form state & validation (dùng `zodResolver(schema)`).
+- React Query: quản lý server‑state (queries/mutations). Không dùng Zustand cho server‑state.
+- SSR: `(private)/layout.tsx` inject `currentUser` + data layout‑wide khi phù hợp.
+- Prisma + Supabase: DB & auth session phía server.
+- Tuân thủ AntD v5 + React 19.
 
-## 4. Cấu trúc thư mục & đặt tên (bắt buộc)
+## 4. Cấu Trúc Thư Mục & Đặt Tên
 
-- Feature pattern (Frontend-first)
+- Feature pattern (linh hoạt theo luồng phát triển)
 
 ```
 src/features/<feature>/
-  views/        # page-level composition (bắt đầu từ đây)
+  views/        # page-level composition
   components/   # UI-only building blocks
-  hooks/        # React Query (queries/mutations)
-  api/          # fetch wrappers + parse response bằng Zod (contract)
-  types.ts
-  constants.ts  # endpoints, query keys,...
-  index.ts
-
+  hooks/        # React Query (queries/mutations) + barrel export index.ts
+  api/          # fetch wrappers + Zod parse (contract) + barrel export index.ts
+  constants.ts  # endpoints, query keys, messages per-domain
+  # ❌ Không cần: types.ts (dùng z.infer trực tiếp), index.ts chính
 ```
 
 - Server
 
 ```
 src/server/
-  repos/        # Prisma truy vấn thuần
-  services/     # Business logic, ServiceError, normalize/unique, guard quyền
-
+  repos/        # Prisma thuần
+  services/     # Business logic, ServiceError, guards
 ```
 
-- Validation dùng chung
+- Validation dùng chung (single source of truth)
 
 ```
-src/shared/validation/*.schema.ts  # Zod schemas FE/BE (single source of truth)
-
+src/shared/validation/*.schema.ts  # Zod schemas FE/BE + types via z.infer
 ```
 
-- Layouts
+- Layouts: `src/layouts/AppLayout/*` (Header, Sidebar, menu.config.ts, AppLayout.tsx)
+- Zod naming:
+  - Request: `<Feature><Action>RequestSchema`
+  - Response (1 item): `<Feature>ResponseSchema`
+  - Response (list): `<Feature>ListResponseSchema` hoặc `<Feature>sResponseSchema`
+  - Query: `<Action>QuerySchema` hoặc `Get<Feature>sQuerySchema`
+- Query Keys (React Query):
+  - List: `['<features>', { ...filters }]`
+  - Detail: `['<feature>', id]`
+- Types: `import type { z } from "zod"; type X = z.infer<typeof XSchema>` (trong component/hook, không tạo file types riêng)
 
-```
-src/layouts/AppLayout/* (Header, Sidebar, menu.config.ts, AppLayout.tsx)
+## 5. Workflow Theo Feature
 
-```
-
-- Đặt tên Zod schema
-  --- Request: <Feature><Action>RequestSchema (vd: CreateClinicRequestSchema)
-  --- Response (1 item): <Feature>ResponseSchema
-  --- Response (list): <Feature>sResponseSchema
-  --- Query: <Feature>QuerySchema hoặc Get<Feature>sQuerySchema
-- Query Keys (React Query)
-  --- List: ['<features>', { ...filters }]
-  --- Detail: ['<feature>', id]
-
-## 5. Quy trình phát triển theo feature (Workflow Frontend-first)
+### API‑first (mặc định)
 
 - Cập nhật docs trước:
-  --- docs/requirements/<NNN Feature>.md (yêu cầu nghiệp vụ)
-  --- docs/features/<feature>.md (spec chi tiết UI/UX)
-  --- Ghi ADR ngắn vào docs/decisions.md nếu có thay đổi kỹ thuật.
-- **Frontend first**: views → components → hooks → api (định nghĩa contract).
-- **API contract**: Zod schemas (shared validation) dựa trên frontend needs.
-- **Backend implement**: API routes → services → repos (implement theo contract).
-- Kiểm thử: acceptance checklist (Given–When–Then) + edge cases (409, 403, 400…).
+  - `docs/requirements/<NNN Feature>.md` (yêu cầu nghiệp vụ)
+  - `docs/features/<feature>.md` (spec/ghi chú sau khi implement)
+- Backend: database design + API contract (Zod) + services + repos + routes
+- Frontend: views + components + hooks + api (consume API đã sẵn sàng)
+- Kiểm thử: acceptance (Given‑When‑Then) + edge cases (409, 403, 400…)
 
-## 6. Quy tắc code quan trọng
+### Frontend‑driven (khi cần)
 
-- Form (RHF + Zod)
-  --- Dùng zodResolver + mode: "onBlur" / reValidateMode: "onChange".
-  --- AntD Input: value={field.value ?? ""} để tránh undefined/null.
-  --- Optional fields (phone, email…): dùng z.preprocess để map "" → undefined.
-- AntD Modal
-  --- Chỉ mount modal khi mở hoặc dùng forceRender.
-  --- Body scroll: styles={{ body: { maxHeight: '70vh', overflowY: 'auto' }}}.
-  --- Kích thước: width={900} hoặc responsive (95vw/breakpoints).
-- Header/Sidebar
-  --- Không hardcode menu trong component; khai báo ở menu.config.ts.
-  --- Header cố định; content cuộn; sidebar có scroll riêng.
-- Error shape chuẩn: server trả { error: string, code?: string } + HTTP status.
-- Unique & Delete rule: unique check tại service; delete chặn khi còn liên kết → yêu cầu archive.
+- Cập nhật docs trước (như trên)
+- Frontend dựng UI + xác định data needs → định nghĩa API contract (Zod) → implement backend theo contract
 
-## 7. Tài liệu & “single source of truth”
+## 6. API & Validation (chuẩn)
 
-- Requirements: docs/requirements/<NNN Feature>.md (đầu bài & acceptance).
-- Feature spec: docs/features/<feature>.md (luồng, structure, validate, UI notes).
-- Guideline: docs/guideline.md (quy tắc chung).
-- Decisions: docs/decisions.md (ADR ngắn).
-- Project structure: docs/project_structure.md.
-
-* Bất kỳ thay đổi behavior nào phải cập nhật docs trước, rồi mới code.
-
-## 8. API & Validation (chuẩn)
-
-- API route (App Router): validate input (body/query) bằng Zod; gọi service; validate output (map DB → ResponseSchema) trước khi trả response.
+- API route (App Router): validate input (body/query) bằng Zod; gọi service; validate output (map DB + ResponseSchema) trước khi trả response.
 - Client: mọi response phải parse bằng Zod ở API client (api/\*.ts) để phát hiện lệch hợp đồng sớm.
 
-## 9. UI/UX tiêu chuẩn
+### 6.1 Thông Báo & Lỗi (chuẩn hoá)
 
-- AntD UI-only; hạn chế viết CSS ngoài.
-- Field required có dấu \* (set required trên Form.Item).
+- Luôn dùng `useNotify()` thay vì gọi trực tiếp `App.useApp().message`.
+- Dùng `COMMON_MESSAGES` cho fallback chung (`src/shared/constants/messages.ts`).
+- Trên server (API routes):
+  - Nếu `ServiceError` → `{ error, code }` + `status = httpStatus`.
+  - Lỗi không xác định → dùng `COMMON_MESSAGES.SERVER_ERROR`.
+  - Lỗi Zod/validation → dùng `COMMON_MESSAGES.VALIDATION_INVALID` hoặc lấy `issues[0].message`.
+
+## 7. UI/UX Tiêu Chuẩn
+
+- AntD UI‑only; hạn chế viết CSS ngoài.
+- Field required có dấu `*` (set `required` trên Form.Item khi phù hợp).
 - Tooltip + Icon cho action; Popconfirm cho xoá.
 - Loading/Empty/Error states rõ ràng.
-- Responsive bằng AntD Grid; không dùng CSS framework khác nếu chưa được duyệt.
+- Responsive bằng AntD Grid; không thêm CSS framework khác nếu chưa duyệt.
 
-## 10. Performance & Testing
+## 8. Performance & Testing
 
-- List nhỏ → không phân trang; tránh gọi API thừa.
-- React Query staleTime hợp lý; invalidate keys đúng nơi.
-- Acceptance theo Given–When–Then, kèm edge cases (409, 403, 404, 400).
+- Tránh gọi API thừa; cân nhắc pagination khi list lớn.
+- React Query `staleTime` hợp lý; invalidate keys đúng chỗ.
+- Acceptance theo Given‑When‑Then; kèm edge cases (409, 403, 404, 400).
 
-## 11. Security & Quyền hạn
+## 9. Security & Quyền Hạn
 
-- Ghi (create/update/delete/archive) = admin-only (server-side check).
-- SSR inject session & dữ liệu layout-wide để tránh fetch thừa.
-- Không tin dữ liệu role từ client; mọi guard ở service.
+- Ghi (create/update/delete/archive) = admin‑only (server‑side check).
+- SSR inject session & data layout‑wide để tránh fetch thừa.
+- Không tin dữ liệu role từ client; mọi guard đặt ở service.
 
-## 12. Khi bạn giao task cho mình (Template ngắn)
+## 10. Template Giao Task Cho AI (Ngắn)
 
 ```
 [Task] Feature: <Tên> – <Mô tả ngắn>
+Luồng: [API-first (mặc định) | Frontend-driven]
 Mục tiêu: ...
 Phạm vi: (gồm/không gồm)
-Acceptance (Given–When–Then): ...
-UI: màn hình/modal, states (loading/empty/error), responsive
-API: endpoint + contracts (link schema) - sẽ định nghĩa sau khi có UI
-Files chạm (theo thứ tự): views/components/hooks/api → validation → server
-Ghi chú kỹ thuật: (nếu có)
+Acceptance (Given‑When‑Then): ...
 
+# Nếu chọn API-first:
+Database: entities, relationships, constraints
+API: endpoints + business logic requirements
+UI: màn hình consume API, states (loading/empty/error)
+
+# Nếu chọn Frontend-driven:
+UI: màn hình/modal, states (loading/empty/error), responsive
+API: endpoints + contracts (định nghĩa từ UI needs)
+
+Files theo luồng:
+- API-first: shared/validation → server → api routes → frontend
+- Frontend-driven: views/components/hooks/api → shared/validation → server
+
+Ghi chú kỹ thuật (nếu có)
 ```
 
-## 13. Khi cần mình nhớ “bối cảnh” nhanh
+## 11. Xin Thêm Thư Viện
 
-- Gửi context pack nhỏ (chỉ liên quan task):
-  --- docs/requirements/<NNN>.md, docs/features/<feature>.md, docs/guideline.md, docs/decisions.md
-  --- Folder src/features/<feature> (nếu đã có)
-  --- Schemas liên quan ở shared/validation
-  --- Server files liên quan ở server/{repos,services} & app/api/v1/...
-
-## 14. Nguyên tắc “hỏi trước – làm sau”
-
-- Bất kỳ thư viện mới (ngoài AntD, RHF, Zod, React Query, Prisma, Supabase) → mình hỏi bạn trước.
-- Bạn đồng ý → mình mới tích hợp & code theo.
+- Bắt buộc hỏi trước khi thêm (ngoài AntD, RHF, Zod, React Query, Prisma, Supabase).
+- Khi đã được duyệt, AI mới tách hạng mục & code theo.

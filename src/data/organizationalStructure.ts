@@ -1,4 +1,4 @@
-// constants.js
+// src/data/organizationalStructure.ts
 
 export const ORGANIZATIONAL_STRUCTURE = [
   // Hội đồng quản trị
@@ -10,7 +10,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 0,
     jobTitle: "Chủ tịch",
     parentId: null,
-    description: "Người đứng đầu cao nhất của tổ chức, chịu trách nhiệm về chiến lược và định hướng chung.",
+    description:
+      "Người đứng đầu cao nhất của tổ chức, chịu trách nhiệm về chiến lược và định hướng chung.",
   },
 
   // Ban Giám đốc
@@ -22,7 +23,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 1,
     jobTitle: "Giám đốc điều hành (CEO)",
     parentId: "HDQT_001",
-    description: "Người điều hành hoạt động hàng ngày của tổ chức, chịu trách nhiệm triển khai chiến lược.",
+    description:
+      "Người điều hành hoạt động hàng ngày của tổ chức, chịu trách nhiệm triển khai chiến lược.",
   },
 
   // Phòng Kinh doanh
@@ -34,7 +36,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 2,
     jobTitle: "Trưởng phòng Kinh doanh (CFO)", // Chú ý: CFO thường là Giám đốc Tài chính
     parentId: "BGD_001",
-    description: "Phụ trách toàn bộ hoạt động kinh doanh, đặt mục tiêu và điều hành đội ngũ sales.",
+    description:
+      "Phụ trách toàn bộ hoạt động kinh doanh, đặt mục tiêu và điều hành đội ngũ sales.",
   },
   {
     id: "KDO_002",
@@ -44,7 +47,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 3,
     jobTitle: "Quầy trưởng",
     parentId: "KDO_001",
-    description: "Quản lý các hoạt động tại quầy, đảm bảo quy trình bán hàng và dịch vụ.",
+    description:
+      "Quản lý các hoạt động tại quầy, đảm bảo quy trình bán hàng và dịch vụ.",
   },
   {
     id: "KDO_003",
@@ -64,7 +68,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 4,
     jobTitle: "Tư vấn viên (Sale offline)",
     parentId: "KDO_002",
-    description: "Thực hiện các hoạt động bán hàng trực tiếp tại điểm giao dịch.",
+    description:
+      "Thực hiện các hoạt động bán hàng trực tiếp tại điểm giao dịch.",
   },
 
   // Phòng Back Office
@@ -116,7 +121,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 5,
     jobTitle: "Nhân viên bảo vệ",
     parentId: "BO_001",
-    description: "Đảm bảo an ninh, an toàn cho tài sản và con người trong tổ chức.",
+    description:
+      "Đảm bảo an ninh, an toàn cho tài sản và con người trong tổ chức.",
   },
   {
     id: "BO_006",
@@ -178,7 +184,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 4,
     jobTitle: "Điều dưỡng viên",
     parentId: "CM_004",
-    description: "Hỗ trợ bác sĩ, chăm sóc bệnh nhân, thực hiện các quy trình điều dưỡng.",
+    description:
+      "Hỗ trợ bác sĩ, chăm sóc bệnh nhân, thực hiện các quy trình điều dưỡng.",
   },
 
   // Phòng Marketing
@@ -190,7 +197,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 2,
     jobTitle: "Trưởng phòng Marketing (CMO)",
     parentId: "BGD_001",
-    description: "Xây dựng và triển khai các chiến lược marketing, quảng bá sản phẩm/dịch vụ.",
+    description:
+      "Xây dựng và triển khai các chiến lược marketing, quảng bá sản phẩm/dịch vụ.",
   },
   {
     id: "MKT_002",
@@ -250,7 +258,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 3,
     jobTitle: "Chuyên viên seeding",
     parentId: "MKT_001",
-    description: "Thực hiện các hoạt động seeding trên các nhóm cộng đồng, diễn đàn.",
+    description:
+      "Thực hiện các hoạt động seeding trên các nhóm cộng đồng, diễn đàn.",
   },
 
   // Phòng Chăm sóc khách hàng
@@ -262,7 +271,8 @@ export const ORGANIZATIONAL_STRUCTURE = [
     positionLevel: 2,
     jobTitle: "Trưởng phòng chăm sóc khách hàng",
     parentId: "BGD_001",
-    description: "Xây dựng và quản lý các hoạt động hỗ trợ và chăm sóc khách hàng.",
+    description:
+      "Xây dựng và quản lý các hoạt động hỗ trợ và chăm sóc khách hàng.",
   },
   {
     id: "CSKH_002",

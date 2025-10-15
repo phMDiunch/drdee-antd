@@ -1,5 +1,56 @@
 // src/app/api/v1/employees/route.ts
+import { NextResponse } from "next/server";
+import { getSessionUser } from "@/server/services/auth.service";
+import { employeeService } from "@/server/services/employee.service";
+import { ServiceError } from "@/server/services/errors";
+import { GetEmployeesQuerySchema } from "@/shared/validation/employee.schema";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export async function GET() {}
+export async function GET(req: Request) {
+  try {
+    const user = await getSessionUser();
+    const { searchParams } = new URL(req.url);
+    const query = GetEmployeesQuerySchema.parse(
+      Object.fromEntries(searchParams)
+    );
+    const data = await employeeService.list(user, query);
+    return NextResponse.json(data, { status: 200 });
+  } catch (e: any) {
+    if (e instanceof ServiceError) {
+      return NextResponse.json(
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
+      );
+    }
+    if (e?.name === "ZodError") {
+      return NextResponse.json(
+        { error: COMMON_MESSAGES.VALIDATION_INVALID },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
+    );
+  }
+}
 
-export async function POST() {}
+export async function POST(req: Request) {
+  try {
+    const user = await getSessionUser();
+    const body = await req.json().catch(() => ({}));
+    const data = await employeeService.create(user, body);
+    return NextResponse.json(data, { status: 201 });
+  } catch (e: any) {
+    if (e instanceof ServiceError) {
+      return NextResponse.json(
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
+      );
+    }
+    return NextResponse.json(
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
+    );
+  }
+}
