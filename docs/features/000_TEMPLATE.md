@@ -92,6 +92,12 @@ src/
 4. **Cache**: Store result với staleTime
 5. **UI**: Render data với loading/error states
 
+### 🔄 **Next.js 15 Considerations:**
+
+- **Suspense Boundaries**: Wrap components sử dụng `useSearchParams()` trong `<Suspense>`
+- **Type Safety**: Không dùng `any`, thay bằng `unknown` + type guards cho error handling
+- **API Routes**: Validate errors với proper type checking trước khi access properties
+
 ---
 
 ## 4) API Contracts
@@ -184,7 +190,7 @@ export const [FEATURE]_ENDPOINTS = {
 } as const;
 
 export const [FEATURE]_QUERY_KEYS = {
-  list: (filters?: any) => ['[feature]s', filters] as const,
+  list: (filters?: Record<string, unknown>) => ['[feature]s', filters] as const,
   byId: (id: string) => ['[feature]', id] as const,
 } as const;
 

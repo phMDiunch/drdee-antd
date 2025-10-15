@@ -141,7 +141,23 @@ Files theo luồng:
 Ghi chú kỹ thuật (nếu có)
 ```
 
-## 11. Xin Thêm Thư Viện
+## 11. TypeScript & Code Quality
+
+- **Strict Mode**: Không sử dụng `any` type, thay bằng `unknown` + type guards khi cần.
+- **Error Handling**: Trong API routes, sử dụng proper type checking:
+
+  ```typescript
+  // ✅ Correct
+  if (typeof e === "object" && e !== null && "name" in e && e.name === "ZodError")
+
+  // ❌ Wrong
+  if (e?.name === "ZodError") // Error: Property 'name' does not exist on type '{}'
+  ```
+
+- **React Hooks**: Tuân thủ exhaustive-deps rule, sử dụng `useCallback`/`useMemo` đúng cách.
+- **Next.js 15**: Luôn wrap `useSearchParams()` trong `<Suspense>` boundary.
+
+## 12. Xin Thêm Thư Viện
 
 - Bắt buộc hỏi trước khi thêm (ngoài AntD, RHF, Zod, React Query, Prisma, Supabase).
 - Khi đã được duyệt, AI mới tách hạng mục & code theo.

@@ -29,6 +29,7 @@ Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
 - Session Supabase qua HttpOnly cookie (không lưu token ở JS).
 - `(private)/layout.tsx` (SSR) gọi `getSessionUser()` để inject `currentUser`.
 - Middleware bảo vệ `(private)`; chặn truy cập nếu chưa đăng nhập.
+- **useSearchParams()**: Luôn wrap trong `<Suspense>` boundary (Next.js 15 requirement) để tránh pre-render errors.
 
 ## 5) Auth
 

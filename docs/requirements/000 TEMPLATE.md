@@ -185,7 +185,7 @@ export const [FEATURE]_ENDPOINTS = {
 } as const;
 
 export const [FEATURE]_QUERY_KEYS = {
-  list: (filters?: any) => ['[feature]s', filters] as const,
+  list: (filters?: Record<string, unknown>) => ['[feature]s', filters] as const,
   byId: (id: string) => ['[feature]', id] as const,
 } as const;
 
