@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: Params) {
     const { id } = await params;
     const data = await dentalServiceService.getById(user, id);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
@@ -30,7 +30,7 @@ export async function PUT(req: Request, { params }: Params) {
     const { id } = await params;
     const data = await dentalServiceService.update(user, { ...body, id });
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
@@ -44,7 +44,7 @@ export async function DELETE(_req: Request, { params }: Params) {
     const { id } = await params;
     const data = await dentalServiceService.remove(user, id);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }

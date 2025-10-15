@@ -18,12 +18,9 @@ export async function PUT(req: Request, { params }: Params) {
     const { id } = await params;
     const data = await employeeService.setStatus(user, id, body);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
+      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
     return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
   }

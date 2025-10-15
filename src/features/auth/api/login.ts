@@ -1,7 +1,7 @@
 // src/features/auth/api/login.ts
 import { AUTH_ENDPOINTS } from "../constants";
 import { LoginRequestSchema, LoginResponseSchema, ApiErrorSchema } from "@/shared/validation/auth.schema";
-import type { LoginResponse } from "@/features/auth/types";
+import type { LoginResponse } from "@/shared/validation/auth.schema";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export async function loginApi(payload: { email: string; password: string }): Promise<LoginResponse> {
@@ -24,4 +24,3 @@ export async function loginApi(payload: { email: string; password: string }): Pr
   if (!parsed.success) throw new Error("Phản hồi đăng nhập không hợp lệ.");
   return parsed.data;
 }
-

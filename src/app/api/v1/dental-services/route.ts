@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     const includeArchived = parsed.data.includeArchived === "1";
     const data = await dentalServiceService.list(user, includeArchived);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
@@ -34,11 +34,10 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const data = await dentalServiceService.create(user, body);
     return NextResponse.json(data, { status: 201 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
     return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
   }
 }
-

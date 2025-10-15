@@ -2,11 +2,8 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { forgotPasswordApi } from "@/features/auth";
-import type {
-  ForgotPasswordRequest,
-  ForgotPasswordResponse,
-} from "@/shared/validation/auth.schema";
+import { forgotPasswordApi } from "@/features/auth/api";
+import type { ForgotPasswordRequest, ForgotPasswordResponse } from "@/shared/validation/auth.schema";
 import { useNotify } from "@/shared/hooks/useNotify";
 import { AUTH_MESSAGES } from "@/features/auth/constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";

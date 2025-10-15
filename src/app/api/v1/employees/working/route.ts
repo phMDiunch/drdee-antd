@@ -11,12 +11,12 @@ export const runtime = "nodejs";
  * @method GET
  * @path /api/v1/employees/working
  */
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const user = await getSessionUser();
     const data = await employeeService.listWorking(user);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }

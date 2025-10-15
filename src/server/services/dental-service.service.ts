@@ -13,13 +13,14 @@ import {
   DentalServicesResponseSchema,
 } from "@/shared/validation/dental-service.schema";
 import type { UserCore } from "@/shared/types/user";
+import type { DentalService } from "@prisma/client";
 
 function normalizeName(name: string) {
   return name.trim();
 }
 
 /** Map Prisma entity -> API response shape (string ISO date) */
-function mapDentalServiceToResponse(row: any) {
+function mapDentalServiceToResponse(row: DentalService) {
   return DentalServiceResponseSchema.parse({
     id: row.id,
     name: row.name,
@@ -48,9 +49,7 @@ export const dentalServiceService = {
   async list(currentUser: UserCore | null, includeArchived: boolean) {
     // (Nếu cần phân quyền xem ở đây; hiện tại ai đã login cũng xem được)
     const rows = await dentalServiceRepo.list(includeArchived);
-    return DentalServicesResponseSchema.parse(
-      rows.map(mapDentalServiceToResponse)
-    );
+    return DentalServicesResponseSchema.parse(rows.map(mapDentalServiceToResponse));
   },
 
   /**
@@ -74,9 +73,7 @@ export const dentalServiceService = {
 
     const parsed = CreateDentalServiceRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(
-        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
-      );
+      throw ERR.INVALID(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
     }
 
     const data: DentalServiceCreateInput = {
@@ -117,9 +114,7 @@ export const dentalServiceService = {
 
     const parsed = UpdateDentalServiceRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(
-        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
-      );
+      throw ERR.INVALID(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
     }
 
     const { id } = parsed.data;
@@ -167,11 +162,7 @@ export const dentalServiceService = {
     const linked = await dentalServiceRepo.countLinked(id);
     if (linked.total > 0) {
       // Gợi ý chuyển sang Archive
-      throw new ServiceError(
-        "HAS_LINKED_DATA",
-        "Dịch vụ đang có dữ liệu liên kết, chỉ có thể lưu trữ (Archive).",
-        409
-      );
+      throw new ServiceError("HAS_LINKED_DATA", "Dịch vụ đang có dữ liệu liên kết, chỉ có thể lưu trữ (Archive).", 409);
     }
 
     const deleted = await dentalServiceRepo.delete(id);

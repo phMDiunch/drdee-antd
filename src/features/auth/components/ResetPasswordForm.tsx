@@ -20,12 +20,21 @@ export default function ResetPasswordForm() {
   return (
     <Card variant="outlined" style={{ width: "100%", maxWidth: 420 }}>
       <div style={{ textAlign: "center", marginBottom: 16 }}>
-        <Title level={4} style={{ marginBottom: 8 }}>Đặt lại mật khẩu</Title>
+        <Title level={4} style={{ marginBottom: 8 }}>
+          Đặt lại mật khẩu
+        </Title>
         <Text type="secondary">Nhập mật khẩu mới của bạn</Text>
       </div>
 
       <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} disabled={resetPassword.isPending}>
-        <Form.Item name="password" label="Mật khẩu mới" rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }, { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }]}>
+        <Form.Item
+          name="password"
+          label="Mật khẩu mới"
+          rules={[
+            { required: true, message: "Vui lòng nhập mật khẩu" },
+            { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+          ]}
+        >
           <Input.Password placeholder="********" autoComplete="new-password" />
         </Form.Item>
 
@@ -33,29 +42,35 @@ export default function ResetPasswordForm() {
           name="confirmPassword"
           label="Xác nhận mật khẩu"
           dependencies={["password"]}
-          rules={[{ required: true, message: "Vui lòng xác nhận mật khẩu" }, ({ getFieldValue }) => ({
-            validator(_, value) {
-              if (!value || getFieldValue("password") === value) {
-                return Promise.resolve();
-              }
-              return Promise.reject(new Error("Mật khẩu xác nhận không khớp"));
-            },
-          })]}
+          rules={[
+            { required: true, message: "Vui lòng xác nhận mật khẩu" },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue("password") === value) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error("Mật khẩu xác nhận không khớp"));
+              },
+            }),
+          ]}
         >
           <Input.Password placeholder="********" autoComplete="new-password" />
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" block loading={resetPassword.isPending}>Đặt lại mật khẩu</Button>
+          <Button type="primary" htmlType="submit" block loading={resetPassword.isPending}>
+            Đặt lại mật khẩu
+          </Button>
         </Form.Item>
 
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <Link href="/login">
-            <Button type="link" style={{ padding: 0 }}>Quay lại đăng nhập</Button>
+            <Button type="link" style={{ padding: 0 }}>
+              Quay lại đăng nhập
+            </Button>
           </Link>
         </div>
       </Form>
     </Card>
   );
 }
-

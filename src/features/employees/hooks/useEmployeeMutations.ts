@@ -82,6 +82,6 @@ export function useDeleteEmployee() {
       notify.success(EMPLOYEE_MESSAGES.DELETE_SUCCESS);
       qc.invalidateQueries({ queryKey: ["employees"] });
     },
-    onError: (e: any) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
+    onError: (e: unknown) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
 }

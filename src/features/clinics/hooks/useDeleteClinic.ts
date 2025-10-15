@@ -18,7 +18,6 @@ export function useDeleteClinic() {
         queryKey: ["clinics"],
       });
     },
-    onError: (e: any) =>
-      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
+    onError: (e: unknown) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
 }

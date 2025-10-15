@@ -1,7 +1,7 @@
 // src/features/auth/api/logout.ts
 import { AUTH_ENDPOINTS } from "../constants";
 import { LogoutResponseSchema, ApiErrorSchema } from "@/shared/validation/auth.schema";
-import type { LogoutResponse } from "@/features/auth/types";
+import type { LogoutResponse } from "@/shared/validation/auth.schema";
 
 export async function logoutApi(): Promise<LogoutResponse> {
   const res = await fetch(AUTH_ENDPOINTS.LOGOUT, { method: "POST", cache: "no-store" });

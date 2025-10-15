@@ -40,16 +40,18 @@ export function usePasswordResetSession() {
           setErrorMessage(null);
         } else {
           setStatus("error");
-          setErrorMessage(
-            "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới."
-          );
+          setErrorMessage("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.");
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (cancelled) return;
         setStatus("error");
-        setErrorMessage(
-          e?.message || "Không thể xác thực yêu cầu đặt lại mật khẩu. Vui lòng thử lại."
-        );
+        // Type-safe extraction of error message from unknown error (could be Supabase AuthError, network error, etc.)
+        // Check if error is object with message property before accessing it
+        const errorMessage =
+          typeof e === "object" && e !== null && "message" in e && typeof e.message === "string"
+            ? e.message
+            : "Không thể xác thực yêu cầu đặt lại mật khẩu. Vui lòng thử lại.";
+        setErrorMessage(errorMessage);
       }
     };
 
@@ -65,4 +67,3 @@ export function usePasswordResetSession() {
 
   return { status, isLoading, isReady, isError, errorMessage } as const;
 }
-

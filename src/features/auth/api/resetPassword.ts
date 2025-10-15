@@ -4,7 +4,10 @@ import type { ResetPasswordResponse } from "@/shared/validation/auth.schema";
 import { createClient } from "@/services/supabase/client";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export async function resetPasswordApi(payload: { password: string; confirmPassword: string }): Promise<ResetPasswordResponse> {
+export async function resetPasswordApi(payload: {
+  password: string;
+  confirmPassword: string;
+}): Promise<ResetPasswordResponse> {
   ResetPasswordRequestSchema.parse(payload);
 
   const supabase = createClient();
@@ -19,4 +22,3 @@ export async function resetPasswordApi(payload: { password: string; confirmPassw
 
   return ResetPasswordResponseSchema.parse({ ok: true });
 }
-

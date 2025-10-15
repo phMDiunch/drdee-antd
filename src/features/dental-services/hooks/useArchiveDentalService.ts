@@ -16,7 +16,6 @@ export function useArchiveDentalService() {
       notify.success(DENTAL_SERVICE_MESSAGES.ARCHIVE_SUCCESS);
       qc.invalidateQueries({ queryKey: ["dental-services"] });
     },
-    onError: (e: any) =>
-      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
+    onError: (e: unknown) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
 }

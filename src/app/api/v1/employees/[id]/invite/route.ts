@@ -12,18 +12,13 @@ export async function POST(_req: Request, { params }: Params) {
     const { id } = await params;
     const data = await employeeService.resendInvite(user, id);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
+      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
-    if (e?.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Payload is not valid." },
-        { status: 400 }
-      );
+    // Type-safe check for ZodError: ensure e is object, not null, has 'name' property, and name equals "ZodError"
+    if (typeof e === "object" && e !== null && "name" in e && e.name === "ZodError") {
+      return NextResponse.json({ error: "Payload is not valid." }, { status: 400 });
     }
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }

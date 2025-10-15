@@ -13,21 +13,25 @@ export function extractErrorMessage(err: unknown, fallback?: string): string {
 
     if (err instanceof Error) return err.message || fallback || "Đã có lỗi xảy ra.";
 
-    // ZodError-like
-    const anyErr: any = err as any;
-    if (anyErr?.name === "ZodError" && Array.isArray(anyErr.issues) && anyErr.issues.length > 0) {
-      return anyErr.issues[0]?.message || fallback || "Dữ liệu không hợp lệ.";
-    }
+    // ZodError-like - sử dụng type guard thay vì any
+    if (typeof err === "object" && err !== null) {
+      const errorObj = err as Record<string, unknown>;
 
-    // API error shape
-    if (typeof anyErr === "object") {
-      if (typeof anyErr.error === "string") return anyErr.error;
-      if (typeof anyErr.message === "string") return anyErr.message;
+      // ZodError check
+      if (errorObj.name === "ZodError" && Array.isArray(errorObj.issues) && errorObj.issues.length > 0) {
+        const firstIssue = errorObj.issues[0] as Record<string, unknown>;
+        if (typeof firstIssue.message === "string") {
+          return firstIssue.message || fallback || "Dữ liệu không hợp lệ.";
+        }
+      }
+
+      // API error shape
+      if (typeof errorObj.error === "string") return errorObj.error;
+      if (typeof errorObj.message === "string") return errorObj.message;
     }
 
     return fallback || "Đã có lỗi xảy ra.";
-  } catch (_) {
+  } catch {
     return fallback || "Đã có lỗi xảy ra.";
   }
 }
-

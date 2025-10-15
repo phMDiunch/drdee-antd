@@ -5,11 +5,12 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 import {
   UpdateDentalServiceRequestSchema,
   DentalServiceResponseSchema,
+  type UpdateDentalServiceRequest,
 } from "@/shared/validation/dental-service.schema";
 
-export async function updateDentalServiceApi(id: string, payload: unknown) {
+export async function updateDentalServiceApi(id: string, payload: Omit<UpdateDentalServiceRequest, "id">) {
   const body = UpdateDentalServiceRequestSchema.parse({
-    ...(payload as any),
+    ...payload,
     id,
   });
   const res = await fetch(DENTAL_SERVICE_ENDPOINTS.BY_ID(id), {
@@ -21,7 +22,6 @@ export async function updateDentalServiceApi(id: string, payload: unknown) {
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
   const parsed = DentalServiceResponseSchema.safeParse(json);
-  if (!parsed.success)
-    throw new Error("Phản hồi cập nhật dịch vụ không hợp lệ.");
+  if (!parsed.success) throw new Error("Phản hồi cập nhật dịch vụ không hợp lệ.");
   return parsed.data;
 }

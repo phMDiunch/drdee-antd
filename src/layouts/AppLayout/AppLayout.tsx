@@ -26,12 +26,13 @@ function buildIndex(items: MenuItem[]) {
   const parentOf = new Map<string, string | null>();
   const allKeys = new Set<string>();
   const walk = (nodes: MenuItem[], parentKey: string | null) => {
-    nodes.forEach((n: any) => {
+    nodes.forEach((n: MenuItem) => {
       if (!n) return;
       const key = n.key as string;
       allKeys.add(key);
       parentOf.set(key, parentKey);
-      const children = n.children as MenuItem[] | undefined;
+      // Type guard: check if item has children property (not a divider)
+      const children = ("children" in n ? n.children : undefined) as MenuItem[] | undefined;
       if (children?.length) walk(children, key);
     });
   };

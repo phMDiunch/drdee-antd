@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: Params) {
     const { id } = await params;
     const data = await employeeService.findById(user, id);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
@@ -39,7 +39,7 @@ export async function PUT(req: Request, { params }: Params) {
     const { id } = await params;
     const data = await employeeService.update(user, id, body);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }
@@ -58,7 +58,7 @@ export async function DELETE(_req: Request, { params }: Params) {
     const { id } = await params;
     const data = await employeeService.remove(user, id);
     return NextResponse.json(data, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
     }

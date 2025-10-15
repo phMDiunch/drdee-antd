@@ -1,19 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import {
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Typography,
-} from "antd";
-import { Controller, useForm } from "react-hook-form";
+import { Button, Card, Col, Form, Input, Row, Select, Space, Spin, Typography } from "antd";
+import { Controller, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   UpdateEmployeeRequestSchema,
@@ -22,12 +11,7 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
 } from "@/shared/validation/employee.schema";
-import {
-  ORG_DEPARTMENTS,
-  ORG_JOB_TITLES,
-  ORG_TEAMS,
-  ORG_POSITION_TITLES,
-} from "@/shared/constants/organization";
+import { ORG_DEPARTMENTS, ORG_JOB_TITLES, ORG_TEAMS, ORG_POSITION_TITLES } from "@/shared/constants/organization";
 import { useClinics } from "@/features/clinics/hooks/useClinics";
 import { useUpdateEmployee } from "@/features/employees/hooks";
 import { useRouter } from "next/navigation";
@@ -35,8 +19,6 @@ import { DatePicker, ColorPicker } from "antd";
 import dayjs from "dayjs";
 
 const { Title, Paragraph, Text } = Typography;
-
-type FormValues = UpdateEmployeeRequest;
 
 const departmentOptions = Array.from(ORG_DEPARTMENTS).map((value) => ({
   label: value,
@@ -62,16 +44,16 @@ export default function EmployeeEditView({ employee }: Props) {
   const clinicsQuery = useClinics(false);
   const updateMutation = useUpdateEmployee();
 
-  const formatDateTime = (value?: string | null) =>
-    value ? new Date(value).toLocaleString("vi-VN") : "-";
+  const formatDateTime = (value?: string | null) => (value ? new Date(value).toLocaleString("vi-VN") : "-");
 
   const {
     control,
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(UpdateEmployeeRequestSchema) as any,
+  } = useForm<UpdateEmployeeRequest>({
+    // TypeScript has issues with Zod resolver types and Date fields - using type assertion as workaround
+    resolver: zodResolver(UpdateEmployeeRequestSchema) as Resolver<UpdateEmployeeRequest>,
     defaultValues: {
       ...employee,
       email: employee.email ?? undefined,
@@ -84,9 +66,7 @@ export default function EmployeeEditView({ employee }: Props) {
       currentAddress: employee.currentAddress ?? undefined,
       hometown: employee.hometown ?? undefined,
       nationalId: employee.nationalId ?? undefined,
-      nationalIdIssueDate: employee.nationalIdIssueDate
-        ? new Date(employee.nationalIdIssueDate)
-        : undefined,
+      nationalIdIssueDate: employee.nationalIdIssueDate ? new Date(employee.nationalIdIssueDate) : undefined,
       nationalIdIssuePlace: employee.nationalIdIssuePlace ?? undefined,
       taxId: employee.taxId ?? undefined,
       insuranceNumber: employee.insuranceNumber ?? undefined,
@@ -110,9 +90,7 @@ export default function EmployeeEditView({ employee }: Props) {
       currentAddress: employee.currentAddress ?? undefined,
       hometown: employee.hometown ?? undefined,
       nationalId: employee.nationalId ?? undefined,
-      nationalIdIssueDate: employee.nationalIdIssueDate
-        ? new Date(employee.nationalIdIssueDate)
-        : undefined,
+      nationalIdIssueDate: employee.nationalIdIssueDate ? new Date(employee.nationalIdIssueDate) : undefined,
       nationalIdIssuePlace: employee.nationalIdIssuePlace ?? undefined,
       taxId: employee.taxId ?? undefined,
       insuranceNumber: employee.insuranceNumber ?? undefined,
@@ -128,7 +106,7 @@ export default function EmployeeEditView({ employee }: Props) {
     })) ?? [];
 
   const submit = handleSubmit((values) => {
-    const payload: FormValues = {
+    const payload: UpdateEmployeeRequest = {
       ...values,
       email: values.email?.trim() || null,
       phone: values.phone?.trim() || null,
@@ -146,7 +124,7 @@ export default function EmployeeEditView({ employee }: Props) {
       favoriteColor: values.favoriteColor || null,
       dob: values.dob ?? null,
       nationalIdIssueDate: values.nationalIdIssueDate ?? null,
-    } as any;
+    };
 
     updateMutation.mutate(payload, {
       onSuccess: () => router.push("/employees"),
@@ -170,15 +148,11 @@ export default function EmployeeEditView({ employee }: Props) {
             <Row gutter={12}>
               <Col xs={24} md={12}>
                 <Text type="secondary">Tạo bởi: </Text>
-                <Text strong>
-                  {employee.createdBy || employee.createdById || "-"}
-                </Text>
+                <Text strong>{employee.createdBy || employee.createdById || "-"}</Text>
               </Col>
               <Col xs={24} md={12}>
                 <Text type="secondary">Cập nhật bởi: </Text>
-                <Text strong>
-                  {employee.updatedBy || employee.updatedById || "-"}
-                </Text>
+                <Text strong>{employee.updatedBy || employee.updatedById || "-"}</Text>
               </Col>
             </Row>
             <Row gutter={12} style={{ marginTop: 4 }}>
@@ -245,9 +219,7 @@ export default function EmployeeEditView({ employee }: Props) {
                         <DatePicker
                           style={{ width: "100%" }}
                           value={field.value ? dayjs(field.value) : undefined}
-                          onChange={(d) =>
-                            field.onChange(d ? d.toDate() : undefined)
-                          }
+                          onChange={(d) => field.onChange(d ? d.toDate() : undefined)}
                           format="DD/MM/YYYY"
                         />
                       </Form.Item>
@@ -361,9 +333,7 @@ export default function EmployeeEditView({ employee }: Props) {
                         <DatePicker
                           style={{ width: "100%" }}
                           value={field.value ? dayjs(field.value) : undefined}
-                          onChange={(d) =>
-                            field.onChange(d ? d.toDate() : undefined)
-                          }
+                          onChange={(d) => field.onChange(d ? d.toDate() : undefined)}
                           format="DD/MM/YYYY"
                         />
                       </Form.Item>
@@ -664,11 +634,7 @@ export default function EmployeeEditView({ employee }: Props) {
               <Form.Item>
                 <Space>
                   <Button onClick={() => router.push(`/employees`)}>Hủy</Button>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={isSubmitting || updateMutation.isPending}
-                  >
+                  <Button type="primary" htmlType="submit" loading={isSubmitting || updateMutation.isPending}>
                     Lưu
                   </Button>
                 </Space>

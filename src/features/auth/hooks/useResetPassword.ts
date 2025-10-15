@@ -2,11 +2,8 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { resetPasswordApi } from "@/features/auth";
-import type {
-  ResetPasswordRequest,
-  ResetPasswordResponse,
-} from "@/shared/validation/auth.schema";
+import { resetPasswordApi } from "@/features/auth/api";
+import type { ResetPasswordRequest, ResetPasswordResponse } from "@/shared/validation/auth.schema";
 import { useRouter } from "next/navigation";
 import { useNotify } from "@/shared/hooks/useNotify";
 import { AUTH_MESSAGES } from "@/features/auth/constants";

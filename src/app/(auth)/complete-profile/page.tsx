@@ -1,7 +1,7 @@
 // src/app/(auth)/complete-profile/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, Suspense } from "react";
 import {
   Card,
   Typography,
@@ -21,14 +21,8 @@ import dayjs from "dayjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  CompleteProfileRequestSchema,
-  type CompleteProfileRequest,
-} from "@/shared/validation/employee.schema";
-import {
-  useCompleteProfilePublic,
-  useEmployeeForProfileCompletion,
-} from "@/features/employees/hooks";
+import { CompleteProfileRequestSchema, type CompleteProfileRequest } from "@/shared/validation/employee.schema";
+import { useCompleteProfilePublic, useEmployeeForProfileCompletion } from "@/features/employees/hooks";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -58,6 +52,20 @@ type FormValues = {
 };
 
 export default function CompleteProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: "40px", textAlign: "center" }}>
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <CompleteProfileContent />
+    </Suspense>
+  );
+}
+
+function CompleteProfileContent() {
   const { message } = App.useApp();
   const searchParams = useSearchParams();
   const employeeId = searchParams?.get("employeeId") ?? undefined;
@@ -112,9 +120,7 @@ export default function CompleteProfilePage() {
       currentAddress: emp.currentAddress ?? "",
       hometown: emp.hometown ?? "",
       nationalId: emp.nationalId ?? "",
-      nationalIdIssueDate: emp.nationalIdIssueDate
-        ? new Date(emp.nationalIdIssueDate)
-        : undefined,
+      nationalIdIssueDate: emp.nationalIdIssueDate ? new Date(emp.nationalIdIssueDate) : undefined,
       nationalIdIssuePlace: emp.nationalIdIssuePlace ?? "",
       taxId: emp.taxId ?? "",
       insuranceNumber: emp.insuranceNumber ?? "",
@@ -132,9 +138,7 @@ export default function CompleteProfilePage() {
     redirectGuardRef.current = true;
 
     if (status === "RESIGNED") {
-      message.error(
-        "Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên."
-      );
+      message.error("Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
       router.replace("/login");
       return;
     }
@@ -156,12 +160,8 @@ export default function CompleteProfilePage() {
       nationalIdIssueDate: values.nationalIdIssueDate!,
       nationalIdIssuePlace: values.nationalIdIssuePlace.trim(),
       taxId: values.taxId?.trim() ? values.taxId.trim() : null,
-      insuranceNumber: values.insuranceNumber?.trim()
-        ? values.insuranceNumber.trim()
-        : null,
-      bankAccountNumber: values.bankAccountNumber?.trim()
-        ? values.bankAccountNumber.trim()
-        : null,
+      insuranceNumber: values.insuranceNumber?.trim() ? values.insuranceNumber.trim() : null,
+      bankAccountNumber: values.bankAccountNumber?.trim() ? values.bankAccountNumber.trim() : null,
       bankName: values.bankName?.trim() ? values.bankName.trim() : null,
       password: values.password,
       confirmPassword: values.confirmPassword,
@@ -178,10 +178,7 @@ export default function CompleteProfilePage() {
 
   if (!employeeId) {
     return (
-      <Empty
-        description="Không tìm thấy mã nhân viên. Vui lòng kiểm tra lại link mời."
-        style={{ marginTop: 80 }}
-      />
+      <Empty description="Không tìm thấy mã nhân viên. Vui lòng kiểm tra lại link mời." style={{ marginTop: 80 }} />
     );
   }
 
@@ -199,8 +196,7 @@ export default function CompleteProfilePage() {
     return (
       <Empty
         description={
-          employeeQuery.error?.message ||
-          "Không thể tải thông tin nhân viên. Vui lòng liên hệ quản trị viên."
+          employeeQuery.error?.message || "Không thể tải thông tin nhân viên. Vui lòng liên hệ quản trị viên."
         }
         style={{ marginTop: 80 }}
       />
@@ -208,12 +204,7 @@ export default function CompleteProfilePage() {
   }
 
   if (!employeeQuery.data) {
-    return (
-      <Empty
-        description="Không thể tải thông tin nhân viên. Vui lòng thử lại sau."
-        style={{ marginTop: 80 }}
-      />
-    );
+    return <Empty description="Không thể tải thông tin nhân viên. Vui lòng thử lại sau." style={{ marginTop: 80 }} />;
   }
 
   return (
@@ -231,8 +222,8 @@ export default function CompleteProfilePage() {
           Hoàn thiện hồ sơ
         </Title>
         <Paragraph style={{ textAlign: "center", marginBottom: 28 }}>
-          Xin chào <Text strong>{employeeQuery.data.fullName}</Text>. Vui lòng
-          cập nhật thông tin để hoàn thiện hồ sơ của bạn.
+          Xin chào <Text strong>{employeeQuery.data.fullName}</Text>. Vui lòng cập nhật thông tin để hoàn thiện hồ sơ
+          của bạn.
         </Paragraph>
 
         <Form layout="vertical" onFinish={submit}>
@@ -267,9 +258,7 @@ export default function CompleteProfilePage() {
                     <DatePicker
                       style={{ width: "100%" }}
                       value={field.value ? dayjs(field.value) : undefined}
-                      onChange={(date) =>
-                        field.onChange(date ? date.toDate() : undefined)
-                      }
+                      onChange={(date) => field.onChange(date ? date.toDate() : undefined)}
                       format="DD/MM/YYYY"
                     />
                   </Form.Item>
@@ -389,9 +378,7 @@ export default function CompleteProfilePage() {
                     <DatePicker
                       style={{ width: "100%" }}
                       value={field.value ? dayjs(field.value) : undefined}
-                      onChange={(date) =>
-                        field.onChange(date ? date.toDate() : undefined)
-                      }
+                      onChange={(date) => field.onChange(date ? date.toDate() : undefined)}
                       format="DD/MM/YYYY"
                     />
                   </Form.Item>
@@ -513,10 +500,7 @@ export default function CompleteProfilePage() {
                     validateStatus={fieldState.error ? "error" : ""}
                     help={fieldState.error?.message}
                   >
-                    <Input.Password
-                      {...field}
-                      placeholder="Nhập lại mật khẩu"
-                    />
+                    <Input.Password {...field} placeholder="Nhập lại mật khẩu" />
                   </Form.Item>
                 )}
               />
@@ -530,11 +514,7 @@ export default function CompleteProfilePage() {
               marginTop: 24,
             }}
           >
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isSubmitting || completeMutation.isPending}
-            >
+            <Button type="primary" htmlType="submit" loading={isSubmitting || completeMutation.isPending}>
               Hoàn tất
             </Button>
           </div>
