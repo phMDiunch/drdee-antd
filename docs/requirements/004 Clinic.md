@@ -1,5 +1,9 @@
 # 🏥 Requirements: Clinic Management System
 
+> **✅ STATUS: COMPLETED** - Implementation finished on October 15, 2025  
+> **📄 Feature Documentation**: `docs/features/004_Clinic.md`  
+> **🔗 Implementation**: `src/features/clinics/`
+
 ## 📊 Database Model
 
 Prisma Model Clinic: src/prisma/schema.prisma
@@ -117,12 +121,12 @@ if (hasLinkedData) {
 
 ### 5. 🎨 **Layout Integration**
 
-#### 🏷️ **Header Tag:**
+#### 🏷️ **Employee Table Integration:**
 
-- **Position**: Bên cạnh logo
+- **Position**: Trong bảng danh sách nhân viên
 - **Content**: `clinicCode` từ `employee.clinicId`
 - **Style**: Tag với `colorCode` background
-- **Behavior**: Read-only (không có clinic selector)
+- **Behavior**: Read-only display
 
 #### 📁 **Sidebar Navigation:**
 
@@ -217,7 +221,7 @@ mutations → invalidate relevant queries
 
 **A: Multi-layer approach:**
 
-1. **SSR Level**: `getSessionUser()` → `getCurrentClinicForUser()` → inject vào Header
+1. **SSR Level**: `getSessionUser()` → inject currentUser (contains clinicId)
 2. **React Query**: Cache clinic list với staleTime 60s
 3. **Future**: Consider Redis cache cho heavy usage
 
@@ -235,15 +239,15 @@ mutations → invalidate relevant queries
 
 ### 🧪 **Testing Checklist:**
 
-- [ ] Admin có thể CRUD clinics
-- [ ] Non-admin không thể tạo/sửa/xóa
-- [ ] Validation hoạt động đúng
-- [ ] Archive/Unarchive toggle correctly
-- [ ] Header hiển thị clinic tag đúng
-- [ ] Menu sidebar có link clinics
-- [ ] Responsive design works
-- [ ] Error handling graceful
-- [ ] Loading states smooth
+- [x] Admin có thể CRUD clinics
+- [x] Non-admin không thể tạo/sửa/xóa
+- [x] Validation hoạt động đúng
+- [x] Archive/Unarchive toggle correctly
+- [x] Employee table hiển thị clinic tag đúng
+- [x] Menu sidebar có link clinics
+- [x] Responsive design works
+- [x] Error handling graceful
+- [x] Loading states smooth
 - [ ] Success feedback clear
 
 ### 🎯 **Quality Standards:**

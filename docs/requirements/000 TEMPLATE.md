@@ -1,5 +1,9 @@
 # 🧩 Requirements: [Feature Name] System
 
+> **📋 STATUS: [PENDING/IN_PROGRESS/COMPLETED]** - [Status description]  
+> **📄 Feature Documentation**: `docs/features/XXX_FeatureName.md` (when completed)  
+> **🔗 Implementation**: `src/features/[feature-name]/` (when exists)
+
 ## 🎯 Core Requirements
 
 ### 📐 **[Core Function Description]**
@@ -328,25 +332,54 @@ export const [Feature]ListResponseSchema = z.array([Feature]ResponseSchema);
 
 ---
 
-## 📝 Notes & Considerations
+## 🧪 Testing Checklist
 
-### 💡 **Implementation Notes:**
+### ✅ **Functional Testing:**
 
-- Consider database performance for large datasets
-- Plan for internationalization if needed
-- Design for extensibility and maintainability
-- Follow established project patterns
+- [ ] CRUD operations work correctly
+- [ ] Validation rules enforced properly
+- [ ] Error handling shows user-friendly messages
+- [ ] Loading states provide clear feedback
+- [ ] Success notifications display appropriately
 
-### ⚠️ **Potential Challenges:**
+### 🔐 **Security Testing:**
 
-- Complex validation rules may need custom logic
-- Large datasets might require advanced filtering
-- Mobile UX may need special consideration
-- Integration with existing systems
+- [ ] Permission controls function correctly
+- [ ] Input sanitization prevents injection
+- [ ] API endpoints protected properly
+- [ ] User roles respected throughout
 
-### 🎯 **Success Metrics:**
+### 📱 **UI/UX Testing:**
 
-- User completion rate > 95%
+- [ ] Responsive design works on all devices
+- [ ] Form validation provides real-time feedback
+- [ ] Navigation flows logically
+- [ ] Accessibility standards met
+
+---
+
+## 📝 Implementation Guidelines
+
+### 💡 **When Implementation Starts:**
+
+1. Update status to **IN_PROGRESS**
+2. Create corresponding feature documentation file
+3. Follow established project patterns and architecture
+4. Implement with security and performance in mind
+
+### ✅ **When Implementation Completes:**
+
+1. Update status to **COMPLETED**
+2. Complete feature documentation with actual implementation details
+3. Mark all testing checklist items as completed
+4. Add links to implementation files
+
+### 🎯 **Success Criteria:**
+
+- All core requirements implemented and tested
+- User experience meets design standards
+- Performance within acceptable limits
+- Security requirements satisfied
 - Error rate < 1%
 - Performance within targets
 - User satisfaction score > 4.5/5

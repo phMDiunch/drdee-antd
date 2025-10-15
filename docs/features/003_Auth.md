@@ -14,24 +14,22 @@ src/
 │   │   │   └── page.tsx                    # 📄 Page render LoginView
 │   │   ├── forgot-password/
 │   │   │   └── page.tsx                    # 📄 Page render ForgotPasswordView
-│   │   └── reset-password/
-│   │       └── page.tsx                    # 📄 Page render ResetPasswordView
+│   │   ├── reset-password/
+│   │   │   └── page.tsx                    # 📄 Page render ResetPasswordView
+│   │   └── complete-profile/
+│   │       └── page.tsx                    # � Page render CompleteProfileView
 │   └── api/v1/auth/
 │       ├── login/
 │       │   └── route.ts                    # 🚀 POST login (SSR Supabase)
-│       ├── logout/
-│       │   └── route.ts                    # 🚀 POST logout
-│       ├── forgot-password/
-│       │   └── route.ts                    # 🚀 POST forgot password (Supabase)
-│       └── reset-password/
-│           └── route.ts                    # 🚀 POST reset password (Supabase)
+│       └── logout/
+│           └── route.ts                    # 🚀 POST logout
 │
 ├── features/auth/
 │   ├── api/
-│   │   ├── login.ts                        # 🔄 fetch -> parse Zod -> LoginResponse
-│   │   ├── logout.ts                       # 🔄 fetch -> parse Zod -> LogoutResponse
-│   │   ├── forgotPassword.ts               # 🔄 fetch -> parse Zod -> ForgotPasswordResponse
-│   │   └── resetPassword.ts                # 🔄 fetch -> parse Zod -> ResetPasswordResponse
+│   │   ├── login.ts                        # 🔄 fetch API -> parse Zod -> LoginResponse
+│   │   ├── logout.ts                       # 🔄 fetch API -> parse Zod -> LogoutResponse
+│   │   ├── forgotPassword.ts               # 🔄 Supabase client -> ForgotPasswordResponse
+│   │   └── resetPassword.ts                # 🔄 Supabase client -> ResetPasswordResponse
 │   ├── components/
 │   │   ├── LoginForm.tsx                   # 🎨 AntD form, validator (Zod hoặc rule AntD)
 │   │   ├── ForgotPasswordForm.tsx          # 🎨 AntD form cho forgot password
@@ -40,12 +38,13 @@ src/
 │   │   ├── useLogin.ts                     # 🪝 React Query mutation
 │   │   ├── useLogout.ts                    # 🪝 React Query mutation
 │   │   ├── useForgotPassword.ts            # 🪝 React Query mutation
-│   │   └── useResetPassword.ts             # 🪝 React Query mutation
+│   │   ├── useResetPassword.ts             # 🪝 React Query mutation
+│   │   └── usePasswordResetSession.ts      # 🪝 Handle reset password URL params
 │   ├── views/
 │   │   ├── LoginView.tsx                   # 📱 Bố cục trang login
 │   │   ├── ForgotPasswordView.tsx          # 📱 Bố cục trang forgot password
 │   │   └── ResetPasswordView.tsx           # 📱 Bố cục trang reset password
-│   ├── constants.ts                        # 📋 Endpoint/messages chuẩn hoá
+│   ├── constants.ts                        # 📋 Endpoint/messages chuẩn hoá (LOGIN/LOGOUT only)
 │   ├── types.ts                           # 🏷️ Type suy ra từ schema Zod
 │   └── index.ts                           # 📦 Barrel exports
 │
@@ -113,22 +112,38 @@ src/
 - **200**: `{ ok: true }`
 - **4xx/5xx**: `{ error: string }`
 
-### `POST /api/v1/auth/forgot-password`
+### Forgot/Reset Password (Supabase Client Direct)
 
-- **Body**: `{ email: string }` (Zod: required, email format)
-- **200**: `{ ok: true }`
-- **400**: `{ error: string }` dữ liệu không hợp lệ
-- **500**: `{ error: string }` lỗi hệ thống
+**Forgot Password:**
 
-### `POST /api/v1/auth/reset-password`
+- **Client**: `supabase.auth.resetPasswordForEmail(email, { redirectTo })`
+- **Flow**: Supabase sends email → user clicks link → redirected to `/reset-password?code=xxx`
+- **Response**: `{ ok: true }` or throws Error
 
-- **Body**: `{ password: string; confirmPassword: string }` (Zod: required, min 6 chars, must match)
-- **200**: `{ ok: true }`
-- **400**: `{ error: string }` dữ liệu không hợp lệ
-- **401**: `{ error: string }` token không hợp lệ
-- **500**: `{ error: string }` lỗi hệ thống
+**Reset Password:**
 
-## 8) Validation & Error Handling
+- **Client**: `supabase.auth.updateUser({ password })`
+- **Requirements**: Valid reset session (from URL code parameter)
+- **Response**: `{ ok: true }` or throws Error
+
+## 8) Middleware Protection
+
+```typescript
+// src/middleware.ts → src/services/supabase/middleware.ts
+const PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/api/public",
+  "/complete-profile",
+];
+
+// Auto-redirect to /login if:
+// 1. User not authenticated && path not in PUBLIC_PATHS
+// 2. User disabled in Supabase metadata
+```
+
+## 9) Validation & Error Handling
 
 - **Client**:
   - AntD Form rule hoặc Zod field-level; trước khi gọi API parse tổng thể (Zod).
@@ -165,4 +180,35 @@ src/
 - Ghép **Employee** vào `getSessionUser()` (theo `authUserId`).
 - `/api/v1/auth/me` (nếu cần fetch client-side).
 - Role-based guard cho API quan trọng.
-- Rate limiting cho forgot password để tránh spam email.
+- - Rate limiting cho forgot password để tránh spam email.
+
+---
+
+## ✅ Status: **COMPLETED**
+
+**Implementation Date**: October 2025  
+**Last Updated**: October 15, 2025  
+**Status**: Production Ready ✅
+
+All core requirements implemented and tested. Ready for production use.
+
+### 📋 **Implementation Summary**
+
+**Completed Components:**
+
+- ✅ API Endpoints: Login/Logout API routes implemented
+- ✅ Supabase Integration: Direct client for forgot/reset password
+- ✅ Frontend Components: LoginForm, ForgotPasswordForm, ResetPasswordForm
+- ✅ Custom Hooks: All auth operations + password reset session handling
+- ✅ Validation: Zod schemas for all auth operations
+- ✅ Middleware Protection: Auto-redirect for protected routes
+- ✅ Session Management: HttpOnly cookies via Supabase SSR
+- ✅ UI Integration: Complete auth pages in (auth) group
+
+**Architecture Delivered:**
+
+```
+✅ UI Components → ✅ Custom Hooks → ✅ API/Supabase Client → ✅ Routes → ✅ Middleware → ✅ Session Management
+```
+
+**Feature Ready For:** Production use, user authentication, password recovery.

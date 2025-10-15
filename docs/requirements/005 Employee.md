@@ -1,4 +1,8 @@
-# 🏥 Requirements: Employee Management System
+# 🧩 Requirements: Employee Management System
+
+> **✅ STATUS: COMPLETED** - Implementation finished on October 15, 2025  
+> **📄 Feature Documentation**: `docs/features/005_Employee.md`  
+> **🔗 Implementation**: `src/features/employees/`
 
 ## 📊 Tham khảo
 
@@ -42,7 +46,7 @@ Hàng 5: [jobTitle            ] [positionTitle            ]
 - `jobTitle`: Required, dựa vào organizationalStructure.ts
 - `team`: Optional, dựa vào organizationalStructure.ts
 - `positionTitle`: Optional, dựa vào organizationalStructure.ts
-- `employeeStatus`: Required, mặc định là `WORKING`
+- `employeeStatus`: Required, mặc định là `PENDING`
 
 ---
 

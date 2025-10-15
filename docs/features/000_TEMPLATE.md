@@ -1,5 +1,9 @@
 # 🧩 Feature: [Feature Name]
 
+> **📋 STATUS: [PENDING/IN_PROGRESS/COMPLETED]** - [Status description]  
+> **📂 REQUIREMENTS:** [Link to corresponding requirements file]  
+> **📁 IMPLEMENTATION:** [Link to implementation folder when completed]
+
 ## 1) Mục tiêu & Phạm vi
 
 Mô tả ngắn gọn nghiệp vụ và mục tiêu chính của feature.
@@ -318,14 +322,45 @@ useDelete[Feature]() → invalidates ['[feature]s']
 
 ---
 
+## 🧪 Testing & Completion
+
+### ✅ **Implementation Checklist:**
+
+- [ ] Database schema defined
+- [ ] API endpoints created
+- [ ] Frontend components built
+- [ ] Validation schemas implemented
+- [ ] UI integration completed
+- [ ] Error handling added
+
+### 🔍 **Testing Checklist:**
+
+- [ ] Unit tests for core functions
+- [ ] API endpoint testing
+- [ ] Form validation testing
+- [ ] UI/UX testing on multiple devices
+- [ ] Permission-based access testing
+- [ ] Error scenarios testing
+
+### 📋 **Documentation Checklist:**
+
+- [ ] Implementation details updated
+- [ ] API contracts documented
+- [ ] Component usage examples
+- [ ] Error codes defined
+- [ ] Status updated to COMPLETED
+
+---
+
 ## 🎯 Best Practices
 
 ### 📝 **Documentation Rules:**
 
-1. **Consistent numbering**: `001_Feature.md`, `002_Feature.md`
-2. **Emoji usage**: Sử dụng emoji cho dễ đọc và phân biệt
-3. **Code blocks**: Syntax highlighting cho tất cả code examples
-4. **Template sections**: Tuân thủ 10 sections chuẩn
+1. **Status tracking**: Always update status header when implementation changes
+2. **Consistent numbering**: `001_Feature.md`, `002_Feature.md`
+3. **Emoji usage**: Sử dụng emoji cho dễ đọc và phân biệt
+4. **Code blocks**: Syntax highlighting cho tất cả code examples
+5. **Template sections**: Tuân thủ established sections structure
 
 ### 🏗️ **Structure Guidelines:**
 

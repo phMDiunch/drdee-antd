@@ -1,58 +1,154 @@
-# Feature: App Layout
+# 🏗️ Feature: App Layout
 
-## 1) Overview
+## 1) Mục tiêu & Phạm vi
 
-AppShell dùng cho khu vực `(private)`: Header cố định (Logo | Search | Notifications | User), bên dưới chia Sider (menu) + Content. Mục tiêu: khung UI nhất quán, responsive, ít CSS ngoài, ưu tiên Ant Design.
+Private layout system với AppHeader (sticky) + SidebarNav + Content. Responsive design với breakpoint `lg`, search modal trên mobile, và menu collapse functionality.
 
-## 2) Folder structure
+## 2) Folder Structure
 
-- `src/layouts/AppLayout/AppLayout.tsx` — ráp khung tổng (Header + Sider + Content), quản lý menu state
-- `src/layouts/AppLayout/AppHeader.tsx` — Header “dumb”: nhận `currentUser`, render 3 vùng, responsive
-- `src/layouts/AppLayout/SidebarNav.tsx` — Sider + Menu inline, scroll riêng
-- `src/layouts/AppLayout/menu.config.ts` — cấu hình menu (icon ở cấp 1, children không icon)
-- `src/layouts/AppLayout/theme.ts` — kích thước layout (HEADER_HEIGHT, SIDER_WIDTH,...)
+```
+src/layouts/AppLayout/
+├── AppLayout.tsx          # Main layout component với menu state management
+├── AppHeader.tsx          # Header với logo, search, notifications, user menu
+├── SidebarNav.tsx         # Collapsible sidebar với menu navigation
+├── menu.config.tsx        # Menu items configuration (icons cấp 1 only)
+└── theme.ts              # Layout constants (heights, widths)
+```
 
-> Header nhận `currentUser` từ SSR (được inject tại `src/app/(private)/layout.tsx`).
+> Header nhận `currentUser` từ SSR injection tại `src/app/(private)/layout.tsx`
 
-## 3) Data flow
+## 3) Architecture & Data Flow
 
-`(private)/layout.tsx (Server)` → `getSessionUser()` → `AppLayout (Client)` → `AppHeader (Client)`
+```typescript
+// SSR injection flow
+(private)/layout.tsx (Server)
+  → getSessionUser()
+  → AppLayout (Client)
+  → AppHeader (Client)
 
-- Menu: `menu.config.ts` → `AppLayout` tính `selectedKeys`, `openKeys` theo URL → `SidebarNav`.
+// Menu state management
+menu.config.tsx
+  → AppLayout (calculates selectedKeys, openKeys from URL)
+  → SidebarNav (renders menu)
+```
 
-## 4) Behavior & UX
+## 4) Layout Components
 
-- Header sticky, không trôi khi content scroll.
-- Sider có scroll riêng, `breakpoint="lg"`, collapse được.
-- Content có scroll riêng, padding theo token AntD.
-- Responsive Header:
-  - md↑: hiện đủ Search + Avatar + Tên + Role (Tag)
-  - sm/xs: nút hamburger + icon search mở Modal; chỉ hiển thị Avatar (tên/role ẩn)
+### 📱 **AppHeader**
 
-## 5) State management
+- **Logo**: Responsive text ("Nha khoa DR DEE" on lg+, "DR DEE" on mobile)
+- **Search**: Input.Search on lg+, search icon → Modal on mobile
+- **Notifications**: Badge với count (static)
+- **User Menu**: Avatar + name/role on lg+, avatar only on mobile
+- **Hamburger**: Menu toggle button với tooltip
 
-- Server state: không có.
-- UI state (cục bộ): `collapsed`, `openKeys`, `selectedKeys` — giữ trong `AppLayout`. (Có thể chuyển sang Zustand nếu cần dùng chéo nhiều nơi.)
+### 📋 **SidebarNav**
 
-## 6) Security
+- **Collapsible**: `breakpoint="lg"` auto-collapse
+- **Menu**: AntD Menu với icons cấp 1, children không có icons
+- **Scroll**: Independent scrolling từ content
 
-- Khu vực `(private)` đã có middleware chặn khi chưa đăng nhập.
-- Header hiển thị thông tin từ SSR; không tin dữ liệu client.
+### 📄 **AppLayout**
 
-## 7) Theming & Customization
+- **State Management**: `collapsed`, `selectedKeys`, `openKeys`
+- **URL Sync**: Menu state sync với current pathname
+- **SSR Props**: Receives `currentUser` từ private layout
 
-- Màu sắc: `src/shared/providers/antd.tsx` → `ConfigProvider.theme.token`.
-- Kích thước: `src/layouts/AppLayout/theme.ts`.
+## 5) Responsive Behavior
 
-## 8) Testing checklist
+### 🖥️ **Breakpoint: lg (≥992px)**
 
-- Collapse/expand Sider.
-- Điều hướng menu + highlight `selectedKeys`, `openKeys`.
-- Header responsive md/xs.
-- Scroll độc lập giữa Sider và Content.
+- Show full search input in header
+- Display user name + role tag beside avatar
+- Logo shows full text "Nha khoa DR DEE"
+- Sidebar auto-expanded
 
-## 9) TODO
+### 📱 **Mobile: <lg**
 
-- Breadcrumb (để sau).
-- Quick create button trên Header.
-- Chi nhánh hiện tại + Switcher (sau khi có Employee/Clinic).
+- Search icon opens modal với full-width input
+- Hide user name/role, show avatar only
+- Logo shows shortened "DR DEE"
+- Sidebar auto-collapsed
+
+## 6) Layout Constants
+
+```typescript
+// src/layouts/AppLayout/theme.ts
+export const APP_LAYOUT = {
+  HEADER_HEIGHT: 56, // Header height
+  SIDER_WIDTH: 240, // Expanded sidebar width
+  SIDER_COLLAPSED_WIDTH: 56, // Collapsed sidebar width
+};
+```
+
+## 7) Theming & Integration
+
+### 🎨 **Ant Design Theming**
+
+```typescript
+// src/shared/providers/antd.tsx
+<ConfigProvider
+  locale={viVN}
+  theme={{
+    token: {
+      colorPrimary: "#0da70fff",
+      // Layout styling via AntD tokens
+    },
+  }}
+>
+```
+
+### 🔐 **Security**
+
+- Private routes protected by middleware
+- User data từ SSR (`getSessionUser()`)
+- No client-side user data dependency
+
+## 8) Implementation Status
+
+### ✅ **Completed Features**
+
+- ✅ Responsive header với breakpoint lg
+- ✅ Search functionality với modal fallback
+- ✅ Menu state management (selectedKeys, openKeys)
+- ✅ Sidebar collapse/expand với breakpoint
+- ✅ SSR user injection
+- ✅ Notifications placeholder (Badge)
+- ✅ User menu với role display
+
+### 📋 **Testing Checklist**
+
+- [x] Sidebar collapse/expand functionality
+- [x] Menu navigation với URL sync
+- [x] Responsive breakpoint behavior (lg)
+- [x] Search modal on mobile devices
+- [x] Independent scroll: sidebar vs content
+- [x] SSR user data display
+
+---
+
+## ✅ Status: **COMPLETED**
+
+**Implementation Date**: October 2025  
+**Last Updated**: October 15, 2025  
+**Status**: Production Ready ✅
+
+Core layout system implemented and tested. Ready for production use.
+
+### 📋 **Implementation Summary**
+
+**Completed Components:**
+
+- ✅ AppLayout: Main layout wrapper với menu state
+- ✅ AppHeader: Responsive header với search, notifications, user menu
+- ✅ SidebarNav: Collapsible navigation với menu items
+- ✅ Menu Config: Hierarchical menu structure
+- ✅ Theme System: Layout constants và AntD integration
+
+**Architecture Delivered:**
+
+```
+✅ SSR User Injection → ✅ Layout Components → ✅ Responsive Design → ✅ Menu Management
+```
+
+**Feature Ready For:** Production use, consistent UI layout, responsive navigation.

@@ -15,10 +15,22 @@ Quản lý nhân viên toàn diện với tính năng mời nhân viên, hoàn t
 
 ### 🎨 **UI Integration**
 
-- 📁 **Sidebar Menu**: `/employees` trong navigation
+- 📁 **Sidebar Menu**: Nhóm "Nhân sự" → "Danh sách" (`/employees`)
 - 🏷️ **Stats Integration**: Employee count & status indicators
 - 📱 **Responsive Design**: Mobile/desktop optimized
 - 🎨 **Color Personalization**: Favorite color picker for employees
+
+### 📋 **Menu Structure**
+
+```typescript
+// src/layouts/AppLayout/menu.config.tsx
+{
+  key: "employees",
+  icon: <TeamOutlined />,
+  label: "Nhân sự",
+  children: [{ key: "/employees", label: "Danh sách" }]
+}
+```
 
 ---
 
@@ -29,23 +41,23 @@ src/
 ├── app/
 │   ├── api/
 │   │   ├── public/employees/
-│   │   │   ├── [id]/
-│   │   │   │   └── route.ts            # 🔍 GET employee for profile completion
-│   │   │   └── complete-profile/
-│   │   │       └── route.ts            # 📝 POST complete profile (public)
+│   │   │   └── [id]/
+│   │   │   │   ├── route.ts            # 🔍 GET employee for profile completion
+│   │   │   │   └── complete-profile/
+│   │   │   │       └── route.ts        # 📝 POST complete profile (public)
 │   │   └── v1/employees/
 │   │       ├── route.ts                # 📝 GET list, POST create
 │   │       ├── working/route.ts        # 📋 GET working employees only
 │   │       └── [id]/
 │   │           ├── route.ts            # 🔍 GET, PUT, DELETE by ID
-│   │           ├── resend-invite/
+│   │           ├── invite/
 │   │           │   └── route.ts        # 📧 POST resend invitation
 │   │           └── status/
 │   │               └── route.ts        # 🔄 PUT update status
 │   ├── (private)/employees/
 │   │   ├── page.tsx                    # 📄 Mount EmployeesListView
-│   │   └── [id]/page.tsx               # 👤 Mount EmployeeEditView
-│   └── complete-profile/
+│   │   └── [id]/edit/page.tsx          # 👤 Mount EmployeeEditView
+│   └── (auth)/complete-profile/
 │       └── page.tsx                    # 🆔 Public profile completion page
 │
 ├── features/employees/
@@ -58,7 +70,7 @@ src/
 │   │   ├── updateEmployee.ts           # ✏️ Update employee
 │   │   ├── deleteEmployee.ts           # ❌ Delete employee
 │   │   ├── setEmployeeStatus.ts        # 🔄 Update employee status
-│   │   ├── resendInvite.ts             # 📧 Resend invitation email
+│   │   ├── resendInvite.ts             # 📧 Resend invitation email (POST /invite)
 │   │   ├── completeProfilePublic.ts    # 👤 Complete profile (public)
 │   │   └── index.ts                    # 📦 Barrel exports
 │   ├── components/
@@ -144,11 +156,11 @@ GET    /api/v1/employees/:id          # Get employee by ID
 PUT    /api/v1/employees/:id          # Update employee
 DELETE /api/v1/employees/:id          # Delete employee
 PUT    /api/v1/employees/:id/status   # Update employee status
-POST   /api/v1/employees/:id/resend-invite # Resend invitation email
+POST   /api/v1/employees/:id/invite    # Resend invitation email
 
 # Public Endpoints
-GET    /api/public/employees/:id      # Get employee for profile completion
-POST   /api/public/employees/complete-profile # Complete employee profile
+GET    /api/public/employees/:id                 # Get employee for profile completion
+POST   /api/public/employees/:id/complete-profile # Complete employee profile
 ```
 
 ### 📥 **Request/Response:**
@@ -251,6 +263,21 @@ POST   /api/public/employees/complete-profile # Complete employee profile
 'Invalid phone format' → 'Số điện thoại không đúng định dạng.'
 'Clinic not found' → 'Phòng khám không tồn tại.'
 'Invitation expired' → 'Lời mời đã hết hạn.'
+```
+
+### 🚫 **Delete Protection**
+
+```typescript
+// Server-side check before hard delete
+const linked = await employeeRepo.countLinked(employeeId);
+if (linked.total > 0) {
+  throw ServiceError("HAS_LINKED_DATA",
+    "Employee has linked data, please switch status to 'RESIGNED'.", 409);
+}
+
+// Linked data includes:
+- Appointment.primaryDentistId (employee as primary dentist)
+- Supabase Auth user (if uid exists, will be deleted)
 ```
 
 ---
@@ -486,3 +513,33 @@ completeProfilePublic() → invalidates ['employee', 'profile', id]
 3. **Loading states**: Consistent UX patterns
 4. **Error feedback**: User-friendly Vietnamese messages
 5. **Accessibility**: Keyboard navigation và screen reader support
+
+---
+
+## ✅ Status: **COMPLETED**
+
+**Implementation Date**: October 2025  
+**Last Updated**: October 15, 2025  
+**Status**: Production Ready ✅
+
+All core requirements implemented and tested. Ready for production use.
+
+### 📋 **Implementation Summary**
+
+**Completed Components:**
+
+- ✅ API Endpoints: All 9 endpoints implemented (including public)
+- ✅ Frontend Components: CreateModal, Table, Filters, Stats
+- ✅ Custom Hooks: All CRUD + status + invitation operations
+- ✅ Validation: Zod schemas for client/server + profile completion
+- ✅ Business Logic: Email invitations, delete protection, status flow
+- ✅ Permissions: Admin/BackOffice guards + public profile access
+- ✅ UI Integration: Sidebar menu, responsive design, color picker
+
+**Architecture Delivered:**
+
+```
+✅ UI Components → ✅ Custom Hooks → ✅ API Client → ✅ Routes → ✅ Services → ✅ Repository → ✅ Database
+```
+
+**Feature Ready For:** Production use, employee onboarding, HR management.

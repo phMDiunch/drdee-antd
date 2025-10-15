@@ -13,8 +13,9 @@ Quản lý **Phòng khám** theo các nghiệp vụ chính:
 
 ### 🎨 **UI Integration**
 
-- 🏷️ **Header Tag**: Hiển thị Clinic Tag (clinicCode + colorCode) theo `employee.clinicId` của user
 - 📁 **Sidebar Menu**: Thêm mục "Phòng khám" dưới nhóm **Cài đặt (Settings)**
+- 🏷️ **Employee Table**: Hiển thị Clinic Tag (clinicCode + colorCode) trong danh sách nhân viên
+- � **Toggle Archived**: UI cho phép hiện/ẩn các phòng khám đã archive
 
 ---
 
@@ -31,10 +32,10 @@ Quản lý **Phòng khám** theo các nghiệp vụ chính:
 │   │       └── unarchive/route.ts          # 📤 POST unarchive
 │   │
 │   └── 🔒 (private)/
-│       ├── layout.tsx                      # 🔐 SSR inject currentUser + currentClinic
+│       ├── layout.tsx                      # 🔐 SSR inject currentUser
 │       └── clinics/page.tsx                # 🏥 Mount ClinicsPageView
 │
-├── 🎯 features/clinic/
+├── 🎯 features/clinics/
 │   ├── 🔄 api/
 │   │   ├── getClinics.ts                   # 📋 Fetch clinics list
 │   │   ├── getClinicById.ts                # 🔍 Fetch single clinic
@@ -332,6 +333,20 @@ Quản lý **Phòng khám** theo các nghiệp vụ chính:
 - 🚨 **Error Handling**: Throw `ServiceError(code, message, httpStatus)`
 - 📤 **Response Mapping**: Route maps status codes and error format
 
+### 🚫 **Delete Protection**
+
+```typescript
+// Server-side check before hard delete
+const linked = await clinicRepo.countLinked(clinicId);
+if (linked.total > 0) {
+  throw ServiceError("HAS_LINKED_DATA",
+    "Phòng khám còn dữ liệu liên kết, chỉ có thể lưu trữ (Archive).", 409);
+}
+
+// Linked data includes:
+- Employee.clinicId (employees belonging to this clinic)
+```
+
 ---
 
 ## 🗂️ 6. State Management
@@ -458,3 +473,33 @@ useUnarchiveClinic()  → invalidates ['clinics'], ['clinic', id]
 - 🔌 [API Documentation](#-4-api-contracts)
 - ✅ [Validation Guide](#-5-validation--error-handling)
 - 🧪 [Testing Checklist](#-9-testing-checklist)
+
+---
+
+## ✅ Status: **COMPLETED**
+
+**Implementation Date**: October 2025  
+**Last Updated**: October 15, 2025  
+**Status**: Production Ready ✅
+
+All core requirements implemented and tested. Ready for production use.
+
+### 📋 **Implementation Summary**
+
+**Completed Components:**
+
+- ✅ API Endpoints: All 7 endpoints implemented (CRUD + Archive/Unarchive)
+- ✅ Frontend Components: FormModal, Table, PageView
+- ✅ Custom Hooks: All CRUD + Archive operations
+- ✅ Validation: Zod schemas for client/server
+- ✅ Business Logic: Archive system, delete protection
+- ✅ Permissions: Admin-only mutations, unique constraints
+- ✅ UI Integration: Sidebar menu, responsive design, color picker
+
+**Architecture Delivered:**
+
+```
+✅ UI Components → ✅ Custom Hooks → ✅ API Client → ✅ Routes → ✅ Services → ✅ Repository → ✅ Database
+```
+
+**Feature Ready For:** Production use, clinic management, administrative operations.
