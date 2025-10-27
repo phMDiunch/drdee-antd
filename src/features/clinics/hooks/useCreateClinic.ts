@@ -1,3 +1,4 @@
+// src/features/clinics/hooks/useCreateClinic.ts
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +19,7 @@ export function useCreateClinic() {
         queryKey: ["clinics"],
       });
     },
-    onError: (e: unknown) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
+    onError: (e: unknown) =>
+      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
 }

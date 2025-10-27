@@ -1,5 +1,5 @@
 // src/server/services/clinic.service.ts
-import { clinicRepo, type ClinicCreateInput, type ClinicUpdateInput } from "@/server/repos/clinic.repo";
+import { clinicRepo } from "@/server/repos/clinic.repo";
 import { ERR, ServiceError } from "./errors";
 import { requireAdmin } from "./auth.service";
 import {
@@ -7,6 +7,7 @@ import {
   UpdateClinicRequestSchema,
   ClinicResponseSchema,
   ClinicsResponseSchema,
+  type CreateClinicRequest,
 } from "@/shared/validation/clinic.schema";
 import type { UserCore } from "@/shared/types/user";
 import type { Clinic } from "@prisma/client";
@@ -20,18 +21,18 @@ function normalizeName(name: string) {
 }
 
 /** Map Prisma entity -> API response shape (string ISO date) */
-function mapClinicToResponse(c: Clinic) {
+function mapClinicToResponse(row: Clinic) {
   return ClinicResponseSchema.parse({
-    id: c.id,
-    clinicCode: c.clinicCode,
-    name: c.name,
-    address: c.address,
-    phone: c.phone ?? null,
-    email: c.email ?? null,
-    colorCode: c.colorCode,
-    archivedAt: c.archivedAt ? c.archivedAt.toISOString() : null,
-    createdAt: c.createdAt.toISOString(),
-    updatedAt: c.updatedAt.toISOString(),
+    id: row.id,
+    clinicCode: row.clinicCode,
+    name: row.name,
+    address: row.address,
+    phone: row.phone ?? null,
+    email: row.email ?? null,
+    colorCode: row.colorCode,
+    archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   });
 }
 
@@ -62,10 +63,12 @@ export const clinicService = {
 
     const parsed = CreateClinicRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
+      throw ERR.INVALID(
+        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      );
     }
 
-    const data: ClinicCreateInput = {
+    const data: CreateClinicRequest = {
       clinicCode: normalizeClinicCode(parsed.data.clinicCode),
       name: normalizeName(parsed.data.name),
       address: parsed.data.address.trim(),
@@ -94,7 +97,9 @@ export const clinicService = {
 
     const parsed = UpdateClinicRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
+      throw ERR.INVALID(
+        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      );
     }
 
     const { id } = parsed.data;
@@ -102,7 +107,7 @@ export const clinicService = {
     const existing = await clinicRepo.getById(id);
     if (!existing) throw ERR.NOT_FOUND("Phòng khám không tồn tại.");
 
-    const data: Partial<ClinicUpdateInput> = {
+    const data = {
       clinicCode: normalizeClinicCode(parsed.data.clinicCode),
       name: normalizeName(parsed.data.name),
       address: parsed.data.address.trim(),
@@ -120,7 +125,8 @@ export const clinicService = {
 
     if (data.name && data.name !== existing.name) {
       const dup = await clinicRepo.getByName(data.name);
-      if (dup && dup.id !== id) throw ERR.CONFLICT("Tên phòng khám đã tồn tại.");
+      if (dup && dup.id !== id)
+        throw ERR.CONFLICT("Tên phòng khám đã tồn tại.");
     }
 
     const updated = await clinicRepo.update(id, data);
@@ -139,7 +145,11 @@ export const clinicService = {
     const linked = await clinicRepo.countLinked(id);
     if (linked.total > 0) {
       // Gợi ý chuyển sang Archive
-      throw new ServiceError("HAS_LINKED_DATA", "Phòng khám còn dữ liệu liên kết, chỉ có thể lưu trữ (Archive).", 409);
+      throw new ServiceError(
+        "HAS_LINKED_DATA",
+        "Phòng khám còn dữ liệu liên kết, chỉ có thể lưu trữ (Archive).",
+        409
+      );
     }
 
     const deleted = await clinicRepo.delete(id);

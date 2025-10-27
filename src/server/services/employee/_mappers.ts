@@ -10,28 +10,50 @@ type EmployeeWithRelations = Employee & {
 };
 
 // Chuyển hàm mapEmployeeToResponse sang đây
-export function mapEmployeeToResponse(employee: EmployeeWithRelations) {
+export function mapEmployeeToResponse(row: EmployeeWithRelations) {
+  console.log("Mapping employee:", row);
   const sanitized = {
-    ...employee,
-    department: employee.department,
-    jobTitle: employee.jobTitle,
-    team: employee.team,
-    positionTitle: employee.positionTitle,
-    employeeStatus: employee.employeeStatus ?? "PENDING",
-    clinicCode: employee.clinic?.clinicCode ?? null,
-    clinicName: employee.clinic?.name ?? null,
-    colorCode: employee.clinic?.colorCode ?? null,
-    dob: employee.dob ? employee.dob.toISOString() : null,
-    nationalIdIssueDate: employee.nationalIdIssueDate ? employee.nationalIdIssueDate.toISOString() : null,
-    createdBy: employee.createdBy?.fullName ?? null,
-    updatedBy: employee.updatedBy?.fullName ?? null,
-    createdAt: employee.createdAt.toISOString(),
-    updatedAt: employee.updatedAt.toISOString(),
+    ...row,
+    department: row.department,
+    jobTitle: row.jobTitle,
+    team: row.team,
+    positionTitle: row.positionTitle,
+    employeeStatus: row.employeeStatus ?? "PENDING",
+    dob: row.dob ? row.dob.toISOString() : null,
+    nationalIdIssueDate: row.nationalIdIssueDate
+      ? row.nationalIdIssueDate.toISOString()
+      : null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    // Nested objects - giữ nguyên cấu trúc quan hệ, bao gồm id
+    clinic: row.clinic
+      ? {
+          id: row.clinic.id,
+          clinicCode: row.clinic.clinicCode,
+          name: row.clinic.name,
+          colorCode: row.clinic.colorCode,
+        }
+      : null,
+    createdBy: row.createdBy
+      ? {
+          id: row.createdBy.id,
+          fullName: row.createdBy.fullName,
+        }
+      : null,
+    updatedBy: row.updatedBy
+      ? {
+          id: row.updatedBy.id,
+          fullName: row.updatedBy.fullName,
+        }
+      : null,
   };
   const parsed = EmployeeResponseSchema.safeParse(sanitized);
   if (!parsed.success) {
     console.error("Failed to map employee response", parsed.error, sanitized);
-    throw ERR.INVALID("Dữ liệu nhân viên ở database trả về không hợp lệ. Kiểm tra database trong supabase");
+    throw ERR.INVALID(
+      "Dữ liệu nhân viên ở database trả về không hợp lệ. Kiểm tra database trong supabase"
+    );
   }
+  console.log("Mapped employee response:", parsed.data);
   return parsed.data;
 }

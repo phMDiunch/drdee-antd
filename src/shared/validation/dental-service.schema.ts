@@ -3,6 +3,11 @@ import { z } from "zod";
 
 const TAG_RE = /^[A-Za-z0-9_-]{1,29}$/;
 
+/**
+ * Dental Service Base Schema
+ * Dùng làm nền cho CreateDentalServiceRequestSchema và UpdateDentalServiceRequestSchema
+ * Chứa các field: name, description, serviceGroup, department, tags, unit, price, warranty, origin...
+ */
 export const DentalServiceBaseSchema = z.object({
   name: z.string().trim().min(2, "Tên dịch vụ là bắt buộc").max(200),
   description: z.string().trim().max(2000).optional().nullable(),
@@ -29,16 +34,32 @@ export const DentalServiceBaseSchema = z.object({
   archivedAt: z.date().optional().nullable(),
 });
 
+/**
+ * Create Dental Service Request Schema
+ * Dùng ở: Form create service (admin) + API POST /api/v1/dental-services
+ * Omit archivedAt (server tự set khi archive)
+ */
 /** ==== Create ==== */
 export const CreateDentalServiceRequestSchema = DentalServiceBaseSchema.omit({
   archivedAt: true,
 });
 
+/**
+ * Update Dental Service Request Schema
+ * Dùng ở: Form edit service (admin) + API PUT/PATCH /api/v1/dental-services/[id]
+ * Cho phép cập nhật tất cả fields + archivedAt
+ */
 /** ==== Update (edit đầy đủ các trường) ==== */
 export const UpdateDentalServiceRequestSchema = DentalServiceBaseSchema.extend({
   id: z.string().uuid("ID không hợp lệ"),
 });
 
+/**
+ * Dental Service Response Schema
+ * Dùng ở: Service layer validate response trước khi trả về API
+ * API responses: GET /api/v1/dental-services, GET /api/v1/dental-services/[id], POST /api/v1/dental-services
+ * Bao gồm tất cả fields + nested objects (createdBy, updatedBy)
+ */
 /** ==== Response object ==== */
 export const DentalServiceResponseSchema = z.object({
   id: z.string().uuid(),
@@ -56,15 +77,41 @@ export const DentalServiceResponseSchema = z.object({
   avgTreatmentMinutes: z.number().int().nullable().optional(),
   avgTreatmentSessions: z.number().int().nullable().optional(),
   archivedAt: z.string().datetime().nullable().optional(),
+  createdById: z.string().uuid(),
+  updatedById: z.string().uuid(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  // Nested objects - bao gồm cả id để dễ dàng reference
+  createdBy: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+    })
+    .nullable()
+    .optional(),
+  updatedBy: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 
+/**
+ * Dental Services Response Schema
+ * Dùng ở: Service layer validate response của GET /api/v1/dental-services (array)
+ */
 /** Response (list) */
 export const DentalServicesResponseSchema = z.array(
   DentalServiceResponseSchema
 );
 
+/**
+ * Get Dental Services Query Schema
+ * Dùng ở: Service layer validate query params của GET /api/v1/dental-services
+ * Hỗ trợ: includeArchived ("0" hoặc "1") để lấy cả services đã archive
+ */
 /** Query */
 export const GetDentalServicesQuerySchema = z.object({
   includeArchived: z.union([z.literal("0"), z.literal("1")]).optional(),

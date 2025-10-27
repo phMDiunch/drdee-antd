@@ -94,37 +94,43 @@ export default function EmployeesListView() {
   const closeModal = useCallback(() => setModalOpen(false), []);
 
   const handleSubmitForm = useCallback(
-    (payload: CreateEmployeeRequest) => {
-      createMutation.mutate(payload, {
-        onSuccess: () => closeModal(),
-      });
+    async (payload: CreateEmployeeRequest) => {
+      try {
+        await createMutation.mutateAsync(payload);
+        closeModal();
+      } catch {
+        // Error already handled in hook's onError
+      }
     },
     [createMutation, closeModal]
   );
 
   const handleToggleStatus = useCallback(
-    (row: EmployeeResponse) => {
+    async (row: EmployeeResponse) => {
       const nextStatus =
         row.employeeStatus === "RESIGNED" ? "WORKING" : "RESIGNED";
       setStatusTargetId(row.id);
-      statusMutation.mutate(
-        { id: row.id, status: nextStatus },
-        { onSettled: () => setStatusTargetId(null) }
-      );
+      try {
+        await statusMutation.mutateAsync({ id: row.id, status: nextStatus });
+      } finally {
+        setStatusTargetId(null);
+      }
     },
     [statusMutation]
   );
 
   const handleResendInvite = useCallback(
-    (row: EmployeeResponse) => {
+    async (row: EmployeeResponse) => {
       if (!row.email) {
         notify.warning("Nhân viên này chưa có email để gửi lại lời mời.");
         return;
       }
       setInviteTargetId(row.id);
-      resendMutation.mutate(row.id, {
-        onSettled: () => setInviteTargetId(null),
-      });
+      try {
+        await resendMutation.mutateAsync(row.id);
+      } finally {
+        setInviteTargetId(null);
+      }
     },
     [notify, resendMutation]
   );
@@ -135,11 +141,13 @@ export default function EmployeesListView() {
   );
 
   const handleDelete = useCallback(
-    (row: EmployeeResponse) => {
+    async (row: EmployeeResponse) => {
       setDeleteTargetId(row.id);
-      deleteMutation.mutate(row.id, {
-        onSettled: () => setDeleteTargetId(null),
-      });
+      try {
+        await deleteMutation.mutateAsync(row.id);
+      } finally {
+        setDeleteTargetId(null);
+      }
     },
     [deleteMutation]
   );

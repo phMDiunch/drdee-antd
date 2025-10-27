@@ -51,6 +51,35 @@ DELETE /api/v1/[feature]/:id           # Delete
 UI Components → Custom Hooks → API Client → Routes → Services → Repository → Database
 ```
 
+### 🗄️ **Repository Pattern (chọn phù hợp):**
+
+**Simple Pattern** (Master Data - no audit trail):
+
+```typescript
+// Use case: Settings, Config data
+async create(data: Create[Feature]Request) // Direct Zod type
+```
+
+**Complex + Server Fields** (Business Data - cần audit trail):
+
+```typescript
+// Use case: Transactional data, User-generated content
+export type [Feature]CreateInput = Create[Feature]Request & {
+  createdById: string; // Server metadata
+  updatedById: string;
+};
+```
+
+**Complex + Relations** (Entity với FK relations):
+
+```typescript
+// Use case: Entities có foreign key relationships
+export type [Feature]CreateInput = Omit<Create[Feature]Request, 'relationId'> & {
+  relation: { connect: { id: string } }; // Prisma relation validation
+  createdBy: { connect: { id: string } };
+};
+```
+
 ### 📊 **Zod Schemas (Single Source of Truth):**
 
 ```typescript

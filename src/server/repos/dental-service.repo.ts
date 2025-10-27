@@ -1,29 +1,20 @@
 // src/server/repos/dental-service.repo.ts
 import { prisma } from "@/services/prisma/prisma";
+import type {
+  CreateDentalServiceRequest,
+  UpdateDentalServiceRequest,
+} from "@/shared/validation/dental-service.schema";
 
-export type DentalServiceCreateInput = {
-  name: string;
-  description?: string | null;
-  serviceGroup?: string | null;
-  department?: string | null;
-  tags?: string[];
-  unit: string;
-  price: number;
-  minPrice?: number | null;
-  officialWarranty?: string | null;
-  clinicWarranty?: string | null;
-  origin?: string | null;
-  avgTreatmentMinutes?: number | null;
-  avgTreatmentSessions?: number | null;
-  createdById: string;
-  updatedById: string;
+export type DentalServiceCreateInput = CreateDentalServiceRequest & {
+  createdById: string; // 🔒 Server-controlled: từ currentUser.employeeId
+  updatedById: string; // 🔒 Server-controlled: từ currentUser.employeeId
 };
 
-export type DentalServiceUpdateInput = Omit<
-  DentalServiceCreateInput,
-  "createdById"
+export type DentalServiceUpdateInput = Partial<
+  Omit<UpdateDentalServiceRequest, "id">
 > & {
-  archivedAt?: Date | null;
+  updatedById?: string; // 🔒 Server-controlled: track who made the update
+  archivedAt?: Date | null; // 🔒 Server-controlled: archive timestamp
 };
 
 export const dentalServiceRepo = {
@@ -31,11 +22,21 @@ export const dentalServiceRepo = {
     return prisma.dentalService.findMany({
       where: includeArchived ? {} : { archivedAt: null },
       orderBy: [{ name: "asc" }],
+      include: {
+        createdBy: { select: { id: true, fullName: true } },
+        updatedBy: { select: { id: true, fullName: true } },
+      },
     });
   },
 
   async getById(id: string) {
-    return prisma.dentalService.findUnique({ where: { id } });
+    return prisma.dentalService.findUnique({
+      where: { id },
+      include: {
+        createdBy: { select: { id: true, fullName: true } },
+        updatedBy: { select: { id: true, fullName: true } },
+      },
+    });
   },
 
   async getByName(name: string) {
@@ -43,11 +44,24 @@ export const dentalServiceRepo = {
   },
 
   async create(data: DentalServiceCreateInput) {
-    return prisma.dentalService.create({ data });
+    return prisma.dentalService.create({
+      data,
+      include: {
+        createdBy: { select: { id: true, fullName: true } },
+        updatedBy: { select: { id: true, fullName: true } },
+      },
+    });
   },
 
   async update(id: string, data: Partial<DentalServiceUpdateInput>) {
-    return prisma.dentalService.update({ where: { id }, data });
+    return prisma.dentalService.update({
+      where: { id },
+      data,
+      include: {
+        createdBy: { select: { id: true, fullName: true } },
+        updatedBy: { select: { id: true, fullName: true } },
+      },
+    });
   },
 
   async archive(id: string, archivedAt: Date = new Date()) {

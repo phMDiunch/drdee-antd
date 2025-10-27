@@ -1,0 +1,209 @@
+// src/app/api/v1/customers/customer.http
+
+// Biến cho host, bạn có thể thay đổi nếu cần
+@host = http://localhost:3000
+
+// Biến để lưu ID sau khi tạo để test các API khác
+@customerId = 12345678-90ab-cdef-1234-567890abcdef
+@clinicId = 00784555-33d8-476e-95bd-6a7830db6ebe
+@primaryContactId = 98765432-10ba-fedc-9876-543210fedcba
+@employeeId = 87654321-09ab-cdef-8765-432109abcdef
+
+###
+# @name login
+# Chạy request này đầu tiên để lấy cookie xác thực
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "dr.phamminhduc@gmail.com",
+  "password": "123123"
+}
+
+###
+# Lấy danh sách khách hàng (có phân trang)
+GET {{host}}/api/v1/customers
+
+###
+# Lấy khách hàng với tham số phân trang và sắp xếp
+GET {{host}}/api/v1/customers?page=1&limit=10&sortBy=createdAt&sortOrder=desc
+
+###
+# Lấy khách hàng hôm nay (daily view)
+GET {{host}}/api/v1/customers/daily
+
+###
+# Lấy khách hàng theo ngày cụ thể
+GET {{host}}/api/v1/customers/daily?date=2025-10-20
+
+###
+# Lấy khách hàng hôm nay của phòng khám cụ thể
+GET {{host}}/api/v1/customers/daily?clinicId={{clinicId}}
+
+###
+# Tra cứu khách hàng theo số điện thoại
+GET {{host}}/api/v1/customers/lookup/phone?phone=0901234567
+
+###
+# Tìm kiếm khách hàng (cơ bản)
+GET {{host}}/api/v1/customers/search?q=minh&limit=10
+
+###
+# Tìm kiếm khách hàng với bộ lọc
+GET {{host}}/api/v1/customers/search?q=Van&limit=5&requirePhone=true&scope=clinic
+
+###
+# Tìm kiếm khách hàng toàn bộ (tất cả phòng khám)
+GET {{host}}/api/v1/customers/search?q=Le&scope=global&limit=15
+
+###
+# Tìm kiếm nhân viên
+GET {{host}}/api/v1/employees/search?q=Minh&limit=10
+
+###
+# Tạo khách hàng mới (đầy đủ thông tin)
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Nguyễn Văn Test",
+  "dob": "1990-05-15",
+  "gender": "male",
+  "phone": "0901234567",
+  "email": "nguyenvantest@example.com",
+  "address": "123 Đường Test, Phường 1",
+  "city": "TP. Hồ Chí Minh",
+  "district": "Quận 1",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "general_checkup",
+  "source": "walk_in",
+  "occupation": "Kỹ sư phần mềm",
+  "sourceNotes": "Khách hàng walk-in"
+}
+
+###
+# Tạo khách hàng không có SĐT (có người liên hệ chính)
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Trần Thị Test Child",
+  "dob": "2010-08-20",
+  "gender": "female",
+  "address": "456 Đường Test, Phường 2",
+  "city": "TP. Hồ Chí Minh",
+  "district": "Quận 2",
+  "relationshipToPrimary": "con",
+  "primaryContactId": "{{primaryContactId}}",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "pediatric_care",
+  "source": "customer_referral"
+}
+
+###
+# Tạo khách hàng với nguồn từ nhân viên giới thiệu
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Lê Văn Employee Referral",
+  "dob": "1985-12-10",
+  "gender": "male",
+  "phone": "0987654321",
+  "email": "levanreferral@example.com",
+  "address": "789 Đường Referral",
+  "city": "Hà Nội",
+  "district": "Ba Đình",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "orthodontics",
+  "source": "employee_search",
+  "sourceNotes": "{{employeeId}}"
+}
+
+###
+# Tạo khách hàng với nguồn từ khách hàng giới thiệu
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Phạm Thị Customer Referral",
+  "dob": "1992-03-25",
+  "gender": "female",
+  "phone": "0912345678",
+  "address": "321 Đường Customer",
+  "city": "Đà Nẵng",
+  "district": "Hải Châu",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "cosmetic_dentistry",
+  "source": "customer_search",
+  "sourceNotes": "{{customerId}}"
+}
+
+###
+# Test validation - định dạng SĐT không hợp lệ
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Test Invalid Phone",
+  "dob": "1990-01-01",
+  "gender": "male",
+  "phone": "123",
+  "address": "Test Address",
+  "city": "Test City",
+  "district": "Test District",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "general_checkup",
+  "source": "walk_in"
+}
+
+###
+# Test validation - SĐT trùng lặp
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Test Duplicate Phone",
+  "dob": "1990-01-01",
+  "gender": "male",
+  "phone": "0901234567",
+  "address": "Test Address",
+  "city": "Test City",
+  "district": "Test District",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "general_checkup",
+  "source": "walk_in"
+}
+
+###
+# Test validation - không có SĐT và không có người liên hệ chính
+POST {{host}}/api/v1/customers
+Content-Type: application/json
+
+{
+  "fullName": "Test No Phone No Primary",
+  "dob": "1990-01-01",
+  "gender": "male",
+  "address": "Test Address",
+  "city": "Test City",
+  "district": "Test District",
+  "clinicId": "{{clinicId}}",
+  "serviceOfInterest": "general_checkup",
+  "source": "walk_in"
+}
+
+###
+# Test tìm kiếm với từ khóa quá ngắn (nên fail)
+GET {{host}}/api/v1/customers/search?q=N
+
+###
+# Test tìm kiếm với độ dài tối thiểu (nên thành công)
+GET {{host}}/api/v1/customers/search?q=Ng
+
+###
+# Test tra cứu SĐT không hợp lệ
+GET {{host}}/api/v1/customers/lookup/phone?phone=123
+
+###
+# Test tra cứu SĐT không tồn tại
+GET {{host}}/api/v1/customers/lookup/phone?phone=0999999999

@@ -45,7 +45,7 @@ src/features/<feature>/
 
 ```
 src/server/
-  repos/        # Prisma thuần
+  repos/        # Prisma + Zod types, 3 patterns chuẩn (Simple/Complex/Relations)
   services/     # Business logic, ServiceError, guards
 ```
 
@@ -87,7 +87,17 @@ src/shared/validation/*.schema.ts  # Zod schemas FE/BE + types via z.infer
 - API route (App Router): validate input (body/query) bằng Zod; gọi service; validate output (map DB + ResponseSchema) trước khi trả response.
 - Client: mọi response phải parse bằng Zod ở API client (api/\*.ts) để phát hiện lệch hợp đồng sớm.
 
-### 6.1 Thông Báo & Lỗi (chuẩn hoá)
+### 6.1 Repository Patterns (chuẩn hoá)
+
+Repo types dựa trên Zod schemas với 3 patterns:
+
+- **Simple** (Clinic): `API Schema = Repo Type`
+- **Complex + Server Fields** (Customer, Dental Service): `API Schema + { createdById, updatedById }`
+- **Complex + Relations** (Employee): `API Schema + { clinic: { connect }, createdBy: { connect } }`
+
+Không duplicate types; luôn extend từ Zod schemas làm single source of truth.
+
+### 6.2 Thông Báo & Lỗi (chuẩn hoá)
 
 - Luôn dùng `useNotify()` thay vì gọi trực tiếp `App.useApp().message`.
 - Dùng `COMMON_MESSAGES` cho fallback chung (`src/shared/constants/messages.ts`).
@@ -135,8 +145,8 @@ UI: màn hình/modal, states (loading/empty/error), responsive
 API: endpoints + contracts (định nghĩa từ UI needs)
 
 Files theo luồng:
-- API-first: shared/validation → server → api routes → frontend
-- Frontend-driven: views/components/hooks/api → shared/validation → server
+- API-first: shared/validation → server/repos (chọn pattern) → server/services → api routes → frontend
+- Frontend-driven: views/components/hooks/api → shared/validation → server/repos → server/services
 
 Ghi chú kỹ thuật (nếu có)
 ```

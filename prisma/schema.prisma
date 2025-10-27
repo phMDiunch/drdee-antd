@@ -39,46 +39,9 @@ model Clinic {
 
   // Liên kết đến nhân viên
   employees Employee[]
-}
 
-model DentalService {
-  id String @id @default(uuid())
-
-  // Thông tin cơ bản
-  name        String  @unique // Tên dịch vụ, ví dụ: "Cạo vôi răng"
-  description String? // Mô tả chi tiết
-
-  // Thông tin phân loại
-  serviceGroup String? // Nhóm dịch vụ, ví dụ: niềng răng invisalign, niềng răng mắc cài
-  department   String? // Bộ môn, ví dụ: niềng răng invisalign moderate, niềng răng invisalign comprehensive
-  tags         String[] @default([]) // Các thẻ (tags) để phân loại dịch vụ do phòng khám tự định nghĩa
-
-  // Thông tin giá & đơn vị
-  unit     String // Đơn vị tính: "Răng", "Hàm", "Lần"
-  price    Int // Giá niêm yết, lưu dạng Int để tránh sai số
-  minPrice Int? // Giá tối thiểu (nếu có)
-
-  // Thông tin chi tiết & bảo hành
-  officialWarranty     String? // Bảo hành chính hãng
-  clinicWarranty       String? // Bảo hành uy tín từ phòng khám
-  origin               String? // Xuất xứ
-  avgTreatmentMinutes  Int? // Số phút điều trị trung bình
-  avgTreatmentSessions Int? // Số buổi điều trị trung bình
-
-  // Metadata
-  archivedAt DateTime? @db.Timestamptz // Ngày dịch vụ ngừng hoạt động
-  createdAt  DateTime  @default(now()) @db.Timestamptz // Ngày tạo
-  updatedAt  DateTime  @updatedAt @db.Timestamptz // Ngày cập nhật cuối
-
-  createdById String // ID của người tạo
-  updatedById String // ID của người cập nhật
-
-  // Liên kết đến nhân viên
-  createdBy Employee @relation("CreatedDentalServices", fields: [createdById], references: [id])
-  updatedBy Employee @relation("UpdatedDentalServices", fields: [updatedById], references: [id])
-
-  // Liên kết đến dịch vụ tư vấn
-  consultedServices ConsultedService[]
+  // Liên kết đến khách hàng
+  customers Customer[]
 }
 
 model Employee {
@@ -183,6 +146,46 @@ model Employee {
   updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
 }
 
+model DentalService {
+  id String @id @default(uuid())
+
+  // Thông tin cơ bản
+  name        String  @unique // Tên dịch vụ, ví dụ: "Cạo vôi răng"
+  description String? // Mô tả chi tiết
+
+  // Thông tin phân loại
+  serviceGroup String? // Nhóm dịch vụ, ví dụ: niềng răng invisalign, niềng răng mắc cài
+  department   String? // Bộ môn, ví dụ: niềng răng invisalign moderate, niềng răng invisalign comprehensive
+  tags         String[] @default([]) // Các thẻ (tags) để phân loại dịch vụ do phòng khám tự định nghĩa
+
+  // Thông tin giá & đơn vị
+  unit     String // Đơn vị tính: "Răng", "Hàm", "Lần"
+  price    Int // Giá niêm yết, lưu dạng Int để tránh sai số
+  minPrice Int? // Giá tối thiểu (nếu có)
+
+  // Thông tin chi tiết & bảo hành
+  officialWarranty     String? // Bảo hành chính hãng
+  clinicWarranty       String? // Bảo hành uy tín từ phòng khám
+  origin               String? // Xuất xứ
+  avgTreatmentMinutes  Int? // Số phút điều trị trung bình
+  avgTreatmentSessions Int? // Số buổi điều trị trung bình
+
+  // Metadata
+  archivedAt DateTime? @db.Timestamptz // Ngày dịch vụ ngừng hoạt động
+  createdAt  DateTime  @default(now()) @db.Timestamptz // Ngày tạo
+  updatedAt  DateTime  @updatedAt @db.Timestamptz // Ngày cập nhật cuối
+
+  createdById String // ID của người tạo
+  updatedById String // ID của người cập nhật
+
+  // Liên kết đến nhân viên
+  createdBy Employee @relation("CreatedDentalServices", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedDentalServices", fields: [updatedById], references: [id])
+
+  // Liên kết đến dịch vụ tư vấn
+  consultedServices ConsultedService[]
+}
+
 model Customer {
   id String @id @default(uuid())
 
@@ -198,23 +201,26 @@ model Customer {
   city     String? // Tỉnh/Thành phố
   district String? // Quận/Huyện
 
-  relationshipToPrimary String? // Mối quan hệ: Bố, Mẹ, Con, Vợ, Chồng...
-  primaryContactId      String? // ID của người liên hệ chính
+  primaryContactRole String? // Vai trò người liên hệ: Bố, Mẹ, Con, Vợ, Chồng...
+  primaryContactId   String? // ID của người liên hệ chính
 
   // Thông tin phân loại
   customerCode String? @unique // Mã khách hàng
   clinicId     String? // Chi nhánh
 
-  occupation         String? // Nghề nghiệp
-  source             String? // Nguồn khách
-  sourceNotes        String? // Ghi chú nguồn
-  servicesOfInterest String[] // Dịch vụ quan tâm (mảng các chuỗi)
+  occupation        String? // Nghề nghiệp
+  source            String? // Nguồn khách
+  sourceNotes       String? // Ghi chú nguồn
+  serviceOfInterest String? // Dịch vụ quan tâm (một giá trị duy nhất)
 
   // Metadata  
   createdById String // ID của người tạo
   updatedById String // ID của người cập nhật cuối
   createdAt   DateTime @default(now()) @db.Timestamptz
   updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  // Liên kết đến chi nhánh
+  clinic Clinic? @relation(fields: [clinicId], references: [id])
 
   // Liên kết đến khách hàng
   primaryContact Customer?  @relation("PrimaryContactDependents", fields: [primaryContactId], references: [id])

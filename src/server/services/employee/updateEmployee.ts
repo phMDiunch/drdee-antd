@@ -1,4 +1,5 @@
 import { employeeRepo } from "@/server/repos/employee.repo";
+import type { EmployeeUpdateInput } from "@/server/repos/employee.repo";
 import { ERR } from "@/server/services/errors";
 import {
   SetEmployeeStatusRequestSchema,
@@ -7,7 +8,6 @@ import {
 import type { UserCore } from "@/shared/types/user";
 import { mapEmployeeToResponse } from "./_mappers";
 import { ensureSelfOrAdmin, isAdmin } from "./_guards";
-import { Prisma } from "@prisma/client";
 import { requireAdmin } from "../auth.service";
 import { getSupabaseAdminClient } from "@/services/supabase/admin";
 
@@ -63,7 +63,7 @@ export async function updateEmployee(
     }
   }
 
-  const dataToUpdate: Prisma.EmployeeUpdateInput = {
+  const dataToUpdate: EmployeeUpdateInput = {
     ...restData,
     updatedBy: currentUser.employeeId
       ? { connect: { id: currentUser.employeeId } }

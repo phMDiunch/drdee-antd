@@ -10,7 +10,6 @@ import {
   Space,
   Typography,
   theme,
-  Input,
   Badge,
   Avatar,
   Dropdown,
@@ -30,6 +29,7 @@ import type { MenuProps } from "antd";
 import { APP_LAYOUT } from "./theme";
 import type { UserCore } from "@/shared/types/user";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import GlobalSearch from "@/shared/components/GlobalSearch";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -69,13 +69,6 @@ export default function AppHeader({
 
   const roleLabel = currentUser?.role ?? "unknown";
   const [searchOpen, setSearchOpen] = useState(false);
-
-  const onSearch = (value: string) => {
-    const q = value?.trim();
-    if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-    setSearchOpen(false);
-  };
 
   const logout = useLogout();
 
@@ -135,13 +128,7 @@ export default function AppHeader({
         </Space>
 
         {isMdUp ? (
-          <Input.Search
-            placeholder="Tìm khách hàng, lịch hẹn, phiếu thu..."
-            onSearch={onSearch}
-            enterButton
-            allowClear
-            style={{ flex: 1, maxWidth: 400, minWidth: 160 }}
-          />
+          <GlobalSearch style={{ flex: 1, maxWidth: 400, minWidth: 160 }} />
         ) : (
           <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
             <Tooltip title="Tìm kiếm">
@@ -223,15 +210,16 @@ export default function AppHeader({
         onCancel={() => setSearchOpen(false)}
         footer={null}
         width={isMdUp ? 640 : "90%"}
-        title="Tìm kiếm"
+        title="Tìm kiếm khách hàng"
         centered
+        afterClose={() => {
+          // Reset search state if needed
+        }}
       >
-        <Input.Search
-          placeholder="Nhập từ khóa..."
+        <GlobalSearch
           autoFocus
-          allowClear
-          enterButton
-          onSearch={onSearch}
+          style={{ width: "100%" }}
+          placeholder="Nhập mã KH, tên hoặc SĐT..."
         />
       </Modal>
     </>

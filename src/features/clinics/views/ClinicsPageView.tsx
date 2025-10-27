@@ -53,15 +53,16 @@ export default function ClinicsPageView({ isAdmin }: Props) {
   }, []);
 
   const handleSubmit = useCallback(
-    (payload: CreateClinicRequest | UpdateClinicRequest) => {
-      if (mode === "create") {
-        create.mutate(payload as CreateClinicRequest, {
-          onSuccess: closeModal,
-        });
-      } else if (mode === "edit" && editing) {
-        update.mutate(payload as UpdateClinicRequest, {
-          onSuccess: closeModal,
-        });
+    async (payload: CreateClinicRequest | UpdateClinicRequest) => {
+      try {
+        if (mode === "create") {
+          await create.mutateAsync(payload as CreateClinicRequest);
+        } else if (mode === "edit" && editing) {
+          await update.mutateAsync(payload as UpdateClinicRequest);
+        }
+        closeModal();
+      } catch {
+        // Error already handled in hook's onError
       }
     },
     [mode, create, update, editing, closeModal]

@@ -57,7 +57,7 @@ src/
 │
 ├── server/
 │   ├── repos/
-│   │   └── [feature].repo.ts           # 🗄️ Database operations
+│   │   └── [feature].repo.ts           # 🗄️ Database operations (chọn 1/3 patterns)
 │   └── services/
 │       └── [feature].service.ts        # ⚙️ Business logic
 │
@@ -97,6 +97,32 @@ src/
 - **Suspense Boundaries**: Wrap components sử dụng `useSearchParams()` trong `<Suspense>`
 - **Type Safety**: Không dùng `any`, thay bằng `unknown` + type guards cho error handling
 - **API Routes**: Validate errors với proper type checking trước khi access properties
+
+### 🗄️ **Repository Patterns:**
+
+**Pattern Selection** (chọn 1/3 dựa trên entity type):
+
+```typescript
+// 🟢 Simple Pattern (Master Data)
+// Use case: Settings, Config, Clinic data
+async create(data: Create[Feature]Request) // Direct Zod type
+
+// 🟡 Complex + Server Fields (Business Data)
+// Use case: Customer, DentalService (cần audit trail)
+export type [Feature]CreateInput = Create[Feature]Request & {
+  createdById: string; // Server-controlled metadata
+  updatedById: string;
+};
+
+// 🟠 Complex + Relations (FK Relationships)
+// Use case: Employee (có relations)
+export type [Feature]CreateInput = Omit<Create[Feature]Request, 'foreignKeyId'> & {
+  foreignKey: { connect: { id: string } }; // Prisma relation
+  createdBy: { connect: { id: string } };  // Audit trail relation
+};
+```
+
+**Nguyên tắc**: Không duplicate types → extend từ Zod schemas làm single source of truth.
 
 ---
 
@@ -333,9 +359,10 @@ useDelete[Feature]() → invalidates ['[feature]s']
 ### ✅ **Implementation Checklist:**
 
 - [ ] Database schema defined
+- [ ] Repository pattern selected (Simple/Complex+Fields/Complex+Relations)
+- [ ] Zod validation schemas implemented
 - [ ] API endpoints created
 - [ ] Frontend components built
-- [ ] Validation schemas implemented
 - [ ] UI integration completed
 - [ ] Error handling added
 

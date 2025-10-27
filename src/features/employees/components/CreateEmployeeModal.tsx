@@ -6,7 +6,8 @@ import { Modal, Form, Input, Row, Col, Select } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  CreateEmployeeRequestSchema,
+  CreateEmployeeFormSchema,
+  type CreateEmployeeFormData,
   type CreateEmployeeRequest,
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
@@ -26,7 +27,8 @@ type Props = {
   onSubmit: (payload: CreateEmployeeRequest) => void;
 };
 
-const defaultEmployeeFormValues: CreateEmployeeRequest = {
+// Constants
+const defaultEmployeeFormValues: Partial<CreateEmployeeFormData> = {
   fullName: "",
   email: undefined,
   phone: undefined,
@@ -70,14 +72,13 @@ export default function CreateEmployeeModal({
   onCancel,
   onSubmit,
 }: Props) {
-  const schema = CreateEmployeeRequestSchema;
   const {
     control,
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<CreateEmployeeRequest>({
-    resolver: zodResolver(schema),
+  } = useForm<CreateEmployeeFormData>({
+    resolver: zodResolver(CreateEmployeeFormSchema),
     defaultValues: defaultEmployeeFormValues,
     mode: "onBlur",
     reValidateMode: "onChange",

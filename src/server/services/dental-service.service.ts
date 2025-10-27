@@ -13,15 +13,21 @@ import {
   DentalServicesResponseSchema,
 } from "@/shared/validation/dental-service.schema";
 import type { UserCore } from "@/shared/types/user";
-import type { DentalService } from "@prisma/client";
+import type { DentalService, Employee } from "@prisma/client";
+
+// DentalService với relations từ Prisma
+type DentalServiceWithRelations = DentalService & {
+  createdBy?: Pick<Employee, "id" | "fullName"> | null;
+  updatedBy?: Pick<Employee, "id" | "fullName"> | null;
+};
 
 function normalizeName(name: string) {
   return name.trim();
 }
 
 /** Map Prisma entity -> API response shape (string ISO date) */
-function mapDentalServiceToResponse(row: DentalService) {
-  return DentalServiceResponseSchema.parse({
+function mapDentalServiceToResponse(row: DentalServiceWithRelations) {
+  const sanitized = {
     id: row.id,
     name: row.name,
     description: row.description ?? null,
@@ -37,9 +43,37 @@ function mapDentalServiceToResponse(row: DentalService) {
     avgTreatmentMinutes: row.avgTreatmentMinutes ?? null,
     avgTreatmentSessions: row.avgTreatmentSessions ?? null,
     archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
+    createdById: row.createdById,
+    updatedById: row.updatedById,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-  });
+    // Nested objects - giữ nguyên cấu trúc quan hệ, bao gồm id
+    createdBy: row.createdBy
+      ? {
+          id: row.createdBy.id,
+          fullName: row.createdBy.fullName,
+        }
+      : null,
+    updatedBy: row.updatedBy
+      ? {
+          id: row.updatedBy.id,
+          fullName: row.updatedBy.fullName,
+        }
+      : null,
+  };
+
+  const parsed = DentalServiceResponseSchema.safeParse(sanitized);
+  if (!parsed.success) {
+    console.error(
+      "Failed to map dental service response",
+      parsed.error,
+      sanitized
+    );
+    throw ERR.INVALID(
+      "Dữ liệu dịch vụ nha khoa ở database trả về không hợp lệ. Kiểm tra database trong supabase"
+    );
+  }
+  return parsed.data;
 }
 
 export const dentalServiceService = {
@@ -49,7 +83,9 @@ export const dentalServiceService = {
   async list(currentUser: UserCore | null, includeArchived: boolean) {
     // (Nếu cần phân quyền xem ở đây; hiện tại ai đã login cũng xem được)
     const rows = await dentalServiceRepo.list(includeArchived);
-    return DentalServicesResponseSchema.parse(rows.map(mapDentalServiceToResponse));
+    return DentalServicesResponseSchema.parse(
+      rows.map(mapDentalServiceToResponse)
+    );
   },
 
   /**
@@ -73,7 +109,9 @@ export const dentalServiceService = {
 
     const parsed = CreateDentalServiceRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
+      throw ERR.INVALID(
+        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      );
     }
 
     const data: DentalServiceCreateInput = {
@@ -114,7 +152,9 @@ export const dentalServiceService = {
 
     const parsed = UpdateDentalServiceRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
+      throw ERR.INVALID(
+        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      );
     }
 
     const { id } = parsed.data;
@@ -162,7 +202,11 @@ export const dentalServiceService = {
     const linked = await dentalServiceRepo.countLinked(id);
     if (linked.total > 0) {
       // Gợi ý chuyển sang Archive
-      throw new ServiceError("HAS_LINKED_DATA", "Dịch vụ đang có dữ liệu liên kết, chỉ có thể lưu trữ (Archive).", 409);
+      throw new ServiceError(
+        "HAS_LINKED_DATA",
+        "Dịch vụ đang có dữ liệu liên kết, chỉ có thể lưu trữ (Archive).",
+        409
+      );
     }
 
     const deleted = await dentalServiceRepo.delete(id);

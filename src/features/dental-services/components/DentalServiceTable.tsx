@@ -153,6 +153,7 @@ export default function DentalServiceTable({
 
   return (
     <Table<DentalServiceResponse>
+      size="small"
       rowKey={(r) => r.id}
       loading={loading}
       columns={columns}

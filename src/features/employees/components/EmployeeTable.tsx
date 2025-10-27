@@ -20,10 +20,10 @@ type Props = {
   statusLoadingId?: string | null;
   inviteLoadingId?: string | null;
   deleteLoadingId?: string | null;
-  onEdit?: (row: EmployeeResponse) => void;
-  onDelete?: (row: EmployeeResponse) => void;
-  onToggleStatus?: (row: EmployeeResponse) => void;
-  onResendInvite?: (row: EmployeeResponse) => void;
+  onEdit: (row: EmployeeResponse) => void;
+  onDelete: (row: EmployeeResponse) => void;
+  onToggleStatus: (row: EmployeeResponse) => void;
+  onResendInvite: (row: EmployeeResponse) => void;
 };
 
 function renderStatusTag(status?: string | null) {
@@ -100,17 +100,23 @@ export default function EmployeeTable({
         dataIndex: "clinicCode",
         key: "clinicCode",
         sorter: (a, b) =>
-          (a.clinicCode || "").localeCompare(b.clinicCode || ""),
+          (a.clinic?.clinicCode || "").localeCompare(
+            b.clinic?.clinicCode || ""
+          ),
         filterSearch: true,
         filters: [
-          ...new Set(data.map((item) => item.clinicCode).filter(Boolean)),
+          ...new Set(
+            data.map((item) => item.clinic?.clinicCode).filter(Boolean)
+          ),
         ].map((code) => ({
           text: code!,
           value: code!,
         })),
-        onFilter: (value, record) => record.clinicCode === value,
+        onFilter: (value, record) => record.clinic?.clinicCode === value,
         render: (_: unknown, row) => (
-          <Tag color={row.colorCode || "default"}>{row.clinicCode}</Tag>
+          <Tag color={row.clinic?.colorCode || "default"}>
+            {row.clinic?.clinicCode}
+          </Tag>
         ),
       },
       {
@@ -177,7 +183,7 @@ export default function EmployeeTable({
               <Tooltip title="Sửa">
                 <Button
                   icon={<EditOutlined />}
-                  onClick={() => onEdit?.(row)}
+                  onClick={() => onEdit(row)}
                   disabled={disabled}
                 />
               </Tooltip>
@@ -185,7 +191,7 @@ export default function EmployeeTable({
               <Tooltip title="Gửi lại lời mời">
                 <Button
                   icon={<MailOutlined />}
-                  onClick={() => onResendInvite?.(row)}
+                  onClick={() => onResendInvite(row)}
                   disabled={!row.email || disabled}
                   loading={inviteLoadingId === row.id}
                 />
@@ -194,7 +200,7 @@ export default function EmployeeTable({
               <Popconfirm
                 title="Đổi trạng thái làm việc"
                 description="Bạn muốn đổi trạng thái làm việc của nhân viên này?"
-                onConfirm={() => onToggleStatus?.(row)}
+                onConfirm={() => onToggleStatus(row)}
                 okText="Đồng ý"
                 cancelText="Hủy"
                 disabled={disabled || !canToggle}
@@ -211,7 +217,7 @@ export default function EmployeeTable({
               <Popconfirm
                 title="Xóa nhân viên"
                 description="Bạn chắc chắn muốn xóa? Hành động này không thể hoàn tác."
-                onConfirm={() => onDelete?.(row)}
+                onConfirm={() => onDelete(row)}
                 okText="Xóa"
                 cancelText="Hủy"
                 disabled={disabled}

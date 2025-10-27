@@ -8,7 +8,6 @@ import type { UserCore } from "@/shared/types/user";
 import { mapEmployeeToResponse } from "./_mappers";
 import { requireAdmin } from "@/server/services/auth.service";
 import { getSupabaseAdminClient } from "@/services/supabase/admin";
-import { Prisma } from "@prisma/client";
 
 function buildInviteRedirectUrl(employeeId: string) {
   const baseUrl =
@@ -221,7 +220,7 @@ export async function completeEmployeeProfilePublic(body: unknown) {
     );
   }
 
-  const payload: Prisma.EmployeeUpdateInput = {
+  const payload = {
     fullName: profile.fullName,
     dob: profile.dob,
     gender: profile.gender,
@@ -235,7 +234,7 @@ export async function completeEmployeeProfilePublic(body: unknown) {
     insuranceNumber: profile.insuranceNumber,
     bankAccountNumber: profile.bankAccountNumber,
     bankName: profile.bankName,
-    employeeStatus: "WORKING",
+    employeeStatus: "WORKING" as const,
     // Note: No updatedBy since this is public access
   };
 

@@ -6,6 +6,11 @@ export const VN_PHONE_RE = /^(0)\d{9}$/;
 // Mã màu hex 6 ký tự
 export const HEX6_RE = /^#([0-9A-Fa-f]{6})$/;
 
+/**
+ * Clinic Base Schema
+ * Dùng làm nền cho CreateClinicRequestSchema và UpdateClinicRequestSchema
+ * Chứa các field cơ bản: clinicCode, name, address, phone, email, colorCode
+ */
 export const ClinicBaseSchema = z.object({
   clinicCode: z.string().trim().min(1, "Mã phòng khám là bắt buộc"),
   name: z.string().trim().min(1, "Tên phòng khám là bắt buộc"),
@@ -21,16 +26,31 @@ export const ClinicBaseSchema = z.object({
   archivedAt: z.date().optional().nullable(), // client gửi khi cần; server set khi archive
 });
 
+/**
+ * Create Clinic Request Schema
+ * Dùng ở: Form create clinic (admin) + API POST /api/v1/clinics
+ * Omit archivedAt (server tự set khi archive)
+ */
 /** ==== Create ==== */
 export const CreateClinicRequestSchema = ClinicBaseSchema.omit({
   archivedAt: true,
 });
 
+/**
+ * Update Clinic Request Schema
+ * Dùng ở: Form edit clinic (admin) + API PUT/PATCH /api/v1/clinics/[id]
+ * Cho phép cập nhật tất cả fields cơ bản + archivedAt
+ */
 /** ==== Update (edit đầy đủ các trường) ==== */
 export const UpdateClinicRequestSchema = ClinicBaseSchema.extend({
   id: z.string().uuid("ID không hợp lệ"),
 });
 
+/**
+ * Clinic Response Schema
+ * Dùng ở: Service layer validate response trước khi trả về API
+ * API responses: GET /api/v1/clinics, GET /api/v1/clinics/[id], POST /api/v1/clinics
+ */
 /** ==== Response object ==== */
 export const ClinicResponseSchema = z.object({
   id: z.string().uuid(),
@@ -45,9 +65,18 @@ export const ClinicResponseSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
+/**
+ * Clinics Response Schema
+ * Dùng ở: Service layer validate response của GET /api/v1/clinics (array of clinics)
+ */
 /** Response (list) */
 export const ClinicsResponseSchema = z.array(ClinicResponseSchema);
 
+/**
+ * Get Clinics Query Schema
+ * Dùng ở: Service layer validate query params của GET /api/v1/clinics
+ * Hỗ trợ: includeArchived ("0" hoặc "1") để lấy cả clinics đã archive
+ */
 /** Query */
 export const GetClinicsQuerySchema = z.object({
   includeArchived: z.union([z.literal("0"), z.literal("1")]).optional(),

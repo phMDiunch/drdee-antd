@@ -6,7 +6,20 @@ export const EMPLOYEE_ROLES = ["admin", "employee"] as const;
 export const EMPLOYEE_STATUSES = ["PENDING", "WORKING", "RESIGNED"] as const;
 const VN_NATIONAL_ID_RE = /^(?:\d{9}|\d{12})$/;
 
-export const EmployeeBaseSchema = z.object({
+/**
+ * ============================================================================
+ * SHARED BASE SCHEMAS (Common Fields)
+ * ============================================================================
+ */
+
+/**
+ * Employee Common Fields Schema
+ * Base schema chứa tất cả fields cơ bản NGOẠI TRỪ các extended profile fields (dob, gender...)
+ * Dùng để tái sử dụng cho cả Frontend (form) và Backend (API)
+ * - Frontend: Có thể extend với Date object cho DatePicker
+ * - Backend: Có thể extend với z.coerce.date() cho API
+ */
+const EmployeeCommonFieldsSchema = z.object({
   fullName: z.string().trim().min(1, "Vui lòng nhập họ và tên"),
   email: z.string().trim().email("Email không hợp lệ").optional().nullable(),
   phone: z
@@ -15,7 +28,6 @@ export const EmployeeBaseSchema = z.object({
     .regex(VN_PHONE_RE, "Số điện thoại không hợp lệ")
     .optional()
     .nullable(),
-  // Không dùng required_error, giữ kiểu cũ
   role: z.enum(EMPLOYEE_ROLES),
   clinicId: z.string().uuid("Phòng khám không hợp lệ"),
   employeeCode: z.string().trim().optional().nullable(),
@@ -26,11 +38,78 @@ export const EmployeeBaseSchema = z.object({
   positionTitle: z.string().trim().optional().nullable(),
 });
 
-export const CreateEmployeeRequestSchema = EmployeeBaseSchema;
+/**
+ * ============================================================================
+ * FRONTEND SCHEMAS (Client-side Form Validation)
+ * ============================================================================
+ */
 
-// Keep a minimal schema for backward compatibility
-// Admin có thể sửa thêm các trường hồ sơ cá nhân
-export const UpdateEmployeeRequestSchema = EmployeeBaseSchema.extend({
+/**
+ * Create Employee Form Schema (FRONTEND ONLY)
+ * Dùng ở: CreateEmployeeModal component với React Hook Form + zodResolver
+ * Tạo nhân viên mới chỉ cần thông tin cơ bản, không cần dob/gender/extended profile
+ */
+export const CreateEmployeeFormSchema = EmployeeCommonFieldsSchema;
+
+/**
+ * Update Employee Form Schema (FRONTEND ONLY)
+ * Dùng ở: EmployeeEditView component với React Hook Form + zodResolver
+ *
+ * Khác biệt với Backend schema:
+ * - dob: Date object (DatePicker onChange returns Date, not string)
+ * - nationalIdIssueDate: Date object (DatePicker)
+ *
+ * Flow: User input → Validate (Date object) → onSubmit → Convert to ISO string → API
+ */
+export const UpdateEmployeeFormSchema = EmployeeCommonFieldsSchema.extend({
+  id: z.string().uuid("ID nhân viên không hợp lệ"),
+  dob: z.date().optional().nullable(),
+  gender: z.string().trim().optional().nullable(),
+  favoriteColor: z
+    .string()
+    .regex(HEX6_RE, "Màu yêu thích phải là mã hex")
+    .optional()
+    .nullable(),
+  currentAddress: z.string().trim().optional().nullable(),
+  hometown: z.string().trim().optional().nullable(),
+  nationalId: z
+    .string()
+    .trim()
+    .regex(VN_NATIONAL_ID_RE, "CMND/CCCD phải gồm 9 hoặc 12 chữ số")
+    .optional()
+    .nullable(),
+  nationalIdIssueDate: z.date().optional().nullable(),
+  nationalIdIssuePlace: z.string().trim().optional().nullable(),
+  taxId: z.string().trim().optional().nullable(),
+  insuranceNumber: z.string().trim().optional().nullable(),
+  bankAccountNumber: z.string().trim().optional().nullable(),
+  bankName: z.string().trim().optional().nullable(),
+});
+
+/**
+ * ============================================================================
+ * BACKEND SCHEMAS (Server-side API Validation)
+ * ============================================================================
+ */
+
+/**
+ * Create Employee Request Schema (BACKEND - API)
+ * Dùng ở: API POST /api/v1/employees (server-side)
+ * Service layer validate request từ client trước khi ghi database
+ * Tạo nhân viên mới với status PENDING, gửi email mời hoàn thiện hồ sơ
+ */
+export const CreateEmployeeRequestSchema = EmployeeCommonFieldsSchema;
+
+/**
+ * Update Employee Request Schema (BACKEND - API)
+ * Dùng ở: API PUT/PATCH /api/v1/employees/[id] (server-side)
+ * Admin có thể sửa cả thông tin cơ bản + hồ sơ cá nhân (dob, gender, nationalId...)
+ *
+ * Khác với FormSchema:
+ * - dob: z.coerce.date() (auto-convert từ ISO string/Date object)
+ * - nationalIdIssueDate: z.coerce.date()
+ */
+export const UpdateEmployeeRequestSchema = EmployeeCommonFieldsSchema.extend({
   id: z.string().uuid("ID nhân viên không hợp lệ"),
   dob: z.coerce.date("Ngày sinh không hợp lệ").optional().nullable(),
   gender: z.string().trim().optional().nullable(),
@@ -58,9 +137,12 @@ export const UpdateEmployeeRequestSchema = EmployeeBaseSchema.extend({
   bankName: z.string().trim().optional().nullable(),
 });
 
-// Extended admin edit schema: allow updating additional profile fields
-// (ĐÃ GỘP) Không cần schema riêng cho admin nữa
-
+/**
+ * Complete Profile Request Schema (BACKEND - API)
+ * Dùng ở: API POST /api/v1/employees/[id]/complete-profile (server-side)
+ * Nhân viên PENDING phải điền đầy đủ: dob, gender, nationalId, address... + set password
+ * Sau khi hoàn thành → status chuyển WORKING
+ */
 export const CompleteProfileRequestSchema = z
   .object({
     id: z.string().uuid(),
@@ -91,12 +173,28 @@ export const CompleteProfileRequestSchema = z
     path: ["confirmPassword"],
   });
 
+/**
+ * Set Employee Status Request Schema (BACKEND - API)
+ * Dùng ở: API PATCH /api/v1/employees/[id]/status (server-side)
+ * Admin có thể set status WORKING hoặc RESIGNED (không thể set PENDING)
+ */
 export const SetEmployeeStatusRequestSchema = z.object({
-  // Admin can only set WORKING or RESIGNED
   status: z.enum(["WORKING", "RESIGNED"] as const),
 });
 
-export const EmployeeResponseSchema = EmployeeBaseSchema.extend({
+/**
+ * ============================================================================
+ * RESPONSE SCHEMAS (Backend API)
+ * ============================================================================
+ */
+
+/**
+ * Employee Response Schema (BACKEND - API Response)
+ * Dùng ở: Service layer validate response trước khi trả về API
+ * API responses: GET /api/v1/employees, GET /api/v1/employees/[id], POST /api/v1/employees
+ * Bao gồm tất cả fields: thông tin cơ bản + hồ sơ cá nhân + nested objects (clinic, createdBy, updatedBy)
+ */
+export const EmployeeResponseSchema = EmployeeCommonFieldsSchema.extend({
   id: z.string().uuid(),
   uid: z.string().nullable().optional(),
   dob: z.string().datetime().nullable().optional(),
@@ -115,18 +213,46 @@ export const EmployeeResponseSchema = EmployeeBaseSchema.extend({
   bankName: z.string().nullable().optional(),
   createdById: z.string().uuid().nullable().optional(),
   updatedById: z.string().uuid().nullable().optional(),
-  // Bổ sung metadata thân thiện
-  createdBy: z.string().nullable().optional(),
-  updatedBy: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  clinicCode: z.string().nullable().optional(),
-  clinicName: z.string().nullable().optional(),
-  colorCode: z.string().regex(HEX6_RE).nullable().optional(),
+  // Nested objects - bao gồm cả id để dễ dàng reference
+  clinic: z
+    .object({
+      id: z.string().uuid(),
+      clinicCode: z.string(),
+      name: z.string(),
+      colorCode: z.string().regex(HEX6_RE),
+    })
+    .nullable()
+    .optional(),
+  createdBy: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+    })
+    .nullable()
+    .optional(),
+  updatedBy: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 
+/**
+ * Employees Response Schema (BACKEND - API Response)
+ * Dùng ở: Service layer validate response của GET /api/v1/employees (array of employees)
+ */
 export const EmployeesResponseSchema = z.array(EmployeeResponseSchema);
 
+/**
+ * Working Employee Response Schema (BACKEND - API Response)
+ * Dùng ở: API GET /api/v1/employees/working (chỉ lấy nhân viên đang làm việc)
+ * Trả về thông tin tối giản: id, fullName, employeeCode, jobTitle, role, department, clinicId
+ * Dùng cho dropdown/search nhân viên trong các form (ví dụ: source=employee_search)
+ */
 export const WorkingEmployeeResponseSchema = z.array(
   z.object({
     id: z.string(),
@@ -139,11 +265,33 @@ export const WorkingEmployeeResponseSchema = z.array(
   })
 );
 
+/**
+ * ============================================================================
+ * QUERY SCHEMAS (Backend API)
+ * ============================================================================
+ */
+
+/**
+ * Get Employees Query Schema (BACKEND - API Query Params)
+ * Dùng ở: Service layer validate query params của GET /api/v1/employees
+ * Hỗ trợ: search (fullName, employeeCode, email, phone), filter theo status
+ */
 export const GetEmployeesQuerySchema = z.object({
   search: z.string().optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 });
 
+/**
+ * ============================================================================
+ * TYPE EXPORTS
+ * ============================================================================
+ */
+
+/** Frontend Types */
+export type CreateEmployeeFormData = z.infer<typeof CreateEmployeeFormSchema>;
+export type UpdateEmployeeFormData = z.infer<typeof UpdateEmployeeFormSchema>;
+
+/** Backend Types */
 export type CreateEmployeeRequest = z.infer<typeof CreateEmployeeRequestSchema>;
 export type UpdateEmployeeRequest = z.infer<typeof UpdateEmployeeRequestSchema>;
 export type EmployeeResponse = z.infer<typeof EmployeeResponseSchema>;

@@ -53,15 +53,18 @@ export default function DentalServicesPageView({ isAdmin }: Props) {
   }, []);
 
   const handleSubmit = useCallback(
-    (payload: CreateDentalServiceRequest | UpdateDentalServiceRequest) => {
-      if (mode === "create") {
-        create.mutate(payload as CreateDentalServiceRequest, {
-          onSuccess: closeModal,
-        });
-      } else if (mode === "edit" && editing) {
-        update.mutate(payload as UpdateDentalServiceRequest, {
-          onSuccess: closeModal,
-        });
+    async (
+      payload: CreateDentalServiceRequest | UpdateDentalServiceRequest
+    ) => {
+      try {
+        if (mode === "create") {
+          await create.mutateAsync(payload as CreateDentalServiceRequest);
+        } else if (mode === "edit" && editing) {
+          await update.mutateAsync(payload as UpdateDentalServiceRequest);
+        }
+        closeModal();
+      } catch {
+        // Error already handled in hook's onError
       }
     },
     [mode, create, update, editing, closeModal]

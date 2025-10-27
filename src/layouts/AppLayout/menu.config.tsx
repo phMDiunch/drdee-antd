@@ -16,19 +16,19 @@ type MenuItem = Required<MenuProps>["items"][number];
 export const menuItems: MenuItem[] = [
   { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
   {
-    key: "customers",
-    icon: <UserOutlined />,
-    label: "Khách hàng",
-    children: [
-      { key: "/customers", label: "Danh sách" },
-      { key: "/customers/create", label: "Thêm mới" },
-    ],
-  },
-  {
     key: "employees",
     icon: <TeamOutlined />,
     label: "Nhân sự",
     children: [{ key: "/employees", label: "Danh sách" }],
+  },
+  {
+    key: "customers",
+    icon: <UserOutlined />,
+    label: "Khách hàng",
+    children: [
+      { key: "/customers/daily", label: "Theo ngày" },
+      { key: "/customers", label: "Danh sách" },
+    ],
   },
   {
     key: "appointments",

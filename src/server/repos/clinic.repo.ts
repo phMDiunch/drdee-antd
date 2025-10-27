@@ -1,18 +1,9 @@
 // src/server/repos/clinic.repo.ts
 import { prisma } from "@/services/prisma/prisma";
-
-export type ClinicCreateInput = {
-  clinicCode: string;
-  name: string;
-  address: string;
-  phone?: string | null;
-  email?: string | null;
-  colorCode: string;
-};
-
-export type ClinicUpdateInput = ClinicCreateInput & {
-  archivedAt?: Date | null;
-};
+import type {
+  CreateClinicRequest,
+  UpdateClinicRequest,
+} from "@/shared/validation/clinic.schema";
 
 export const clinicRepo = {
   async list(includeArchived: boolean) {
@@ -34,11 +25,16 @@ export const clinicRepo = {
     return prisma.clinic.findUnique({ where: { name } });
   },
 
-  async create(data: ClinicCreateInput) {
+  async create(data: CreateClinicRequest) {
     return prisma.clinic.create({ data });
   },
 
-  async update(id: string, data: Partial<ClinicUpdateInput>) {
+  async update(
+    id: string,
+    data: Partial<Omit<UpdateClinicRequest, "id">> & {
+      archivedAt?: Date | null;
+    }
+  ) {
     return prisma.clinic.update({ where: { id }, data });
   },
 

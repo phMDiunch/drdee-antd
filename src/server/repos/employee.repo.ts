@@ -1,6 +1,24 @@
 // src/server/repos/employee.repo.ts
 import { prisma } from "@/services/prisma/prisma";
 import type { Prisma } from "@prisma/client";
+import type {
+  CreateEmployeeRequest,
+  UpdateEmployeeRequest,
+} from "@/shared/validation/employee.schema";
+
+export type EmployeeCreateInput = Omit<CreateEmployeeRequest, "clinicId"> & {
+  clinic: { connect: { id: string } }; // 🔗 Prisma relation thay vì clinicId
+  createdBy: { connect: { id: string } }; // 🔗 Prisma relation cho audit trail
+  updatedBy?: { connect: { id: string } }; // 🔗 Optional relation
+};
+
+export type EmployeeUpdateInput = Partial<
+  Omit<UpdateEmployeeRequest, "id" | "clinicId">
+> & {
+  uid?: string | null; // 🔗 Supabase user ID
+  clinic?: { connect: { id: string } }; // 🔗 Optional clinic change
+  updatedBy?: { connect: { id: string } }; // 🔗 Track who updated
+};
 
 export const employeeRepo = {
   async list(params: { search?: string }) {
@@ -78,11 +96,11 @@ export const employeeRepo = {
     return prisma.employee.findUnique({ where: { insuranceNumber } });
   },
 
-  async create(data: Prisma.EmployeeCreateInput) {
+  async create(data: EmployeeCreateInput) {
     return prisma.employee.create({ data });
   },
 
-  async update(id: string, data: Prisma.EmployeeUpdateInput) {
+  async update(id: string, data: EmployeeUpdateInput) {
     return prisma.employee.update({ where: { id }, data });
   },
 

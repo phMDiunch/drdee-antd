@@ -18,7 +18,7 @@ Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
 
 - Zod schemas: `src/shared/validation/*` (request/response, types via `z.infer`, tái dùng FE/BE).
 - Business logic: `src/server/services/*` (Supabase/Prisma + rule nghiệp vụ).
-- Data access: `src/server/repos/*` (Prisma thuần).
+- Data access: `src/server/repos/*` (Prisma + Zod types, 3 patterns chuẩn hoá).
 - Feature module: `src/features/<feature>/{api,components,hooks,views}` + `constants.ts` (không cần `types.ts`, `index.ts` chính).
 - Barrel exports: `src/features/<feature>/{api,hooks}/index.ts` (export từ subfolder).
 - Layout: `src/layouts/AppLayout/*` (Header, Sider, Content, menu, theme).
@@ -30,6 +30,7 @@ Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
 - `(private)/layout.tsx` (SSR) gọi `getSessionUser()` để inject `currentUser`.
 - Middleware bảo vệ `(private)`; chặn truy cập nếu chưa đăng nhập.
 - **useSearchParams()**: Luôn wrap trong `<Suspense>` boundary (Next.js 15 requirement) để tránh pre-render errors.
+- **User Context Pattern**: Server Component fetch user → `<Providers user={currentUser}>` → Client Components dùng `useCurrentUser()` (không cần loading state).
 
 ## 5) Auth
 
@@ -86,10 +87,207 @@ Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
 - Dùng `COMMON_MESSAGES` cho thông điệp chung (`src/shared/constants/messages.ts`).
 - Employees/Clinics: ưu tiên hooks đã chuẩn hoá; mutation mới follow pattern hiện có.
 
-## 13) Naming & Zod Schemas
+## 13) Repository Patterns (Chuẩn Hoá)
 
-- Request: `<Feature><Action>RequestSchema` (vd: `CreateClinicRequestSchema`).
-- Response (1 item): `<Feature>ResponseSchema`.
-- Response (list): `<Feature>ListResponseSchema` hoặc `<Feature>sResponseSchema`.
-- Query/Params: `<Action>QuerySchema`, `<Action>ParamsSchema`.
-- Types: `import type { z } from "zod"; type X = z.infer<typeof XSchema>` (dùng trực tiếp trong component/hook, không tạo file types.ts riêng).
+Repo types dựa trên Zod schemas (single source of truth) với 3 patterns:
+
+### Simple Pattern (Master Data)
+
+- **Use case**: Clinic, Settings (no server metadata needed)
+- **Pattern**: `API Schema = Repo Type` (direct pass-through)
+
+```typescript
+async create(data: CreateClinicRequest) // Zod type trực tiếp
+```
+
+### Complex Pattern (Business Data)
+
+- **Use case**: Customer, Dental Service (cần audit trail)
+- **Pattern**: `API Schema + Server Fields = Repo Type`
+
+```typescript
+export type CustomerCreateInput = CreateCustomerRequest & {
+  createdById: string; // Server-controlled metadata
+  updatedById: string;
+};
+```
+
+### Complex Pattern (Relations)
+
+- **Use case**: Employee (có FK relations trong Prisma)
+- **Pattern**: `API Schema + Prisma Relations = Repo Type`
+
+```typescript
+export type EmployeeCreateInput = Omit<CreateEmployeeRequest, "clinicId"> & {
+  clinic: { connect: { id: string } }; // Prisma relation
+  createdBy: { connect: { id: string } }; // FK validation
+};
+```
+
+**Nguyên tắc**:
+
+- Không duplicate type definitions → dùng Zod schemas làm base
+- Server metadata (audit trail) không expose qua API schemas
+- Relations dùng Prisma `{ connect }` cho FK validation
+
+## 14) Naming & Zod Schemas
+
+### Schema Organization (3-Layer Pattern)
+
+Schemas tổ chức: **Shared Base → Frontend (nếu cần) → Backend**
+
+**Layer 1: Base** – Common fields, exclude fields có type khác nhau FE/BE (VD: date).
+
+```typescript
+const CustomerCommonFieldsSchema = z.object({ fullName, gender, ... }); // NO dob
+const validateConditionalFields = (data, ctx) => { /* reuse logic */ };
+```
+
+**Layer 2: Frontend** – Khi form có Date field (string) hoặc validation khác backend.
+
+```typescript
+// Create<Feature>FormSchema (FRONTEND)
+export const CreateCustomerFormSchema = CustomerCommonFieldsSchema.extend({
+  dob: z.string().min(1, "..."),
+}) // STRING for DatePicker
+  .superRefine(validateConditionalFields);
+```
+
+**Layer 3: Backend** – API schemas với Date, validate request/response.
+
+```typescript
+// <Feature>RequestBaseSchema, Create/Update<Feature>RequestSchema (BACKEND)
+const CustomerRequestBaseSchema = CustomerCommonFieldsSchema
+  .extend({ dob: z.coerce.date("...") }); // DATE for API
+export const CreateCustomerRequestSchema = CustomerRequestBaseSchema.superRefine(validateConditionalFields);
+export const CustomerResponseSchema = z.object({ id, fullName, dob: z.string().datetime().nullable(), ... });
+```
+
+**Naming:**
+
+- Frontend: `Create<Feature>FormSchema` (khi cần tách)
+- Backend Request: `Create<Feature>RequestSchema`, `Update<Feature>RequestSchema`
+- Backend Response: `<Feature>ResponseSchema`, `<Feature>ListResponseSchema`
+- Query: `Get<Feature>QuerySchema`
+
+**Type Exports:**
+
+```typescript
+// Frontend
+export type CreateCustomerFormData = z.infer<typeof CreateCustomerFormSchema>;
+// Backend
+export type CreateCustomerRequest = z.infer<typeof CreateCustomerRequestSchema>;
+export type CustomerResponse = z.infer<typeof CustomerResponseSchema>;
+```
+
+**DRY Principles:**
+
+- ✅ Extract base schema + validation functions để reuse
+- ❌ Không duplicate field definitions hoặc validation logic
+
+## 15) Naming Conventions (Backend to Frontend)
+
+Quy ước đặt tên nhất quán từ Backend → Frontend cho mọi feature.
+
+### Backend Layer
+
+**Repository (`src/server/repos/<feature>.repo.ts`)**
+
+- File: `<feature>.repo.ts` (singular, kebab-case)
+- Export: `export const <feature>Repo = { ... }`
+- Functions: `create`, `update`, `findById`, `list`, `delete`, `archive`, `unarchive`
+- Types: `<Feature>CreateInput`, `<Feature>UpdateInput` (PascalCase, singular)
+
+```typescript
+// customer.repo.ts
+export type CustomerCreateInput = CreateCustomerRequest & { createdById, updatedById, ... };
+export const customerRepo = {
+  async create(data: CustomerCreateInput) { ... },
+  async findById(id: string) { ... },
+};
+```
+
+**Service (`src/server/services/<feature>.service.ts`)**
+
+- File: `<feature>.service.ts` (singular, kebab-case)
+- Export: `export const <feature>Service = { ... }`
+- Functions: `create`, `update`, `getById`, `list`, `delete` (business logic names)
+
+```typescript
+// customer.service.ts
+export const customerService = {
+  async create(currentUser, body) { ... },
+  async getById(currentUser, id) { ... },
+};
+```
+
+### API Routes
+
+- Path: `/api/v1/<features>` (plural, kebab-case)
+- Files: `route.ts` (Next.js convention)
+- Endpoints: `GET /customers`, `POST /customers`, `GET /customers/[id]`, `PUT /customers/[id]`
+
+### Frontend Layer
+
+**API Client (`src/features/<features>/api/*.ts`)**
+
+- Folder: `<features>` (plural, kebab-case)
+- Files: `<action><Feature>.ts` (camelCase action + PascalCase singular)
+- Functions: `<action><Feature>Api`
+
+```typescript
+// createCustomer.ts
+export async function createCustomerApi(body: unknown) { ... }
+// getCustomers.ts
+export async function getCustomersApi(params?: GetCustomersQuery) { ... }
+```
+
+**React Query Hooks (`src/features/<features>/hooks/*.ts`)**
+
+- Files: `use<Action><Feature>.ts` (PascalCase singular)
+- Hooks: `use<Action><Feature>()` (query/mutation)
+
+```typescript
+// useCustomers.ts - Query
+export function useCustomers(params?: GetCustomersQuery) {
+  return useQuery({ queryKey: ["customers", params], ... });
+}
+// useCreateCustomer.ts - Mutation
+export function useCreateCustomer() {
+  return useMutation({ mutationFn: createCustomerApi, ... });
+}
+```
+
+**Components (`src/features/<features>/components/*.tsx`)**
+
+- Files: `<ComponentName>.tsx` (PascalCase)
+- Naming: `Create<Feature>Modal`, `<Feature>Table`, `<Feature>Filters`
+
+**Views (`src/features/<features>/views/*.tsx`)**
+
+- Files: `<Feature><Context>View.tsx` (PascalCase singular + context)
+- Export: `default function <Feature><Context>View()`
+- Examples: `CustomerDailyView`, `CustomerListView`, `EmployeeListView`
+
+**Constants (`src/features/<features>/constants.ts`)**
+
+- Exports: `<FEATURE>_ENDPOINTS`, `<FEATURE>_QUERY_KEYS`, `<FEATURE>_MESSAGES`
+- Options: `<OPTIONS_NAME>` (plural, UPPER_SNAKE_CASE): `PRIMARY_CONTACT_ROLES`
+
+### Summary
+
+| Layer           | Singular/Plural | Case                 | Example                   |
+| --------------- | --------------- | -------------------- | ------------------------- |
+| Repo file       | Singular        | kebab-case           | `customer.repo.ts`        |
+| Repo export     | Singular        | camelCase            | `customerRepo`            |
+| Service file    | Singular        | kebab-case           | `customer.service.ts`     |
+| Service export  | Singular        | camelCase            | `customerService`         |
+| API route       | Plural          | kebab-case           | `/api/v1/customers`       |
+| Feature folder  | Plural          | kebab-case           | `features/customers/`     |
+| API client file | Singular        | camelCase+PascalCase | `createCustomer.ts`       |
+| API client fn   | Singular        | camelCase            | `createCustomerApi()`     |
+| Hook file       | Singular        | PascalCase           | `useCreateCustomer.ts`    |
+| Hook function   | Singular        | camelCase            | `useCreateCustomer()`     |
+| Component file  | Singular        | PascalCase           | `CreateCustomerModal.tsx` |
+| View file       | Singular        | PascalCase           | `CustomerDailyView.tsx`   |
+| Constants file  | Singular        | lowercase            | `constants.ts`            |

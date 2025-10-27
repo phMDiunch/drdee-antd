@@ -32,7 +32,9 @@ function buildIndex(items: MenuItem[]) {
       allKeys.add(key);
       parentOf.set(key, parentKey);
       // Type guard: check if item has children property (not a divider)
-      const children = ("children" in n ? n.children : undefined) as MenuItem[] | undefined;
+      const children = ("children" in n ? n.children : undefined) as
+        | MenuItem[]
+        | undefined;
       if (children?.length) walk(children, key);
     });
   };
@@ -40,7 +42,10 @@ function buildIndex(items: MenuItem[]) {
   return { parentOf, allKeys };
 }
 
-function findSelectedKey(pathname: string, allKeys: Set<string>): string | undefined {
+function findSelectedKey(
+  pathname: string,
+  allKeys: Set<string>
+): string | undefined {
   if (allKeys.has(pathname)) return pathname;
   const segs = pathname.split("/").filter(Boolean);
   for (let i = segs.length; i > 0; i--) {
@@ -50,7 +55,10 @@ function findSelectedKey(pathname: string, allKeys: Set<string>): string | undef
   return undefined;
 }
 
-function getOpenKeys(key: string | undefined, parentOf: Map<string, string | null>): string[] {
+function getOpenKeys(
+  key: string | undefined,
+  parentOf: Map<string, string | null>
+): string[] {
   const chain: string[] = [];
   let cur = key ? parentOf.get(key) ?? null : null;
   while (cur) {
@@ -65,8 +73,14 @@ export default function AppLayout({ children, currentUser }: Props) {
   const router = useRouter();
   const pathname = usePathname() || "/";
 
-  const { parentOf, allKeys } = useMemo(() => buildIndex(menuItems as MenuItem[]), []);
-  const selectedKey = useMemo(() => findSelectedKey(pathname, allKeys), [pathname, allKeys]);
+  const { parentOf, allKeys } = useMemo(
+    () => buildIndex(menuItems as MenuItem[]),
+    []
+  );
+  const selectedKey = useMemo(
+    () => findSelectedKey(pathname, allKeys),
+    [pathname, allKeys]
+  );
 
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
@@ -79,12 +93,13 @@ export default function AppLayout({ children, currentUser }: Props) {
     if (info.key.startsWith("/")) router.push(info.key);
   };
 
-  console.log("AppLayout ~ currentUser:", currentUser);
-  // TODO: thay bằng dữ liệu thật từ Supabase sau khi làm Auth
-
   return (
     <Layout style={{ height: "100vh" }}>
-      <AppHeader currentUser={currentUser} collapsed={collapsed} onToggleSider={() => setCollapsed((c) => !c)} />
+      <AppHeader
+        currentUser={currentUser}
+        collapsed={collapsed}
+        onToggleSider={() => setCollapsed((c) => !c)}
+      />
 
       <Layout
         style={{
