@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { deleteClinicApi } from "../api";
+import { deleteClinicApi } from "../api/deleteClinic";
 import { CLINIC_MESSAGES } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 

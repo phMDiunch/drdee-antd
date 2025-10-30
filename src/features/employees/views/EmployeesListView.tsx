@@ -15,7 +15,7 @@ import {
   useSetEmployeeStatus,
   useResendEmployeeInvite,
   useDeleteEmployee,
-} from "@/features/employees/hooks";
+} from "@/features/employees";
 import type {
   EmployeeResponse,
   CreateEmployeeRequest,

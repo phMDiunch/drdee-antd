@@ -1,55 +1,3 @@
-# APPOINTMENT FEATURE - REQUIREMENT CHI TIẾT
-
-## I. TỔNG QUAN
-
-### 1. Mô tả chức năng
-
-Feature Appointment quản lý lịch hẹn khách hàng với bác sĩ, bao gồm 2 phần:
-
-- **Phần A**: Feature appointments chính - Quản lý lịch hẹn (CRUD, check-in, check-out, status transitions)
-- **Phần B**: Tích hợp trong feature customers - Check-in nhanh từ danh sách khách hàng
-
-### 2. Database Schema (Prisma)
-
-```prisma
-model Appointment {
-  id String @id @default(uuid())
-
-  // Thông tin cơ bản
-  customerId          String
-  appointmentDateTime DateTime @db.Timestamptz
-  duration            Int      @default(30) // phút
-  notes               String?
-
-  // Phân công
-  primaryDentistId   String   // Bắt buộc
-  secondaryDentistId String?  // Optional
-  clinicId           String
-
-  // Trạng thái & Check-in/out
-  status       String    // "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Không đến", "Đã hủy", "Đến đột xuất"
-  checkInTime  DateTime? @db.Timestamptz
-  checkOutTime DateTime? @db.Timestamptz
-
-  // Audit
-  createdById String
-  updatedById String
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
-
-  // Relations
-  customer         Customer
-  primaryDentist   Employee
-  secondaryDentist Employee?
-  createdBy        Employee
-  updatedBy        Employee
-  treatmentLogs    TreatmentLog[]
-  consultedServices ConsultedService[] // 1 appointment có nhiều consulted services
-}
-```
-
----
-
 ## II. PHẦN A - FEATURE APPOINTMENTS
 
 ### A1. BUSINESS RULES
@@ -126,128 +74,6 @@ src/
 │       ├── check-in/route.ts            # PATCH /:id/check-in
 │       ├── checkout/route.ts            # PATCH /:id/checkout
 │       └── no-show/route.ts             # PATCH /:id/no-show
-```
-
-#### **Zod Schemas** (`src/shared/validation/appointment.validation.ts`)
-
-```typescript
-import { z } from "zod";
-
-// Base schema (common fields)
-const AppointmentBaseSchema = z.object({
-  customerId: z.string().uuid("ID khách hàng không hợp lệ"),
-  appointmentDateTime: z.coerce.date({ message: "Thời gian hẹn không hợp lệ" }),
-  duration: z
-    .number()
-    .int()
-    .min(15, "Thời lượng tối thiểu 15 phút")
-    .default(30),
-  notes: z.string().optional(),
-  primaryDentistId: z.string().uuid("ID bác sĩ chính không hợp lệ"),
-  secondaryDentistId: z.string().uuid().optional().nullable(),
-  clinicId: z.string().uuid("ID cơ sở không hợp lệ"),
-});
-
-// Backend Request Schemas
-export const CreateAppointmentRequestSchema = AppointmentBaseSchema.extend({
-  status: z.enum(["Chờ xác nhận", "Đã xác nhận"]).default("Chờ xác nhận"),
-});
-
-export const UpdateAppointmentRequestSchema = AppointmentBaseSchema.partial();
-
-// Frontend Form Schema (date as string for DatePicker)
-export const CreateAppointmentFormSchema = z.object({
-  customerId: z.string().min(1, "Vui lòng chọn khách hàng"),
-  appointmentDateTime: z.string().min(1, "Vui lòng chọn thời gian"),
-  duration: z.number().min(15, "Thời lượng tối thiểu 15 phút").default(30),
-  notes: z.string().optional(),
-  primaryDentistId: z.string().min(1, "Vui lòng chọn bác sĩ chính"),
-  secondaryDentistId: z.string().optional().nullable(),
-  clinicId: z.string().min(1, "Vui lòng chọn cơ sở"),
-});
-
-// Query Schemas
-export const GetAppointmentsQuerySchema = z.object({
-  from: z.string().optional(), // ISO string (Calendar view)
-  to: z.string().optional(),
-  date: z.string().optional(), // YYYY-MM-DD (Daily view)
-  clinicId: z.string().uuid().optional(),
-  doctorId: z.string().uuid().optional(),
-  page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().default(20),
-  search: z.string().optional(),
-});
-
-export const CheckConflictQuerySchema = z.object({
-  customerId: z.string().uuid(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD
-  excludeId: z.string().uuid().optional(),
-});
-
-// Response Schemas
-export const AppointmentResponseSchema = z.object({
-  id: z.string(),
-  customerId: z.string(),
-  appointmentDateTime: z.string().datetime(),
-  duration: z.number(),
-  notes: z.string().nullable(),
-  primaryDentistId: z.string(),
-  secondaryDentistId: z.string().nullable(),
-  clinicId: z.string(),
-  status: z.string(),
-  checkInTime: z.string().datetime().nullable(),
-  checkOutTime: z.string().datetime().nullable(),
-  createdById: z.string(),
-  updatedById: z.string(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-  // Include relations when populated
-  customer: z
-    .object({
-      id: z.string(),
-      customerCode: z.string().nullable(),
-      fullName: z.string(),
-      phone: z.string().nullable(),
-      email: z.string().nullable(),
-      address: z.string().nullable(),
-    })
-    .optional(),
-  primaryDentist: z
-    .object({
-      id: z.string(),
-      fullName: z.string(),
-    })
-    .optional(),
-  secondaryDentist: z
-    .object({
-      id: z.string(),
-      fullName: z.string(),
-    })
-    .optional()
-    .nullable(),
-});
-
-export const AppointmentListResponseSchema = z.object({
-  appointments: z.array(AppointmentResponseSchema),
-  total: z.number(),
-});
-
-// Type exports
-export type CreateAppointmentRequest = z.infer<
-  typeof CreateAppointmentRequestSchema
->;
-export type UpdateAppointmentRequest = z.infer<
-  typeof UpdateAppointmentRequestSchema
->;
-export type CreateAppointmentFormData = z.infer<
-  typeof CreateAppointmentFormSchema
->;
-export type GetAppointmentsQuery = z.infer<typeof GetAppointmentsQuerySchema>;
-export type CheckConflictQuery = z.infer<typeof CheckConflictQuerySchema>;
-export type AppointmentResponse = z.infer<typeof AppointmentResponseSchema>;
-export type AppointmentListResponse = z.infer<
-  typeof AppointmentListResponseSchema
->;
 ```
 
 #### **Repository** (`src/server/repos/appointment.repo.ts`)
@@ -693,83 +519,6 @@ export const appointmentService = {
 };
 ```
 
-#### **API Routes** (Example: `src/app/api/v1/appointments/route.ts`)
-
-```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { appointmentService } from "@/server/services/appointment.service";
-import {
-  CreateAppointmentRequestSchema,
-  GetAppointmentsQuerySchema,
-} from "@/shared/validation/appointment.validation";
-import { getSessionUser } from "@/server/auth/session";
-import { COMMON_MESSAGES } from "@/shared/constants/messages";
-
-export async function GET(request: NextRequest) {
-  try {
-    const currentUser = await getSessionUser();
-    const { searchParams } = new URL(request.url);
-
-    const query = GetAppointmentsQuerySchema.parse({
-      from: searchParams.get("from") || undefined,
-      to: searchParams.get("to") || undefined,
-      date: searchParams.get("date") || undefined,
-      clinicId: searchParams.get("clinicId") || undefined,
-      doctorId: searchParams.get("doctorId") || undefined,
-      search: searchParams.get("search") || undefined,
-      page: searchParams.get("page") || undefined,
-      pageSize: searchParams.get("pageSize") || undefined,
-    });
-
-    const result = await appointmentService.list(query);
-    return NextResponse.json(result);
-  } catch (error: any) {
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        { error: COMMON_MESSAGES.VALIDATION_INVALID },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { error: COMMON_MESSAGES.SERVER_ERROR },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const currentUser = await getSessionUser();
-    const body = await request.json();
-    const data = CreateAppointmentRequestSchema.parse(body);
-
-    const appointment = await appointmentService.create(currentUser, data);
-    return NextResponse.json(appointment, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "ZodError") {
-      return NextResponse.json(
-        {
-          error: error.issues[0]?.message || COMMON_MESSAGES.VALIDATION_INVALID,
-        },
-        { status: 400 }
-      );
-    }
-    if (error instanceof ServiceError) {
-      return NextResponse.json(
-        { error: error.message, code: error.code },
-        { status: error.httpStatus }
-      );
-    }
-    return NextResponse.json(
-      { error: COMMON_MESSAGES.SERVER_ERROR },
-      { status: 500 }
-    );
-  }
-}
-```
-
----
-
 ### A3. FRONTEND ARCHITECTURE
 
 #### **Folder Structure**
@@ -806,7 +555,6 @@ src/features/appointments/
 │   └── AppointmentCalendar.tsx
 └── views/
     ├── AppointmentDailyView.tsx      # Daily table view
-    └── AppointmentListView.tsx       # Full list/calendar view
 ```
 
 #### **Constants** (`src/features/appointments/constants.ts`)
@@ -825,8 +573,6 @@ export const APPOINTMENT_ENDPOINTS = {
 
 export const APPOINTMENT_QUERY_KEYS = {
   all: ["appointments"] as const,
-  lists: () => [...APPOINTMENT_QUERY_KEYS.all, "list"] as const,
-  list: (filters: any) => [...APPOINTMENT_QUERY_KEYS.lists(), filters] as const,
   details: () => [...APPOINTMENT_QUERY_KEYS.all, "detail"] as const,
   detail: (id: string) => [...APPOINTMENT_QUERY_KEYS.details(), id] as const,
   daily: (date: string, clinicId?: string) =>
@@ -856,65 +602,11 @@ export const APPOINTMENT_STATUS_OPTIONS = [
 export const STATUS_TRANSITIONS: Record<string, string[]> = {
   "Chờ xác nhận": ["Đã xác nhận", "Đã hủy"],
   "Đã xác nhận": ["Đã đến", "Không đến", "Đã hủy"],
-  "Đã đến": [],
   "Không đến": ["Đã đến"],
-  "Đã hủy": [],
+  "Đã đến": [],
   "Đến đột xuất": [],
+  "Đã hủy": [],
 };
-```
-
-#### **API Client Example** (`src/features/appointments/api/createAppointment.ts`)
-
-```typescript
-import { APPOINTMENT_ENDPOINTS } from "../constants";
-import {
-  CreateAppointmentRequestSchema,
-  AppointmentResponseSchema,
-} from "@/shared/validation/appointment.validation";
-
-export async function createAppointmentApi(body: unknown) {
-  const validated = CreateAppointmentRequestSchema.parse(body);
-
-  const res = await fetch(APPOINTMENT_ENDPOINTS.BASE, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(validated),
-  });
-
-  if (!res.ok) {
-    const { error } = await res.json();
-    throw new Error(error || "Tạo lịch hẹn thất bại");
-  }
-
-  const data = await res.json();
-  return AppointmentResponseSchema.parse(data);
-}
-```
-
-#### **React Query Hook Example** (`src/features/appointments/hooks/useCreateAppointment.ts`)
-
-```typescript
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createAppointmentApi } from "../api/createAppointment";
-import { APPOINTMENT_QUERY_KEYS, APPOINTMENT_MESSAGES } from "../constants";
-import { useNotify } from "@/hooks/useNotify";
-import { COMMON_MESSAGES } from "@/shared/constants/messages";
-
-export function useCreateAppointment() {
-  const queryClient = useQueryClient();
-  const notify = useNotify();
-
-  return useMutation({
-    mutationFn: createAppointmentApi,
-    onSuccess: () => {
-      notify.success(APPOINTMENT_MESSAGES.CREATE_SUCCESS);
-      queryClient.invalidateQueries({ queryKey: APPOINTMENT_QUERY_KEYS.all });
-    },
-    onError: (error) => {
-      notify.error(error, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR });
-    },
-  });
-}
 ```
 
 #### **Views**
@@ -926,13 +618,6 @@ export function useCreateAppointment() {
 - Filter by doctor (optional)
 - AppointmentTable with inline actions (confirm, check-in, edit, delete)
 - Add appointment button → AppointmentModal
-
-**List View** (`src/features/appointments/views/AppointmentListView.tsx`):
-
-- Tabs: Calendar view (month) & Table view (paginated)
-- Calendar view: react-big-calendar with events
-- Table view: pagination, search, filters
-- AppointmentModal for add/edit
 
 ---
 
@@ -1032,101 +717,3 @@ export type Customer = PrismaCustomer & {
   } | null;
 };
 ```
-
-#### API Query
-
-- GET `/api/v1/customers?date=YYYY-MM-DD&includeAppointments=true`
-- Backend populate `todayAppointment` cho mỗi customer
-
----
-
-## IV. CHECKLIST IMPLEMENTATION
-
-### Backend
-
-- [ ] Tạo `src/shared/validation/appointment.validation.ts`
-- [ ] Tạo `src/server/repos/appointment.repo.ts`
-- [ ] Tạo `src/server/services/appointment.service.ts`
-- [ ] Tạo `src/server/errors/ServiceError.ts` (nếu chưa có)
-- [ ] Refactor API routes sang `/api/v1/appointments/*`
-- [ ] Implement status transition validation
-- [ ] Implement edit restrictions (today's appointments)
-- [ ] Implement 1 khách 1 lịch/ngày validation
-- [ ] Implement check-in/confirm/no-show actions
-- [ ] Update `/api/v1/customers/:id/checkin` cho walk-in flow
-
-### Frontend (Appointments)
-
-- [ ] Update `constants.ts` với endpoints, query keys, messages
-- [ ] Tạo API clients (`api/*.ts` + `index.ts`)
-- [ ] Tạo React Query hooks (`hooks/*.ts` + `index.ts`)
-- [ ] Refactor AppointmentForm (Zod integration, validation)
-- [ ] Refactor AppointmentTable (status-based actions)
-- [ ] Refactor AppointmentModal (add/edit modes)
-- [ ] Tạo AppointmentDailyView (date navigation, filters)
-- [ ] Tạo AppointmentListView (calendar + table tabs)
-- [ ] Update routes `/appointments/today` và `/appointments`
-
-### Frontend (Customers Integration)
-
-- [ ] Update Customer type với `todayAppointment`
-- [ ] Update CustomerListPage: hiển thị today appointment info
-- [ ] Update CustomerListPage: check-in modal (walk-in flow)
-- [ ] Update CustomerDetailPage: appointment tab với check-in button
-- [ ] Update CustomerDetailPage: alert nếu chưa check-in (consulted service tab)
-
-### Testing
-
-- [ ] Test 1 khách 1 lịch/ngày validation
-- [ ] Test status transitions (confirm, check-in, no-show)
-- [ ] Test edit restrictions (today's appointments)
-- [ ] Test reschedule logic (status reset)
-- [ ] Test walk-in flow (check-in từ customer list)
-- [ ] Test conflict checking khi edit appointmentDateTime
-- [ ] Test permissions (admin vs manager vs employee)
-
----
-
-## V. MESSAGES & ERROR HANDLING
-
-### Shared Messages (`src/shared/constants/messages.ts`)
-
-```typescript
-export const COMMON_MESSAGES = {
-  VALIDATION_INVALID: "Dữ liệu không hợp lệ",
-  UNKNOWN_ERROR: "Có lỗi xảy ra, vui lòng thử lại",
-  SERVER_ERROR: "Lỗi máy chủ, vui lòng liên hệ quản trị viên",
-  NOT_FOUND: "Không tìm thấy dữ liệu",
-  UNAUTHORIZED: "Bạn không có quyền thực hiện thao tác này",
-};
-```
-
-### ServiceError Class
-
-```typescript
-export class ServiceError extends Error {
-  constructor(public code: string, message: string, public httpStatus: number) {
-    super(message);
-    this.name = "ServiceError";
-  }
-}
-```
-
----
-
-## VI. NOTES & BEST PRACTICES
-
-1. **Không dùng Prisma trực tiếp trong API routes** → Dùng service layer
-2. **Mọi validation dùng Zod** → Single source of truth
-3. **React Query cho server state** → Không dùng Zustand/Context
-4. **useNotify() thay vì toast trực tiếp** → Chuẩn hóa thông báo
-5. **Barrel exports** → `index.ts` trong `api/` và `hooks/`
-6. **Status transitions strict** → Validate theo `STATUS_TRANSITIONS` map
-7. **Date handling** → dayjs với timezone VN (Asia/Ho_Chi_Minh)
-8. **Optimistic updates** (optional) → React Query optimistic mutations
-9. **Prefetch adjacent days** → Improve UX cho daily view navigation
-10. **Admin scope** → Cho phép xem/edit cross-clinic (nếu cần)
-
----
-
-**Kết thúc requirement document.**

@@ -22,7 +22,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CompleteProfileRequestSchema, type CompleteProfileRequest } from "@/shared/validation/employee.schema";
-import { useCompleteProfilePublic, useEmployeeForProfileCompletion } from "@/features/employees/hooks";
+import { useCompleteProfilePublic, useEmployeeForProfileCompletion } from "@/features/employees";
 
 const { Title, Paragraph, Text } = Typography;
 

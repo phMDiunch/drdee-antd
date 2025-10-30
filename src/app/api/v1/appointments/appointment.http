@@ -1,0 +1,361 @@
+// src/app/api/v1/appointments/appointment.http
+
+// Biến cho host, bạn có thể thay đổi nếu cần
+@host = http://localhost:3000
+
+// Biến để lưu ID sau khi tạo để test các API khác
+@appointmentId = 12345678-90ab-cdef-1234-567890abcdef
+@clinicId = 797e0cc1-5dfd-469d-a003-6c9aa100057b
+@customerId = 98765432-10ba-fedc-9876-543210fedcba
+@primaryDentistId = 87654321-09ab-cdef-8765-432109abcdef
+@secondaryDentistId = 76543210-98ba-cdef-7654-321098abcdef
+
+###
+# @name login
+# Chạy request này đầu tiên để lấy cookie xác thực
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "dr.phamminhduc@gmail.com",
+  "password": "123123"
+}
+
+###
+# Lấy danh sách lịch hẹn trong ngày (daily view)
+# Mặc định: hôm nay, clinic của user đang đăng nhập
+GET {{host}}/api/v1/appointments/daily
+
+###
+# Lấy lịch hẹn theo ngày cụ thể
+GET {{host}}/api/v1/appointments/daily?date=2025-10-29
+
+###
+# Lấy lịch hẹn hôm nay của phòng khám cụ thể (admin)
+GET {{host}}/api/v1/appointments/daily?clinicId={{clinicId}}
+
+###
+# Lấy lịch hẹn theo ngày + phòng khám cụ thể
+GET {{host}}/api/v1/appointments/daily?date=2025-10-29&clinicId={{clinicId}}
+
+###
+# Kiểm tra tình trạng bác sĩ (dentist availability)
+# Check xem bác sĩ có rảnh trong khung giờ không
+GET {{host}}/api/v1/appointments/check-availability?dentistId={{primaryDentistId}}&datetime=2025-10-29T14:00:00.000Z&duration=30
+
+###
+# Kiểm tra availability với excludeAppointmentId (dùng khi update)
+GET {{host}}/api/v1/appointments/check-availability?dentistId={{primaryDentistId}}&datetime=2025-10-29T14:00:00.000Z&duration=30&excludeAppointmentId={{appointmentId}}
+
+###
+# Lấy chi tiết một lịch hẹn theo ID
+GET {{host}}/api/v1/appointments/{{appointmentId}}
+
+###
+# Tạo lịch hẹn mới (đầy đủ thông tin)
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "secondaryDentistId": "{{secondaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-30T10:00:00.000Z",
+  "duration": 30,
+  "status": "Chờ xác nhận",
+  "notes": "Khách hàng muốn tư vấn niềng răng"
+}
+
+###
+# Tạo lịch hẹn không có bác sĩ phụ
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-30T14:00:00.000Z",
+  "duration": 60,
+  "status": "Chờ xác nhận"
+}
+
+###
+# Tạo lịch hẹn với thời lượng khác (45 phút)
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-30T15:30:00.000Z",
+  "duration": 45,
+  "status": "Chờ xác nhận",
+  "notes": "Khám tổng quát"
+}
+
+###
+# Tạo lịch hẹn với status "Đã xác nhận"
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-31T09:00:00.000Z",
+  "duration": 30,
+  "status": "Đã xác nhận",
+  "notes": "Đã gọi điện xác nhận với khách"
+}
+
+###
+# Test validation - Tạo lịch trong quá khứ (nên fail)
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-20T10:00:00.000Z",
+  "duration": 30,
+  "status": "Chờ xác nhận"
+}
+
+###
+# Test validation - Duration nhỏ hơn 1 phút (nên fail)
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-30T10:00:00.000Z",
+  "duration": 0,
+  "status": "Chờ xác nhận"
+}
+
+###
+# Test validation - Status không hợp lệ (nên fail)
+POST {{host}}/api/v1/appointments
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-30T10:00:00.000Z",
+  "duration": 30,
+  "status": "Invalid Status"
+}
+
+###
+# Cập nhật lịch hẹn - Thay đổi thời gian
+# Note: Đổi appointmentDateTime sẽ reset status = "Chờ xác nhận" và clear checkIn/checkOut
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "appointmentDateTime": "2025-10-30T11:00:00.000Z",
+  "duration": 45
+}
+
+###
+# Cập nhật lịch hẹn - Đổi bác sĩ chính
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "primaryDentistId": "{{secondaryDentistId}}"
+}
+
+###
+# Cập nhật lịch hẹn - Thêm bác sĩ phụ
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "secondaryDentistId": "{{secondaryDentistId}}"
+}
+
+###
+# Cập nhật lịch hẹn - Xóa bác sĩ phụ
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "secondaryDentistId": null
+}
+
+###
+# Cập nhật lịch hẹn - Thay đổi ghi chú
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "notes": "Khách hàng yêu cầu thay đổi thời gian, đã gọi điện xác nhận lại"
+}
+
+###
+# Quick Action: Xác nhận lịch hẹn
+# Chuyển status từ "Chờ xác nhận" → "Đã xác nhận"
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Đã xác nhận"
+}
+
+###
+# Quick Action: Check-in
+# Đánh dấu khách đã đến
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Đã đến",
+  "checkInTime": "2025-10-29T10:05:00.000Z"
+}
+
+###
+# Quick Action: Check-out
+# Đánh dấu khách đã khám xong
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "checkOutTime": "2025-10-29T10:35:00.000Z"
+}
+
+###
+# Quick Action: Mark no-show (Không đến)
+# Đánh dấu khách không đến
+# Server sẽ tự động clear checkInTime và checkOutTime
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Không đến"
+}
+
+###
+# Quick Action: Hủy lịch hẹn
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Đã hủy",
+  "notes": "Khách gọi điện xin hủy vì bận việc đột xuất"
+}
+
+###
+# Admin Override: Sửa lỗi check-in
+# Admin có thể edit checkInTime/checkOutTime trực tiếp
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "checkInTime": "2025-10-29T10:00:00.000Z",
+  "checkOutTime": null
+}
+
+###
+# Admin Override: Clear check-in/check-out
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Đã xác nhận",
+  "checkInTime": null,
+  "checkOutTime": null
+}
+
+###
+# Admin Override: Sửa lỗi "Không đến"
+# Khách thực tế có đến nhưng bị đánh nhầm
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Đã đến",
+  "checkInTime": "2025-10-29T10:00:00.000Z",
+  "checkOutTime": "2025-10-29T10:30:00.000Z",
+  "notes": "Sửa lỗi: Khách có đến, nhân viên đánh nhầm"
+}
+
+###
+# Admin Override: Cập nhật đầy đủ (full edit)
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "primaryDentistId": "{{primaryDentistId}}",
+  "secondaryDentistId": null,
+  "clinicId": "{{clinicId}}",
+  "appointmentDateTime": "2025-10-30T10:00:00.000Z",
+  "duration": 45,
+  "status": "Đã xác nhận",
+  "notes": "Đã xác nhận lại với khách, đổi thời lượng từ 30 → 45 phút",
+  "checkInTime": null,
+  "checkOutTime": null
+}
+
+###
+# Test validation - checkOutTime không có checkInTime (nên fail)
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "checkOutTime": "2025-10-29T10:35:00.000Z"
+}
+
+###
+# Test validation - checkInTime > checkOutTime (nên fail)
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "checkInTime": "2025-10-29T10:40:00.000Z",
+  "checkOutTime": "2025-10-29T10:35:00.000Z"
+}
+
+###
+# Test validation - Status "Đã đến" nhưng không có checkInTime (nên fail)
+PUT {{host}}/api/v1/appointments/{{appointmentId}}
+Content-Type: application/json
+
+{
+  "status": "Đã đến",
+  "checkInTime": null
+}
+
+###
+# Xóa lịch hẹn
+# Employee chỉ xóa được lịch tương lai
+# Admin xóa được tất cả
+DELETE {{host}}/api/v1/appointments/{{appointmentId}}
+
+###
+# Lấy danh sách lịch hẹn (paginated - future enhancement)
+GET {{host}}/api/v1/appointments
+
+###
+# Lấy danh sách lịch hẹn với phân trang
+GET {{host}}/api/v1/appointments?page=1&limit=20
+
+###
+# Lấy danh sách lịch hẹn với filter theo clinic
+GET {{host}}/api/v1/appointments?clinicId={{clinicId}}
+
+###
+# Lấy danh sách lịch hẹn với filter theo status
+GET {{host}}/api/v1/appointments?status=Chờ xác nhận
+
+###
+# Lấy danh sách lịch hẹn với nhiều filter
+GET {{host}}/api/v1/appointments?clinicId={{clinicId}}&status=Đã xác nhận&page=1&limit=10

@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { updateClinicApi } from "../api";
+import { updateClinicApi } from "../api/updateClinic";
 import { CLINIC_MESSAGES, CLINIC_QUERY_KEYS } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 import type { UpdateClinicRequest } from "@/shared/validation/clinic.schema";

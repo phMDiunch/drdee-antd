@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { AutoComplete, Spin, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
-import { useCustomerSearch } from "@/features/customers/hooks";
+import { useCustomerSearch } from "@/features/customers";
 import type { SearchItem } from "@/shared/validation/customer.schema";
 
 const { Text } = Typography;

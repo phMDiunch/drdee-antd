@@ -2,7 +2,7 @@
 
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { getDentalServicesApi } from "../api";
+import { getDentalServicesApi } from "../api/getDentalServices";
 import { DENTAL_SERVICE_QUERY_KEYS } from "../constants";
 
 export function useDentalServices(includeArchived: boolean) {

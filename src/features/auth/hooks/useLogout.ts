@@ -2,7 +2,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { logoutApi } from "@/features/auth/api";
+import { logoutApi } from "@/features/auth/api/logout";
 import type { LogoutResponse } from "@/shared/validation/auth.schema";
 import { useRouter } from "next/navigation";
 import { useNotify } from "@/shared/hooks/useNotify";

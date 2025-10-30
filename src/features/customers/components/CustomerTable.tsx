@@ -1,4 +1,6 @@
+// src/features/customers/components/CustomerTable.tsx
 "use client";
+
 import React from "react";
 import { Table, Tag } from "antd";
 import Link from "next/link";

@@ -1,7 +1,7 @@
 // src/features/employees/hooks/useEmployeeById.ts
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { getEmployeeByIdApi } from "../api";
+import { getEmployeeByIdApi } from "../api/getEmployeeById";
 import { EMPLOYEE_QUERY_KEYS } from "../constants";
 import type { EmployeeResponse } from "@/shared/validation/employee.schema";
 

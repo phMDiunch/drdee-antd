@@ -26,11 +26,7 @@ import {
   type CustomerSource,
 } from "@/features/customers/constants";
 import provinces from "@/data/vietnamAdministrativeUnits.json";
-import {
-  usePhoneDuplicateCheck,
-  useCustomerFormOptions,
-  useCustomerFormDefaults,
-} from "../hooks";
+import { usePhoneDuplicateCheck, useCustomerFormOptions } from "@/features/customers";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 
 // Import schemas and types
@@ -81,12 +77,46 @@ export default function CustomerFormModal({
   const defaultClinicId = selectedClinicId || currentUser?.clinicId || "";
   const clinicIdDisabled = !isAdmin || mode === "edit"; // Disable for non-admin or in edit mode
 
-  // Get default form values using custom hook
-  const defaultValues = useCustomerFormDefaults(
-    mode,
-    defaultClinicId,
-    initialData
-  );
+  // Get default form values - MEMOIZED to prevent infinite loop in useEffect
+  const defaultValues = useMemo(() => {
+    if (mode === "edit" && initialData) {
+      return {
+        fullName: initialData.fullName,
+        dob: initialData.dob || "",
+        gender: initialData.gender || "",
+        phone: initialData.phone,
+        email: initialData.email,
+        address: initialData.address || "",
+        city: initialData.city || "",
+        district: initialData.district || "",
+        primaryContactRole: initialData.primaryContactRole,
+        primaryContactId: initialData.primaryContactId,
+        occupation: initialData.occupation,
+        source: initialData.source || "",
+        sourceNotes: initialData.sourceNotes,
+        serviceOfInterest: initialData.serviceOfInterest || "",
+        clinicId: initialData.clinicId || "",
+      };
+    }
+
+    return {
+      fullName: "",
+      dob: "",
+      gender: "",
+      phone: null,
+      email: null,
+      address: "",
+      city: "",
+      district: "",
+      primaryContactRole: null,
+      primaryContactId: null,
+      occupation: null,
+      source: "",
+      sourceNotes: null,
+      serviceOfInterest: "",
+      clinicId: defaultClinicId || "",
+    };
+  }, [mode, defaultClinicId, initialData]);
 
   const {
     control,

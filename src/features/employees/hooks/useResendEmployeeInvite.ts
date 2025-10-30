@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { resendEmployeeInviteApi } from "../api";
+import { resendEmployeeInviteApi } from "../api/resendInvite";
 import { EMPLOYEE_MESSAGES } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 

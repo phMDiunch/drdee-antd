@@ -1,7 +1,11 @@
+// src/features/customers/components/CustomerFilters.tsx
 "use client";
+
 import React from "react";
-import { Button, Space, Typography } from "antd";
+import { Button, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+
+const { Text } = Typography;
 
 type Props = {
   loading?: boolean;
@@ -9,7 +13,11 @@ type Props = {
   dailyCount?: number;
 };
 
-export default function CustomerFilters({ onCreate, dailyCount = 0 }: Props) {
+export default function CustomerFilters({
+  loading,
+  onCreate,
+  dailyCount = 0,
+}: Props) {
   return (
     <div
       style={{
@@ -17,20 +25,18 @@ export default function CustomerFilters({ onCreate, dailyCount = 0 }: Props) {
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 16,
-        gap: 12,
-        flexWrap: "wrap",
       }}
     >
-      <Space>
-        <Typography.Text>
-          {dailyCount} khách hàng mới trong ngày
-        </Typography.Text>
-      </Space>
-      <Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-          Tạo khách hàng mới
-        </Button>
-      </Space>
+      <Text strong>{dailyCount} khách hàng mới trong ngày</Text>
+
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={onCreate}
+        loading={loading}
+      >
+        Tạo khách hàng mới
+      </Button>
     </div>
   );
 }

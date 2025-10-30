@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { Tabs } from "antd";
-import { useClinics } from "@/features/clinics/hooks";
+import { useClinics } from "@/features/clinics";
 
 type Props = {
   value?: string | null;

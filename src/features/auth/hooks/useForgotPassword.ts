@@ -2,7 +2,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { forgotPasswordApi } from "@/features/auth/api";
+import { forgotPasswordApi } from "@/features/auth/api/forgotPassword";
 import type { ForgotPasswordRequest, ForgotPasswordResponse } from "@/shared/validation/auth.schema";
 import { useNotify } from "@/shared/hooks/useNotify";
 import { AUTH_MESSAGES } from "@/features/auth/constants";

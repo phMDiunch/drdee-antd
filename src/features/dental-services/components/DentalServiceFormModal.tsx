@@ -67,40 +67,10 @@ export default function DentalServiceFormModal({
     [mode]
   );
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { isSubmitting },
-  } = useForm<CreateDentalServiceRequest & { id?: string }>({
-    resolver: zodResolver(schema),
-    mode: "onBlur",
-    reValidateMode: "onChange",
-    defaultValues:
-      mode === "edit" && initial
-        ? {
-            id: initial.id,
-            name: initial.name,
-            description: initial.description ?? undefined,
-            serviceGroup: initial.serviceGroup ?? undefined,
-            department: initial.department ?? undefined,
-            tags: initial.tags ?? [],
-            unit: initial.unit,
-            price: initial.price,
-            minPrice: initial.minPrice ?? undefined,
-            officialWarranty: initial.officialWarranty ?? undefined,
-            clinicWarranty: initial.clinicWarranty ?? undefined,
-            origin: initial.origin ?? undefined,
-            avgTreatmentMinutes: initial.avgTreatmentMinutes ?? undefined,
-            avgTreatmentSessions: initial.avgTreatmentSessions ?? undefined,
-          }
-        : defaultValues,
-  });
-
-  useEffect(() => {
-    if (!open) return;
+  // Memoize defaultValues to prevent infinite loop
+  const formDefaultValues = useMemo(() => {
     if (mode === "edit" && initial) {
-      reset({
+      return {
         id: initial.id,
         name: initial.name,
         description: initial.description ?? undefined,
@@ -115,11 +85,27 @@ export default function DentalServiceFormModal({
         origin: initial.origin ?? undefined,
         avgTreatmentMinutes: initial.avgTreatmentMinutes ?? undefined,
         avgTreatmentSessions: initial.avgTreatmentSessions ?? undefined,
-      });
-    } else {
-      reset(defaultValues);
+      };
     }
-  }, [open, mode, initial, reset]);
+    return defaultValues;
+  }, [mode, initial]);
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<CreateDentalServiceRequest & { id?: string }>({
+    resolver: zodResolver(schema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    defaultValues: formDefaultValues,
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    reset(formDefaultValues);
+  }, [open, formDefaultValues, reset]);
 
   const onValid = (values: CreateDentalServiceRequest & { id?: string }) => {
     if (mode === "edit") {

@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { updateEmployeeApi } from "../api";
+import { updateEmployeeApi } from "../api/updateEmployee";
 import { type UpdateEmployeeRequest } from "@/shared/validation/employee.schema";
 import { EMPLOYEE_MESSAGES, EMPLOYEE_QUERY_KEYS } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";

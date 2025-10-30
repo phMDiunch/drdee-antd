@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getClinicByIdApi } from "../api";
+import { getClinicByIdApi } from "../api/getClinicById";
 import { CLINIC_QUERY_KEYS } from "../constants";
 
 export function useClinicById(id?: string) {

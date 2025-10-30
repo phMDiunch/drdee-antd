@@ -3,7 +3,7 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { deleteDentalServiceApi } from "../api";
+import { deleteDentalServiceApi } from "../api/deleteDentalService";
 import { DENTAL_SERVICE_MESSAGES } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 

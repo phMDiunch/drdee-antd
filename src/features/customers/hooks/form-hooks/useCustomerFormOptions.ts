@@ -3,8 +3,8 @@ import type {
   CustomerDetailResponse,
   SearchItem,
 } from "@/shared/validation/customer.schema";
-import { useClinics } from "@/features/clinics/hooks";
-import { useWorkingEmployees } from "@/features/employees/hooks";
+import { useClinics } from "@/features/clinics";
+import { useWorkingEmployees } from "@/features/employees";
 import { useCustomersSearch } from "../useCustomerSearch";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import provinces from "@/data/vietnamAdministrativeUnits.json";

@@ -1,6 +1,6 @@
 // src/features/customers/hooks/useUpdateCustomer.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateCustomerApi } from "../api";
+import { updateCustomerApi } from "../api/updateCustomer";
 import { useNotify } from "@/shared/hooks/useNotify";
 import type { UpdateCustomerRequest } from "@/shared/validation/customer.schema";
 

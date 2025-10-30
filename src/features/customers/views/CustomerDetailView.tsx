@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Row, Col, Card, Tabs, Empty, Space, Typography, Spin } from "antd";
 import { UserOutlined, IdcardOutlined, PhoneOutlined } from "@ant-design/icons";
-import { useCustomerDetail } from "../hooks";
+import { useCustomerDetail } from "@/features/customers";
 import CustomerInfoTab from "../components/detail-tabs/CustomerInfoTab";
 import AppointmentsTab from "../components/detail-tabs/AppointmentsTab";
 import ConsultedServicesTab from "../components/detail-tabs/ConsultedServicesTab";

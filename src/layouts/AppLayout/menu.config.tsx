@@ -35,8 +35,8 @@ export const menuItems: MenuItem[] = [
     icon: <CalendarOutlined />,
     label: "Lịch hẹn",
     children: [
-      { key: "/appointments", label: "Lịch" },
-      { key: "/appointments/list", label: "Danh sách" },
+      { key: "/appointments/daily", label: "Theo ngày" },
+      { key: "/appointments", label: "Danh sách" },
     ],
   },
   {

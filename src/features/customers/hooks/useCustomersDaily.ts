@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getCustomersDailyApi, type GetCustomersDailyParams } from "../api";
+import { getCustomersDailyApi, type GetCustomersDailyParams } from "../api/getCustomersDaily";
 import { CUSTOMER_QUERY_KEYS } from "../constants";
 
 export function useCustomersDaily(params?: GetCustomersDailyParams) {

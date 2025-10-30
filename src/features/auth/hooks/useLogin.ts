@@ -2,7 +2,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { loginApi } from "@/features/auth/api";
+import { loginApi } from "@/features/auth/api/login";
 import type { LoginRequest, LoginResponse } from "@/shared/validation/auth.schema";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useNotify } from "@/shared/hooks/useNotify";

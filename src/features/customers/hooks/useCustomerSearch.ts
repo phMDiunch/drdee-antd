@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { searchCustomersApi } from "../api";
+import { searchCustomersApi } from "../api/searchCustomers";
 import { CUSTOMER_QUERY_KEYS } from "../constants";
 
 /**

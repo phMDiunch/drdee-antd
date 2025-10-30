@@ -51,6 +51,22 @@ export default function ClinicFormModal({
     [mode]
   );
 
+  // Memoize defaultValues to prevent infinite loop
+  const defaultValues = useMemo(() => {
+    if (mode === "edit" && initial) {
+      return {
+        id: initial.id,
+        clinicCode: initial.clinicCode,
+        name: initial.name,
+        address: initial.address,
+        phone: initial.phone ?? undefined,
+        email: initial.email ?? undefined,
+        colorCode: initial.colorCode,
+      };
+    }
+    return defaultClinicFormValues;
+  }, [mode, initial]);
+
   const {
     control,
     handleSubmit,
@@ -60,36 +76,13 @@ export default function ClinicFormModal({
     resolver: zodResolver(schema),
     mode: "onBlur",
     reValidateMode: "onChange",
-    defaultValues:
-      mode === "edit" && initial
-        ? {
-            id: initial.id,
-            clinicCode: initial.clinicCode,
-            name: initial.name,
-            address: initial.address,
-            phone: initial.phone ?? undefined,
-            email: initial.email ?? undefined,
-            colorCode: initial.colorCode,
-          }
-        : defaultClinicFormValues,
+    defaultValues,
   });
 
   useEffect(() => {
     if (!open) return;
-    if (mode === "edit" && initial) {
-      reset({
-        id: initial.id,
-        clinicCode: initial.clinicCode,
-        name: initial.name,
-        address: initial.address,
-        phone: initial.phone ?? undefined,
-        email: initial.email ?? undefined,
-        colorCode: initial.colorCode,
-      });
-    } else {
-      reset(defaultClinicFormValues);
-    }
-  }, [open, mode, initial, reset]);
+    reset(defaultValues);
+  }, [open, defaultValues, reset]);
 
   const onValid = (values: CreateClinicRequest & { id?: string }) => {
     if (mode === "edit") {

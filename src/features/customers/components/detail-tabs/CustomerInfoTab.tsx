@@ -10,7 +10,7 @@ import type {
   CustomerDetailResponse,
   CreateCustomerRequest,
 } from "@/shared/validation/customer.schema";
-import { useUpdateCustomer } from "../../hooks";
+import { useUpdateCustomer } from "@/features/customers";
 import dayjs from "dayjs";
 import vietnamData from "@/data/vietnamAdministrativeUnits.json";
 

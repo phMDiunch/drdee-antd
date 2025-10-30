@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getClinicsApi } from "../api";
+import { getClinicsApi } from "../api/getClinics";
 import { CLINIC_QUERY_KEYS } from "../constants";
 
 export function useClinics(includeArchived?: boolean) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   Button,
   Card,
@@ -29,8 +29,8 @@ import {
   ORG_TEAMS,
   ORG_POSITION_TITLES,
 } from "@/shared/constants/organization";
-import { useClinics } from "@/features/clinics/hooks/useClinics";
-import { useUpdateEmployee } from "@/features/employees/hooks";
+import { useClinics } from "@/features/clinics";
+import { useUpdateEmployee } from "@/features/employees";
 import { useRouter } from "next/navigation";
 import { DatePicker, ColorPicker } from "antd";
 import dayjs from "dayjs";
@@ -56,31 +56,6 @@ const positionTitleOptions = Array.from(ORG_POSITION_TITLES).map((value) => ({
 
 type Props = { employee: EmployeeResponse };
 
-// Helper function to transform EmployeeResponse → UpdateEmployeeFormData
-const getFormValuesFromEmployee = (
-  employee: EmployeeResponse
-): UpdateEmployeeFormData => ({
-  ...employee,
-  email: employee.email ?? undefined,
-  phone: employee.phone ?? undefined,
-  employeeCode: employee.employeeCode ?? undefined,
-  team: employee.team ?? null,
-  positionTitle: employee.positionTitle ?? null,
-  dob: employee.dob ? new Date(employee.dob) : undefined,
-  favoriteColor: employee.favoriteColor ?? undefined,
-  currentAddress: employee.currentAddress ?? undefined,
-  hometown: employee.hometown ?? undefined,
-  nationalId: employee.nationalId ?? undefined,
-  nationalIdIssueDate: employee.nationalIdIssueDate
-    ? new Date(employee.nationalIdIssueDate)
-    : undefined,
-  nationalIdIssuePlace: employee.nationalIdIssuePlace ?? undefined,
-  taxId: employee.taxId ?? undefined,
-  insuranceNumber: employee.insuranceNumber ?? undefined,
-  bankAccountNumber: employee.bankAccountNumber ?? undefined,
-  bankName: employee.bankName ?? undefined,
-});
-
 export default function EmployeeEditView({ employee }: Props) {
   const router = useRouter();
   const clinicsQuery = useClinics(false);
@@ -89,6 +64,32 @@ export default function EmployeeEditView({ employee }: Props) {
   const formatDateTime = (value?: string | null) =>
     value ? new Date(value).toLocaleString("vi-VN") : "-";
 
+  // Memoize defaultValues to prevent infinite loop in useEffect
+  const defaultValues = useMemo(
+    () => ({
+      ...employee,
+      email: employee.email ?? undefined,
+      phone: employee.phone ?? undefined,
+      employeeCode: employee.employeeCode ?? undefined,
+      team: employee.team ?? null,
+      positionTitle: employee.positionTitle ?? null,
+      dob: employee.dob ? new Date(employee.dob) : undefined,
+      favoriteColor: employee.favoriteColor ?? undefined,
+      currentAddress: employee.currentAddress ?? undefined,
+      hometown: employee.hometown ?? undefined,
+      nationalId: employee.nationalId ?? undefined,
+      nationalIdIssueDate: employee.nationalIdIssueDate
+        ? new Date(employee.nationalIdIssueDate)
+        : undefined,
+      nationalIdIssuePlace: employee.nationalIdIssuePlace ?? undefined,
+      taxId: employee.taxId ?? undefined,
+      insuranceNumber: employee.insuranceNumber ?? undefined,
+      bankAccountNumber: employee.bankAccountNumber ?? undefined,
+      bankName: employee.bankName ?? undefined,
+    }),
+    [employee]
+  );
+
   const {
     control,
     handleSubmit,
@@ -96,14 +97,14 @@ export default function EmployeeEditView({ employee }: Props) {
     formState: { isSubmitting },
   } = useForm<UpdateEmployeeFormData>({
     resolver: zodResolver(UpdateEmployeeFormSchema),
-    defaultValues: getFormValuesFromEmployee(employee),
+    defaultValues,
     mode: "onBlur",
     reValidateMode: "onChange",
   });
 
   useEffect(() => {
-    reset(getFormValuesFromEmployee(employee));
-  }, [employee, reset]);
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
   const clinicOptions =
     clinicsQuery.data?.map((clinic) => ({

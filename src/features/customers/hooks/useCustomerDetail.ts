@@ -1,6 +1,6 @@
 // src/features/customers/hooks/useCustomerDetail.ts
 import { useQuery } from "@tanstack/react-query";
-import { getCustomerDetailApi } from "../api";
+import { getCustomerDetailApi } from "../api/getCustomerDetail";
 
 /**
  * React Query hook to fetch customer detail by ID

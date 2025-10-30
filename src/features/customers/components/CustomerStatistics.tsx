@@ -1,3 +1,4 @@
+// src/features/customers/components/CustomerStatistics.tsx
 "use client";
 
 import React, { useMemo } from "react";

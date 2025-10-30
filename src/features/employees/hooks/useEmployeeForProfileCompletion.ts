@@ -1,7 +1,7 @@
 // src/features/employees/hooks/useEmployeeForProfileCompletion.ts
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { getEmployeeByIdForProfileCompletionApi } from "../api";
+import { getEmployeeByIdForProfileCompletionApi } from "../api/getEmployeeByIdForProfileCompletion";
 import { EMPLOYEE_QUERY_KEYS } from "../constants";
 import type { EmployeeResponse } from "@/shared/validation/employee.schema";
 

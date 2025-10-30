@@ -2,7 +2,7 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { App } from "antd";
-import { completeProfilePublicApi } from "../api";
+import { completeProfilePublicApi } from "../api/completeProfilePublic";
 import { EMPLOYEE_MESSAGES, EMPLOYEE_QUERY_KEYS } from "../constants";
 import type { CompleteProfileRequest } from "@/shared/validation/employee.schema";
 

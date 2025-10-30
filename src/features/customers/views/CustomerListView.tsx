@@ -25,10 +25,10 @@ import type {
   CreateCustomerRequest,
 } from "@/shared/validation/customer.schema";
 import { CUSTOMER_SOURCES, SERVICES_OF_INTEREST } from "../constants";
-import { useCustomers, useCreateCustomer } from "../hooks";
+import { useCustomers, useCreateCustomer } from "@/features/customers";
 import CustomerFormModal from "../components/CustomerFormModal";
 import { useNotify } from "@/shared/hooks/useNotify";
-import ClinicTabs from "../components/ClinicTabs";
+import ClinicTabs from "@/shared/components/ClinicTabs";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 
 const { Search } = Input;
@@ -238,7 +238,7 @@ function CustomerListContent() {
         <div style={{ marginBottom: 16 }}>
           <ClinicTabs
             value={selectedClinicId}
-            onChange={(id) => {
+            onChange={(id: string | undefined) => {
               setSelectedClinicId(id);
               updateURL({ clinicId: id ?? "", page: "1" });
             }}

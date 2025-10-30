@@ -1,12 +1,12 @@
 "use client";
 import React, { useCallback, useState } from "react";
 import PageHeaderWithDateNav from "@/shared/components/PageHeaderWithDateNav";
-import ClinicTabs from "../components/ClinicTabs";
+import ClinicTabs from "@/shared/components/ClinicTabs";
 import CustomerStatistics from "../components/CustomerStatistics";
 import CustomerFilters from "../components/CustomerFilters";
 import CustomerTable from "../components/CustomerTable";
 import CustomerFormModal from "../components/CustomerFormModal";
-import { useCreateCustomer, useCustomersDaily } from "../hooks";
+import { useCreateCustomer, useCustomersDaily } from "@/features/customers";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 import type { CreateCustomerRequest } from "@/shared/validation/customer.schema";
