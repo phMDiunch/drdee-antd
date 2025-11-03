@@ -25,12 +25,19 @@ import dayjs from "dayjs";
 import Link from "next/link";
 import { APPOINTMENT_STATUS_COLORS } from "../constants";
 import type { AppointmentResponse } from "@/shared/validation/appointment.schema";
+import { useCurrentUser } from "@/shared/providers";
+import {
+  canEditAppointment,
+  canDeleteAppointment,
+  canPerformQuickAction,
+} from "../utils/appointmentPermissions";
 
 const { Text } = Typography;
 
 type Props = {
   data: AppointmentResponse[];
   loading?: boolean;
+  isCustomerDetailView?: boolean; // Customer Detail context: hide customer column + show full datetime
   onCheckIn: (id: string) => void;
   onCheckOut: (id: string) => void;
   onConfirm: (id: string) => void;
@@ -43,6 +50,7 @@ type Props = {
 export default function AppointmentTable({
   data,
   loading,
+  isCustomerDetailView = false,
   onCheckIn,
   onCheckOut,
   onConfirm,
@@ -51,6 +59,8 @@ export default function AppointmentTable({
   onDelete,
   actionLoading,
 }: Props) {
+  const { user: currentUser } = useCurrentUser();
+
   const calculateAge = (dob: string | null) => {
     if (!dob) return "—";
     const age = dayjs().diff(dayjs(dob), "year");
@@ -61,8 +71,8 @@ export default function AppointmentTable({
     return dayjs(dateStr).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD");
   };
 
-  // Get unique dentists for filter
-  const uniqueDentists = React.useMemo(() => {
+  const columns = React.useMemo<ColumnsType<AppointmentResponse>>(() => {
+    // Calculate unique dentists for filters
     const dentistSet = new Set<string>();
     data.forEach((apt) => {
       dentistSet.add(apt.primaryDentist.fullName);
@@ -70,33 +80,34 @@ export default function AppointmentTable({
         dentistSet.add(apt.secondaryDentist.fullName);
       }
     });
-    return Array.from(dentistSet).sort();
-  }, [data]);
+    const uniqueDentists = Array.from(dentistSet).sort();
 
-  // Get unique statuses for filter
-  const uniqueStatuses = React.useMemo(() => {
+    // Calculate unique statuses for filters
     const statusSet = new Set<string>();
     data.forEach((apt) => {
       statusSet.add(apt.status);
     });
-    return Array.from(statusSet);
-  }, [data]);
+    const uniqueStatuses = Array.from(statusSet);
 
-  const columns = React.useMemo<ColumnsType<AppointmentResponse>>(
-    () => [
+    return [
       {
         title: "Khách hàng",
         dataIndex: "customer",
         key: "customer",
-        width: 180,
+        width: 200,
         render: (customer) => (
           <div>
-            <Link
-              href={`/customers/${customer.id}`}
-              style={{ fontWeight: 600 }}
-            >
-              {customer.fullName}
-            </Link>
+            <Space size={4}>
+              <Link
+                href={`/customers/${customer.id}`}
+                style={{ fontWeight: 600 }}
+              >
+                {customer.fullName}
+              </Link>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                ({calculateAge(customer.dob)})
+              </Text>
+            </Space>
             <br />
             <Space size={4} style={{ marginTop: 4 }}>
               {customer.customerCode && (
@@ -114,22 +125,32 @@ export default function AppointmentTable({
         ),
       },
       {
-        title: "Tuổi",
-        dataIndex: ["customer", "dob"],
-        key: "age",
-        width: 70,
-        render: (dob) => <Text>{calculateAge(dob)}</Text>,
+        title: "Chi nhánh",
+        dataIndex: "clinic",
+        key: "clinic",
+        width: 90,
+        render: (clinic) => (
+          <Tag color={clinic.colorCode} style={{ fontSize: 11 }}>
+            {clinic.clinicCode}
+          </Tag>
+        ),
       },
       {
         title: "Thời gian hẹn",
         dataIndex: "appointmentDateTime",
         key: "time",
-        width: 100,
+        width: isCustomerDetailView ? 150 : 100,
         sorter: (a, b) =>
           dayjs(a.appointmentDateTime).valueOf() -
           dayjs(b.appointmentDateTime).valueOf(),
         defaultSortOrder: "ascend",
-        render: (datetime) => <Text>{dayjs(datetime).format("HH:mm")}</Text>,
+        render: (datetime) => (
+          <Text>
+            {dayjs(datetime).format(
+              isCustomerDetailView ? "DD/MM/YYYY HH:mm" : "HH:mm"
+            )}
+          </Text>
+        ),
       },
       {
         title: "Bác sĩ chính",
@@ -203,16 +224,22 @@ export default function AppointmentTable({
           }
 
           if (isToday(record.appointmentDateTime) && !checkInTime) {
+            const permission = canPerformQuickAction(record, currentUser);
             return (
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                onClick={() => onCheckIn(record.id)}
-                loading={actionLoading}
+              <Tooltip
+                title={!permission.canPerform ? permission.reason : undefined}
               >
-                Check-in
-              </Button>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CheckOutlined />}
+                  onClick={() => onCheckIn(record.id)}
+                  loading={actionLoading}
+                  disabled={!permission.canPerform}
+                >
+                  Check-in
+                </Button>
+              </Tooltip>
             );
           }
 
@@ -243,15 +270,21 @@ export default function AppointmentTable({
             record.checkInTime &&
             !checkOutTime
           ) {
+            const permission = canPerformQuickAction(record, currentUser);
             return (
-              <Button
-                size="small"
-                icon={<CheckOutlined />}
-                onClick={() => onCheckOut(record.id)}
-                loading={actionLoading}
+              <Tooltip
+                title={!permission.canPerform ? permission.reason : undefined}
               >
-                Check-out
-              </Button>
+                <Button
+                  size="small"
+                  icon={<CheckOutlined />}
+                  onClick={() => onCheckOut(record.id)}
+                  loading={actionLoading}
+                  disabled={!permission.canPerform}
+                >
+                  Check-out
+                </Button>
+              </Tooltip>
             );
           }
 
@@ -261,94 +294,154 @@ export default function AppointmentTable({
       {
         title: "Thao tác",
         key: "actions",
-        width: 280,
-        fixed: "right",
+        width: 180,
+        // fixed: "right",
         render: (_, record) => (
           <Space split={<Divider type="vertical" />}>
             {/* Group 1: Quick Actions with text + icon */}
             <Space size="small">
               {/* Confirm button - conditional */}
               {record.status === "Chờ xác nhận" &&
-                dayjs(record.appointmentDateTime).isAfter(dayjs(), "day") && (
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<CheckCircleOutlined />}
-                    onClick={() => onConfirm(record.id)}
-                    loading={actionLoading}
-                  >
-                    Xác nhận
-                  </Button>
-                )}
+                dayjs(record.appointmentDateTime).isAfter(dayjs(), "day") &&
+                (() => {
+                  const permission = canPerformQuickAction(record, currentUser);
+                  return (
+                    <Tooltip
+                      title={
+                        !permission.canPerform ? permission.reason : undefined
+                      }
+                    >
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<CheckCircleOutlined />}
+                        onClick={() => onConfirm(record.id)}
+                        loading={actionLoading}
+                        disabled={!permission.canPerform}
+                      >
+                        Xác nhận
+                      </Button>
+                    </Tooltip>
+                  );
+                })()}
 
               {/* Mark no-show button - conditional */}
               {!record.checkInTime &&
                 record.status !== "Không đến" &&
-                dayjs(record.appointmentDateTime) <= dayjs() && (
-                  <Button
-                    type="default"
-                    size="small"
-                    icon={<UserDeleteOutlined />}
-                    onClick={() => onMarkNoShow(record.id)}
-                    loading={actionLoading}
-                  >
-                    Không đến
-                  </Button>
-                )}
+                dayjs(record.appointmentDateTime) <= dayjs() &&
+                (() => {
+                  const permission = canPerformQuickAction(record, currentUser);
+                  return (
+                    <Tooltip
+                      title={
+                        !permission.canPerform ? permission.reason : undefined
+                      }
+                    >
+                      <Button
+                        type="default"
+                        size="small"
+                        icon={<UserDeleteOutlined />}
+                        onClick={() => onMarkNoShow(record.id)}
+                        loading={actionLoading}
+                        disabled={!permission.canPerform}
+                      >
+                        Không đến
+                      </Button>
+                    </Tooltip>
+                  );
+                })()}
             </Space>
 
             {/* Group 2: Edit & Delete - icon only */}
             <Space size="small">
-              <Tooltip title="Sửa">
-                <Button
-                  icon={<EditOutlined />}
-                  onClick={() => onEdit(record)}
-                />
-              </Tooltip>
+              {(() => {
+                const editPermission = canEditAppointment(record, currentUser);
+                return (
+                  <Tooltip
+                    title={
+                      editPermission.canEdit ? "Sửa" : editPermission.reason
+                    }
+                  >
+                    <Button
+                      icon={<EditOutlined />}
+                      onClick={() => onEdit(record)}
+                      disabled={!editPermission.canEdit}
+                    />
+                  </Tooltip>
+                );
+              })()}
 
-              <Popconfirm
-                title="Xóa lịch hẹn"
-                description={`Bạn có chắc muốn xóa lịch hẹn của ${record.customer.fullName}?`}
-                onConfirm={() => onDelete(record.id)}
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Tooltip title="Xóa">
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    loading={actionLoading}
-                  />
-                </Tooltip>
-              </Popconfirm>
+              {(() => {
+                const deletePermission = canDeleteAppointment(
+                  record,
+                  currentUser
+                );
+                return (
+                  <Popconfirm
+                    title="Xóa lịch hẹn"
+                    description={`Bạn có chắc muốn xóa lịch hẹn của ${record.customer.fullName}?`}
+                    onConfirm={() => onDelete(record.id)}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                    disabled={!deletePermission.canDelete}
+                  >
+                    <Tooltip
+                      title={
+                        deletePermission.canDelete
+                          ? "Xóa"
+                          : deletePermission.reason
+                      }
+                    >
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        loading={actionLoading}
+                        disabled={!deletePermission.canDelete}
+                      />
+                    </Tooltip>
+                  </Popconfirm>
+                );
+              })()}
             </Space>
           </Space>
         ),
       },
-    ],
-    [
-      uniqueDentists,
-      uniqueStatuses,
-      onCheckIn,
-      onCheckOut,
-      onConfirm,
-      onMarkNoShow,
-      onEdit,
-      onDelete,
-      actionLoading,
-    ]
-  );
+    ];
+  }, [
+    data,
+    isCustomerDetailView,
+    currentUser,
+    onCheckIn,
+    onCheckOut,
+    onConfirm,
+    onMarkNoShow,
+    onEdit,
+    onDelete,
+    actionLoading,
+  ]);
+
+  // Filter columns based on context
+  const visibleColumns = React.useMemo(() => {
+    if (isCustomerDetailView) {
+      // Customer Detail view: Hide "Khách hàng", Show "Chi nhánh"
+      return columns.filter((col) => col.key !== "customer");
+    } else {
+      // Daily/List view: Show "Khách hàng", Hide "Chi nhánh"
+      return columns.filter((col) => col.key !== "clinic");
+    }
+  }, [columns, isCustomerDetailView]);
 
   return (
     <Table
-      columns={columns}
+      columns={visibleColumns}
       dataSource={data}
       rowKey="id"
       loading={loading}
       pagination={false}
+      scroll={{ x: 1400 }}
       locale={{
-        emptyText: "Không có lịch hẹn nào trong ngày",
+        emptyText: "Không có lịch hẹn nào",
       }}
     />
   );

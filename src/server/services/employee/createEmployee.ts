@@ -256,12 +256,8 @@ export async function completeEmployeeProfilePublic(body: unknown) {
         ban_duration: "none",
       });
     }
-  } catch (error: unknown) {
+  } catch {
     // Best-effort enable; do not block profile completion if this fails
-    console.warn(
-      "Failed to enable Supabase user:",
-      error instanceof Error ? error.message : "Unknown error"
-    );
   }
 
   const updated = await employeeRepo.update(id, payload);

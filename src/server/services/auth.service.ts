@@ -61,8 +61,7 @@ export async function getSessionUser(): Promise<UserCore | null> {
         clinicId: employee.clinicId ?? user.clinicId,
       };
     }
-  } catch (e) {
-    console.error("Lỗi khi lấy thông tin nhân viên cho session:", e);
+  } catch {
     // Bỏ qua lỗi để không làm sập trang nếu DB có vấn đề
   }
 

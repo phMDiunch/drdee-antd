@@ -19,11 +19,6 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
   try {
     // Validate core required fields (always non-null)
     if (!row.id || !row.fullName || !row.createdAt || !row.updatedAt) {
-      console.error("❌ Missing core required fields:");
-      console.error("   - id:", row.id);
-      console.error("   - fullName:", row.fullName);
-      console.error("   - createdAt:", row.createdAt);
-      console.error("   - updatedAt:", row.updatedAt);
       throw new Error(`Missing required fields for customer ${customerId}`);
     }
 
@@ -84,37 +79,6 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
 
     const parsed = CustomerResponseSchema.safeParse(sanitized);
     if (!parsed.success) {
-      console.error("=== ❌ ZOD VALIDATION FAILED ===");
-      console.error("Customer ID:", customerId);
-      console.error("Total errors:", parsed.error.issues.length);
-      console.error("\n📋 Detailed field errors:");
-
-      // Log từng field bị lỗi
-      parsed.error.issues.forEach((err, index) => {
-        console.error(`\n[${index + 1}] Field: "${err.path.join(".")}"`);
-        console.error(`    Code: ${err.code}`);
-        console.error(`    Message: ${err.message}`);
-        if ("received" in err) {
-          console.error(`    Received:`, err.received);
-        }
-        if ("expected" in err) {
-          console.error(`    Expected:`, err.expected);
-        }
-
-        // Log giá trị thực tế của field bị lỗi
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const fieldValue = err.path.reduce<any>(
-          (obj, key) => obj?.[key],
-          sanitized
-        );
-        console.error(`    Actual value:`, fieldValue);
-        console.error(`    Actual type:`, typeof fieldValue);
-      });
-
-      console.error("\n📦 Full sanitized object:");
-      console.error(JSON.stringify(sanitized, null, 2));
-      console.error("=== END ZOD VALIDATION ERRORS ===\n");
-
       throw new ServiceError(
         "INVALID",
         "Dữ liệu khách hàng ở database trả về không hợp lệ. Kiểm tra database trong supabase",
@@ -123,11 +87,6 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
     }
     return parsed.data;
   } catch (error) {
-    console.error("=== ERROR in mapCustomerToResponse ===");
-    console.error("Customer ID:", row.id);
-    console.error("Error:", error);
-    console.error("Raw customer data:", JSON.stringify(row, null, 2));
-
     throw new ServiceError(
       "MAPPING_ERROR",
       `Lỗi mapping dữ liệu khách hàng ${row.id || "unknown"}: ${
@@ -139,9 +98,9 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
 }
 
 /**
- * Map Customer Detail with source relations
+ * Map Customer Detail with source relations and appointments
  * Used for: GET /api/v1/customers/[id]
- * Reuses base mapping + adds sourceEmployee/sourceCustomer
+ * Reuses base mapping + adds sourceEmployee/sourceCustomer + appointments
  */
 type CustomerDetailWithRelations = CustomerWithRelations & {
   sourceEmployee?: Pick<Employee, "id" | "fullName" | "phone"> | null;
@@ -149,6 +108,13 @@ type CustomerDetailWithRelations = CustomerWithRelations & {
     Customer,
     "id" | "fullName" | "phone" | "customerCode"
   > | null;
+  appointments?: Array<{
+    id: string;
+    appointmentDateTime: Date;
+    checkInTime: Date | null;
+    checkOutTime: Date | null;
+    status: string;
+  }>;
 };
 
 export function mapCustomerDetailToResponse(row: CustomerDetailWithRelations) {
@@ -178,15 +144,23 @@ export function mapCustomerDetailToResponse(row: CustomerDetailWithRelations) {
             customerCode: row.sourceCustomer.customerCode,
           }
         : null,
+
+      // Appointments relation (for check-in status + tab count)
+      appointments: row.appointments
+        ? row.appointments.map((apt) => ({
+            id: apt.id,
+            appointmentDateTime: apt.appointmentDateTime.toISOString(),
+            checkInTime: apt.checkInTime ? apt.checkInTime.toISOString() : null,
+            checkOutTime: apt.checkOutTime
+              ? apt.checkOutTime.toISOString()
+              : null,
+            status: apt.status,
+          }))
+        : undefined,
     };
 
     const parsed = CustomerDetailResponseSchema.safeParse(sanitized);
     if (!parsed.success) {
-      console.error("=== ❌ CUSTOMER DETAIL VALIDATION FAILED ===");
-      console.error("Customer ID:", customerId);
-      console.error("Errors:", parsed.error.issues);
-      console.error("Data:", JSON.stringify(sanitized, null, 2));
-
       throw new ServiceError(
         "INVALID",
         "Dữ liệu chi tiết khách hàng không hợp lệ",
@@ -196,10 +170,6 @@ export function mapCustomerDetailToResponse(row: CustomerDetailWithRelations) {
 
     return parsed.data;
   } catch (error) {
-    console.error("=== ERROR in mapCustomerDetailToResponse ===");
-    console.error("Customer ID:", customerId);
-    console.error("Error:", error);
-
     throw new ServiceError(
       "MAPPING_ERROR",
       `Lỗi mapping chi tiết khách hàng ${customerId}: ${

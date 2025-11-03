@@ -11,6 +11,8 @@ export { default as CustomerFormModal } from "./components/CustomerFormModal";
 export { default as CustomerTable } from "./components/CustomerTable";
 export { default as CustomerStatistics } from "./components/CustomerStatistics";
 export { default as CustomerFilters } from "./components/CustomerFilters";
+export { default as QuickCheckInButton } from "./components/QuickCheckInButton";
+export { default as WalkInModal } from "./components/WalkInModal";
 
 // Detail tabs
 export { default as CustomerInfoTab } from "./components/detail-tabs/CustomerInfoTab";

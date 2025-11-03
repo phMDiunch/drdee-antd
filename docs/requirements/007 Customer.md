@@ -60,9 +60,10 @@
 
 ### 🔐 Permissions
 
-- **Admin** và **Back office**: có thể tạo khách hàng cho bất kỳ clinic nào
-- **Employee**: chỉ tạo được khách hàng cho clinic của mình
-- Kiểm tra quyền ở cả client và server
+- **Admin**: Có thể tạo khách hàng cho **bất kỳ clinic nào** (field clinicId enabled, có thể chọn)
+- **Employee**: Chỉ tạo được khách hàng cho **clinic của mình** (field clinicId disabled, auto-fill với user.clinicId)
+- Backend validation: Employee không thể tạo cho clinic khác (throw 403)
+- Customer code được generate theo `data.clinicId` (đảm bảo prefix đúng clinic)
 
 ### 🎨 UI/UX
 

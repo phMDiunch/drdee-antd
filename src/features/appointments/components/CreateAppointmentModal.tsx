@@ -24,6 +24,8 @@ import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmploy
 import { useClinics } from "@/features/clinics/hooks/useClinics";
 import { useDentistAvailability } from "../hooks/useDentistAvailability";
 import { APPOINTMENT_STATUS_OPTIONS } from "../constants";
+import { getAppointmentDateTimePickerConfig } from "../utils/dateTimePickerConfig";
+import { canEditStatusField } from "../utils/appointmentPermissions";
 import type {
   CreateAppointmentFormData,
   CreateAppointmentRequest,
@@ -36,6 +38,13 @@ type Props = {
   open: boolean;
   confirmLoading?: boolean;
   selectedClinicId?: string; // From clinic tabs (admin only)
+  prefilledCustomer?: {
+    // Pre-fill customer (for Customer Detail view)
+    id: string;
+    customerCode: string | null;
+    fullName: string;
+    phone: string | null;
+  };
   onCancel: () => void;
   onSubmit: (payload: CreateAppointmentRequest) => void;
 };
@@ -43,6 +52,7 @@ type Props = {
 export default function CreateAppointmentModal({
   open,
   selectedClinicId,
+  prefilledCustomer,
   confirmLoading,
   onCancel,
   onSubmit,
@@ -51,6 +61,20 @@ export default function CreateAppointmentModal({
 
   // Determine default clinic (Employee: session clinic, Admin: selected clinic from tabs)
   const defaultClinicId = selectedClinicId || currentUser?.clinicId || "";
+
+  const defaultValues = useMemo(
+    () => ({
+      clinicId: defaultClinicId,
+      status: "Chờ xác nhận" as const,
+      duration: 30,
+      appointmentDateTime: "",
+      customerId: prefilledCustomer?.id || "",
+      primaryDentistId: "",
+      secondaryDentistId: undefined,
+      notes: "",
+    }),
+    [defaultClinicId, prefilledCustomer?.id]
+  );
 
   const {
     control,
@@ -62,17 +86,15 @@ export default function CreateAppointmentModal({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(CreateAppointmentFormSchema) as any, // Type assertion needed due to Zod default values
     mode: "onBlur",
-    defaultValues: {
-      clinicId: defaultClinicId,
-      status: "Chờ xác nhận",
-      duration: 30,
-      appointmentDateTime: "",
-      customerId: "",
-      primaryDentistId: "",
-      secondaryDentistId: undefined,
-      notes: "",
-    },
+    defaultValues,
   });
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      reset(defaultValues);
+    }
+  }, [open, reset, defaultValues]);
 
   // Watch fields for dependent logic
   const appointmentDateTime = watch("appointmentDateTime");
@@ -85,6 +107,14 @@ export default function CreateAppointmentModal({
   const [debouncedCustomerQuery, setDebouncedCustomerQuery] =
     React.useState("");
 
+  // Reset customer search when modal opens with prefilled customer
+  useEffect(() => {
+    if (open && prefilledCustomer) {
+      setCustomerQuery("");
+      setDebouncedCustomerQuery("");
+    }
+  }, [open, prefilledCustomer]);
+
   // Debounce customer search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,11 +123,34 @@ export default function CreateAppointmentModal({
     return () => clearTimeout(timer);
   }, [customerQuery]);
 
-  const { data: customerOptions = [], isFetching: customerFetching } =
+  const { data: customerSearchResults = [], isFetching: customerFetching } =
     useCustomersSearch({
       q: debouncedCustomerQuery,
       limit: 20,
     });
+
+  // Customer select options - combine prefilled customer with search results
+  const customerSelectOptions = useMemo(() => {
+    // CASE 1: Prefilled customer (Customer Detail view)
+    if (prefilledCustomer) {
+      return [
+        {
+          label: `${prefilledCustomer.customerCode || ""} - ${
+            prefilledCustomer.fullName
+          }${prefilledCustomer.phone ? ` (${prefilledCustomer.phone})` : ""}`,
+          value: prefilledCustomer.id,
+        },
+      ];
+    }
+
+    // CASE 2: Search results (Daily/List view)
+    return customerSearchResults.map((c) => ({
+      label: `${c.customerCode || ""} - ${c.fullName}${
+        c.phone ? ` (${c.phone})` : ""
+      }`,
+      value: c.id,
+    }));
+  }, [prefilledCustomer, customerSearchResults]);
 
   // Working employees for selected clinic
   const { data: employeesData } = useWorkingEmployees();
@@ -131,18 +184,6 @@ export default function CreateAppointmentModal({
         }
       : undefined
   );
-
-  // Reset form when modal opens
-  useEffect(() => {
-    if (open) {
-      reset({
-        clinicId: defaultClinicId,
-        status: "Chờ xác nhận",
-        duration: 30,
-        appointmentDateTime: "",
-      });
-    }
-  }, [open, reset, defaultClinicId]);
 
   const onValid = (formData: CreateAppointmentFormData) => {
     // Convert form data to API payload
@@ -184,30 +225,49 @@ export default function CreateAppointmentModal({
                   validateStatus={fieldState.error ? "error" : ""}
                   help={fieldState.error?.message}
                 >
-                  <Select
-                    {...field}
-                    showSearch
-                    placeholder="Tìm kiếm khách hàng..."
-                    filterOption={false}
-                    onSearch={setCustomerQuery}
-                    notFoundContent={
-                      customerFetching ? (
-                        <Spin size="small" />
-                      ) : customerQuery.length >= 2 ? (
-                        "Không tìm thấy khách hàng"
-                      ) : customerQuery.length > 0 ? (
-                        "Nhập ít nhất 2 ký tự"
-                      ) : (
-                        "Nhập để tìm kiếm"
-                      )
-                    }
-                    options={customerOptions.map((c) => ({
-                      label: `${c.customerCode || ""} - ${c.fullName}${
-                        c.phone ? ` (${c.phone})` : ""
-                      }`,
-                      value: c.id,
-                    }))}
-                  />
+                  {prefilledCustomer ? (
+                    // CASE 1: Prefilled customer (Customer Detail view) - Show as disabled Input
+                    <>
+                      <Input
+                        value={`${prefilledCustomer.customerCode || ""} - ${
+                          prefilledCustomer.fullName
+                        }${
+                          prefilledCustomer.phone
+                            ? ` (${prefilledCustomer.phone})`
+                            : ""
+                        }`}
+                        disabled
+                        style={{ color: "rgba(0, 0, 0, 0.85)" }} // Override disabled text color
+                      />
+                      {/* Hidden field to hold the actual customerId value */}
+                      <input
+                        type="hidden"
+                        {...field}
+                        value={prefilledCustomer.id}
+                      />
+                    </>
+                  ) : (
+                    // CASE 2: Normal mode (Daily/List view) - Show searchable Select
+                    <Select
+                      {...field}
+                      showSearch
+                      placeholder="Tìm kiếm khách hàng..."
+                      filterOption={false}
+                      onSearch={setCustomerQuery}
+                      notFoundContent={
+                        customerFetching ? (
+                          <Spin size="small" />
+                        ) : customerQuery.length >= 2 ? (
+                          "Không tìm thấy khách hàng"
+                        ) : customerQuery.length > 0 ? (
+                          "Nhập ít nhất 2 ký tự"
+                        ) : (
+                          "Nhập để tìm kiếm"
+                        )
+                      }
+                      options={customerSelectOptions}
+                    />
+                  )}
                 </Form.Item>
               )}
             />
@@ -225,7 +285,7 @@ export default function CreateAppointmentModal({
                   help={fieldState.error?.message}
                 >
                   <DatePicker
-                    showTime={{ format: "HH:mm" }}
+                    showTime={getAppointmentDateTimePickerConfig()}
                     format="DD/MM/YYYY HH:mm"
                     value={field.value ? dayjs(field.value) : undefined}
                     onChange={(d) =>
@@ -350,6 +410,7 @@ export default function CreateAppointmentModal({
                 >
                   <Select
                     {...field}
+                    disabled={!canEditStatusField(currentUser)}
                     options={[...APPOINTMENT_STATUS_OPTIONS]}
                   />
                 </Form.Item>

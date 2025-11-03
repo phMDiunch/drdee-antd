@@ -39,10 +39,6 @@ export async function updateCustomerApi(
   // Validate response with Zod
   const responseParsed = CustomerDetailResponseSchema.safeParse(result);
   if (!responseParsed.success) {
-    console.error(
-      "CustomerDetailResponse validation failed:",
-      responseParsed.error
-    );
     throw new Error("Dữ liệu trả về không hợp lệ");
   }
 

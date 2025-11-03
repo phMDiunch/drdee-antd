@@ -377,7 +377,7 @@ interface AppointmentTab {
   component: "AppointmentTable";
 
   features: {
-    hideCustomerColumn: true; // Vì đã ở customer detail
+    isCustomerDetailView: true; // Customer Detail context: hide customer + show full datetime
     showHeader: true;
     showCheckInOut: true;
     title: "Danh sách lịch hẹn";
@@ -466,7 +466,7 @@ interface PaymentTab {
   component: "PaymentVoucherTable";
 
   features: {
-    hideCustomerColumn: true;
+    isCustomerDetailView: true; // Customer Detail context
     showHeader: true;
 
     specialProps: {

@@ -102,8 +102,46 @@ export const customerRepo = {
     clinicId: string;
     dateStart: Date;
     dateEnd: Date;
+    includeAppointments?: boolean;
+    appointmentDateStart?: Date;
+    appointmentDateEnd?: Date;
   }) {
-    const { clinicId, dateStart, dateEnd } = params;
+    const {
+      clinicId,
+      dateStart,
+      dateEnd,
+      includeAppointments,
+      appointmentDateStart,
+      appointmentDateEnd,
+    } = params;
+
+    // Build include object conditionally
+    const include: Prisma.CustomerInclude = {
+      clinic: {
+        select: { id: true, clinicCode: true, name: true, colorCode: true },
+      },
+      primaryContact: { select: { id: true, fullName: true, phone: true } },
+      createdBy: { select: { id: true, fullName: true } },
+      updatedBy: { select: { id: true, fullName: true } },
+    };
+
+    // Add appointments if requested
+    if (includeAppointments && appointmentDateStart && appointmentDateEnd) {
+      include.appointments = {
+        where: {
+          appointmentDateTime: {
+            gte: appointmentDateStart,
+            lt: appointmentDateEnd,
+          },
+        },
+        orderBy: { appointmentDateTime: "asc" },
+        include: {
+          primaryDentist: {
+            select: { id: true, fullName: true },
+          },
+        },
+      };
+    }
 
     const items = await prisma.customer.findMany({
       where: {
@@ -111,17 +149,22 @@ export const customerRepo = {
         createdAt: { gte: dateStart, lt: dateEnd },
       },
       orderBy: { createdAt: "desc" },
-      include: {
-        clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
-        },
-        primaryContact: { select: { id: true, fullName: true, phone: true } },
-        createdBy: { select: { id: true, fullName: true } },
-        updatedBy: { select: { id: true, fullName: true } },
-      },
+      include,
     });
 
-    return { items, count: items.length };
+    // Transform appointments[0] → todayAppointment if includeAppointments
+    const transformedItems = includeAppointments
+      ? items.map((item) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { appointments, ...rest } = item as any;
+          return {
+            ...rest,
+            todayAppointment: appointments?.[0] ?? null,
+          };
+        })
+      : items;
+
+    return { items: transformedItems, count: transformedItems.length };
   },
 
   /**
@@ -182,6 +225,17 @@ export const customerRepo = {
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },
+        // Appointments relation (for Customer Detail - check-in status + tab count)
+        appointments: {
+          select: {
+            id: true,
+            appointmentDateTime: true,
+            checkInTime: true,
+            checkOutTime: true,
+            status: true,
+          },
+          orderBy: { appointmentDateTime: "desc" },
+        },
       },
     });
   },

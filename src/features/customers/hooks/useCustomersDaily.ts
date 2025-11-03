@@ -1,13 +1,23 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getCustomersDailyApi, type GetCustomersDailyParams } from "../api/getCustomersDaily";
-import { CUSTOMER_QUERY_KEYS } from "../constants";
+import {
+  getCustomersDailyApi,
+  type GetCustomersDailyParams,
+} from "../api/getCustomersDaily";
 
 export function useCustomersDaily(params?: GetCustomersDailyParams) {
   return useQuery({
-    queryKey: CUSTOMER_QUERY_KEYS.daily(params?.date, params?.clinicId),
+    queryKey: [
+      "customers",
+      "daily",
+      {
+        date: params?.date,
+        clinicId: params?.clinicId,
+        includeAppointments: params?.includeAppointments,
+      },
+    ],
     queryFn: () => getCustomersDailyApi(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 30_000, // 30 seconds (shorter due to check-in updates)
   });
 }

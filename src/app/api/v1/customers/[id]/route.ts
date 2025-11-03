@@ -29,7 +29,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    console.error("GET /api/v1/customers/[id] error:", error);
     return NextResponse.json(
       { error: COMMON_MESSAGES.SERVER_ERROR },
       { status: 500 }
@@ -70,7 +69,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    console.error("PATCH /api/v1/customers/[id] error:", error);
     return NextResponse.json(
       { error: COMMON_MESSAGES.SERVER_ERROR },
       { status: 500 }

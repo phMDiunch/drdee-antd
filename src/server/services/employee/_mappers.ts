@@ -11,7 +11,6 @@ type EmployeeWithRelations = Employee & {
 
 // Chuyển hàm mapEmployeeToResponse sang đây
 export function mapEmployeeToResponse(row: EmployeeWithRelations) {
-  console.log("Mapping employee:", row);
   const sanitized = {
     ...row,
     department: row.department,
@@ -49,11 +48,9 @@ export function mapEmployeeToResponse(row: EmployeeWithRelations) {
   };
   const parsed = EmployeeResponseSchema.safeParse(sanitized);
   if (!parsed.success) {
-    console.error("Failed to map employee response", parsed.error, sanitized);
     throw ERR.INVALID(
       "Dữ liệu nhân viên ở database trả về không hợp lệ. Kiểm tra database trong supabase"
     );
   }
-  console.log("Mapped employee response:", parsed.data);
   return parsed.data;
 }

@@ -27,6 +27,8 @@ import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmploy
 import { useClinics } from "@/features/clinics/hooks/useClinics";
 import { useDentistAvailability } from "../hooks/useDentistAvailability";
 import { APPOINTMENT_STATUS_OPTIONS } from "../constants";
+import { getAppointmentDateTimePickerConfig } from "../utils/dateTimePickerConfig";
+import { getFieldPermissions } from "../utils/appointmentPermissions";
 import type {
   UpdateAppointmentFormData,
   UpdateAppointmentRequest,
@@ -56,22 +58,25 @@ export default function UpdateAppointmentModal({
   const { user: currentUser } = useCurrentUser();
   const isAdmin = currentUser?.role === "admin";
 
-  // Determine timeline for permission checks
+  // Determine timeline for alerts/warnings
   const appointmentDate = dayjs(appointment.appointmentDateTime);
   const today = dayjs().startOf("day");
   const isPast = appointmentDate.isBefore(today);
   const isToday = appointmentDate.isSame(today, "day");
-  const isFuture = appointmentDate.isAfter(today);
 
-  // Permission matrix based on timeline + role (matching requirement)
-  const canEditCustomer = isAdmin ? true : isFuture; // Employee: only future
-  const canEditDateTime = isAdmin ? true : isFuture; // Employee: only future
-  const canEditDuration = isAdmin || !isPast; // Employee: today + future
-  const canEditPrimaryDentist = isAdmin || !isPast;
-  const canEditSecondaryDentist = isAdmin || !isPast;
-  const canEditClinic = isAdmin || !isPast;
-  const canEditStatus = isAdmin || !isPast;
-  const canEditNotes = isAdmin || !isPast;
+  // Get field-level permissions based on timeline, status, and role
+  const {
+    canEditCustomer,
+    canEditDateTime,
+    canEditDuration,
+    canEditPrimaryDentist,
+    canEditSecondaryDentist,
+    canEditClinic,
+    canEditStatus,
+    canEditNotes,
+    canEditCheckInTime,
+    canEditCheckOutTime,
+  } = getFieldPermissions(appointment, currentUser);
 
   const {
     control,
@@ -338,7 +343,7 @@ export default function UpdateAppointmentModal({
                   help={fieldState.error?.message}
                 >
                   <DatePicker
-                    showTime={{ format: "HH:mm" }}
+                    showTime={getAppointmentDateTimePickerConfig()}
                     format="DD/MM/YYYY HH:mm"
                     value={field.value ? dayjs(field.value) : undefined}
                     onChange={(d) =>
@@ -501,8 +506,8 @@ export default function UpdateAppointmentModal({
           </Col>
         </Row>
 
-        {/* Admin Only Section */}
-        {isAdmin && (
+        {/* Admin Only Section - CheckIn/CheckOut */}
+        {(canEditCheckInTime || canEditCheckOutTime) && (
           <>
             <Divider orientation="left">
               <Text type="secondary">Chỉnh sửa nâng cao (Admin)</Text>
@@ -521,7 +526,7 @@ export default function UpdateAppointmentModal({
                       help={fieldState.error?.message}
                     >
                       <DatePicker
-                        showTime={{ format: "HH:mm" }}
+                        showTime={getAppointmentDateTimePickerConfig()}
                         format="DD/MM/YYYY HH:mm"
                         value={field.value ? dayjs(field.value) : null}
                         onChange={(d) =>
@@ -550,7 +555,7 @@ export default function UpdateAppointmentModal({
                       help={fieldState.error?.message}
                     >
                       <DatePicker
-                        showTime={{ format: "HH:mm" }}
+                        showTime={getAppointmentDateTimePickerConfig()}
                         format="DD/MM/YYYY HH:mm"
                         value={field.value ? dayjs(field.value) : null}
                         onChange={(d) =>

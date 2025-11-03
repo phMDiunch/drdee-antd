@@ -64,11 +64,6 @@ function mapDentalServiceToResponse(row: DentalServiceWithRelations) {
 
   const parsed = DentalServiceResponseSchema.safeParse(sanitized);
   if (!parsed.success) {
-    console.error(
-      "Failed to map dental service response",
-      parsed.error,
-      sanitized
-    );
     throw ERR.INVALID(
       "Dữ liệu dịch vụ nha khoa ở database trả về không hợp lệ. Kiểm tra database trong supabase"
     );

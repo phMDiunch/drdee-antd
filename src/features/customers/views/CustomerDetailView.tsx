@@ -1,9 +1,15 @@
 // src/features/customers/views/CustomerDetailView.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Row, Col, Card, Tabs, Empty, Space, Typography, Spin } from "antd";
-import { UserOutlined, IdcardOutlined, PhoneOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  IdcardOutlined,
+  PhoneOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+} from "@ant-design/icons";
 import { useCustomerDetail } from "@/features/customers";
 import CustomerInfoTab from "../components/detail-tabs/CustomerInfoTab";
 import AppointmentsTab from "../components/detail-tabs/AppointmentsTab";
@@ -41,6 +47,45 @@ export default function CustomerDetailView({
     if (!dob) return null;
     return dayjs().diff(dayjs(dob), "year");
   };
+
+  // Calculate today's check-in status (memoized)
+  const checkInStatus = useMemo(() => {
+    if (!customer?.appointments) {
+      return {
+        icon: <ClockCircleOutlined />,
+        text: "Không có lịch hôm nay",
+      };
+    }
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const todayAppointment = customer.appointments.find((apt) => {
+      const aptDate = dayjs(apt.appointmentDateTime).format("YYYY-MM-DD");
+      return aptDate === today;
+    });
+
+    if (!todayAppointment) {
+      return {
+        icon: <ClockCircleOutlined />,
+        text: "Không có lịch hôm nay",
+      };
+    }
+
+    if (todayAppointment.checkInTime) {
+      return {
+        icon: <CheckCircleOutlined />,
+        text: `Đã check-in lúc ${dayjs(todayAppointment.checkInTime).format(
+          "HH:mm"
+        )}`,
+        type: "success" as const,
+      };
+    }
+
+    return {
+      icon: <ClockCircleOutlined />,
+      text: "Chưa check-in",
+      type: "warning" as const,
+    };
+  }, [customer?.appointments]);
 
   if (isLoading) {
     return (
@@ -106,11 +151,11 @@ export default function CustomerDetailView({
                 <Text>{customer.phone || "—"}</Text>
               </Space>
 
-              {/* Phase 2: Check-in status */}
-              {/* <Space>
-                <ClockCircleOutlined />
-                <Text type="warning">Chưa check-in</Text>
-              </Space> */}
+              {/* Check-in status */}
+              <Space>
+                {checkInStatus.icon}
+                <Text type={checkInStatus.type}>{checkInStatus.text}</Text>
+              </Space>
             </Space>
           </Card>
         </Col>
@@ -150,8 +195,17 @@ export default function CustomerDetailView({
             },
             {
               key: "appointments",
-              label: "Lịch hẹn (0)",
-              children: <AppointmentsTab />,
+              label: `Lịch hẹn (${customer.appointments?.length || 0})`,
+              children: (
+                <AppointmentsTab
+                  customerId={customer.id}
+                  customerName={customer.fullName}
+                  customerCode={customer.customerCode}
+                  customerPhone={customer.phone}
+                  clinicId={customer.clinicId || ""} // Fallback empty string (shouldn't happen)
+                  onAppointmentChange={() => refetch()}
+                />
+              ),
             },
             {
               key: "consultedServices",

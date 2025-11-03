@@ -28,6 +28,7 @@ export default function CustomerDailyView() {
   const { data, isLoading } = useCustomersDaily({
     date: selectedDate.format("YYYY-MM-DD"),
     clinicId: selectedClinicId,
+    includeAppointments: true, // Enable check-in feature
   });
   const [openCreate, setOpenCreate] = useState(false);
   const createMutation = useCreateCustomer();
@@ -71,7 +72,12 @@ export default function CustomerDailyView() {
         dailyCount={totalCount}
       />
 
-      <CustomerTable data={items} loading={isLoading} />
+      <CustomerTable
+        data={items}
+        loading={isLoading}
+        showCheckIn={true}
+        selectedDate={selectedDate.format("YYYY-MM-DD")}
+      />
 
       <CustomerFormModal
         open={openCreate}

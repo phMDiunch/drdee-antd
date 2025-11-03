@@ -35,8 +35,7 @@ const AppointmentCommonFieldsSchema = z.object({
   duration: z
     .number()
     .int("Thời lượng phải là số nguyên")
-    .min(1, "Thời lượng tối thiểu là 1 phút")
-    .default(30),
+    .min(1, "Thời lượng tối thiểu là 1 phút"),
   notes: z.string().trim().optional().nullable(),
 
   primaryDentistId: z
@@ -45,7 +44,7 @@ const AppointmentCommonFieldsSchema = z.object({
   secondaryDentistId: z.string().uuid().optional().nullable(),
   clinicId: z.string().uuid("Vui lòng chọn chi nhánh"),
 
-  status: z.enum(APPOINTMENT_STATUSES).default("Chờ xác nhận"),
+  status: z.enum(APPOINTMENT_STATUSES), // No default here - will be set explicitly
 });
 
 /**
@@ -120,6 +119,12 @@ const validateAppointmentConditionalFields = (
 export const CreateAppointmentFormSchema = AppointmentCommonFieldsSchema.extend(
   {
     appointmentDateTime: z.string().min(1, "Vui lòng chọn thời gian hẹn"),
+    duration: z
+      .number()
+      .int("Thời lượng phải là số nguyên")
+      .min(1, "Thời lượng tối thiểu là 1 phút")
+      .default(15),
+    status: z.enum(APPOINTMENT_STATUSES).default("Chờ xác nhận"),
   }
 );
 
@@ -154,8 +159,18 @@ export const AppointmentRequestBaseSchema =
 /**
  * Create Appointment Request Schema (BACKEND - API)
  * Dùng ở: API POST /api/v1/appointments (server-side)
+ * Supports walk-in: can include checkInTime for immediate check-in
  */
-export const CreateAppointmentRequestSchema = AppointmentRequestBaseSchema;
+export const CreateAppointmentRequestSchema =
+  AppointmentRequestBaseSchema.extend({
+    duration: z
+      .number()
+      .int("Thời lượng phải là số nguyên")
+      .min(1, "Thời lượng tối thiểu là 1 phút")
+      .default(30),
+    status: z.enum(APPOINTMENT_STATUSES).default("Chờ xác nhận"),
+    checkInTime: z.coerce.date().optional().nullable(), // For walk-in appointments
+  });
 
 /**
  * Update Appointment Request Schema (BACKEND - API)
@@ -184,6 +199,7 @@ export const GetAppointmentsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().optional(),
+  customerId: z.string().uuid().optional(), // Filter by customer (for Customer Detail view)
   clinicId: z.string().uuid().optional(),
   status: z.enum(APPOINTMENT_STATUSES).optional(),
   date: z.string().optional(), // YYYY-MM-DD format

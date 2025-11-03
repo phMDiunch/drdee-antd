@@ -274,6 +274,19 @@ export const CustomerDetailResponseSchema = CustomerResponseSchema.extend({
     })
     .nullable()
     .optional(),
+
+  // Appointments relation (for Customer Detail view - check-in status + tab count)
+  appointments: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        appointmentDateTime: z.string().datetime(),
+        checkInTime: z.string().datetime().nullable(),
+        checkOutTime: z.string().datetime().nullable(),
+        status: z.string(),
+      })
+    )
+    .optional(),
 });
 
 /**
@@ -320,6 +333,29 @@ export const GetCustomersDailyQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ (yyyy-MM-dd)")
     .optional(),
   clinicId: z.string().uuid().optional(),
+  includeAppointments: z.coerce.boolean().optional().default(false),
+});
+
+/**
+ * Customer Daily Response Schema (BACKEND - API Response)
+ * Extends CustomerResponseSchema với thêm todayAppointment cho quick check-in feature
+ * Dùng ở: GET /api/v1/customers/daily?includeAppointments=true
+ */
+export const CustomerDailyResponseSchema = CustomerResponseSchema.extend({
+  todayAppointment: z
+    .object({
+      id: z.string().uuid(),
+      appointmentDateTime: z.coerce.date(),
+      status: z.string(),
+      checkInTime: z.coerce.date().nullable(),
+      checkOutTime: z.coerce.date().nullable(),
+      primaryDentist: z.object({
+        id: z.string().uuid(),
+        fullName: z.string(),
+      }),
+    })
+    .nullable()
+    .optional(),
 });
 
 /**
@@ -375,6 +411,7 @@ export type CustomerResponse = z.infer<typeof CustomerResponseSchema>;
 export type CustomerDetailResponse = z.infer<
   typeof CustomerDetailResponseSchema
 >;
+export type CustomerDailyResponse = z.infer<typeof CustomerDailyResponseSchema>;
 export type GetCustomersQuery = z.infer<typeof GetCustomersQuerySchema>;
 export type GetCustomersDailyQuery = z.infer<
   typeof GetCustomersDailyQuerySchema

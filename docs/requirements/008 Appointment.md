@@ -1,8 +1,8 @@
 # 🧩 Requirements: Appointment Management System
 
-> **📋 STATUS: PENDING** - Implementation not started  
+> **📋 STATUS: ✅ IMPLEMENTED** - Backend + Frontend complete  
 > **📄 Feature Documentation**: `docs/features/008_Appointment.md` (placeholder)  
-> **🔗 Implementation**: `src/features/appointments/`, `src/app/(private)/appointments/`, `src/app/api/v1/appointments/`
+> **🔗 Implementation**: `src/features/appointments/`, `src/app/(private)/appointments/`, `src/app/api/v1/appointments/` > **🔧 Last Updated**: 2025-11-03 - Added walk-in logic clarification
 
 ## 📊 Tham khảo
 
@@ -49,16 +49,70 @@
   ```
 - ✅ Không dùng Prisma relations pattern (đơn giản, audit trail đủ dùng)
 
-### Permission & Timeline Rules
+### Permission Rules - Based on Timeline & Status
 
-- ✅ **Quá khứ (appointmentDateTime < TODAY)**:
-  - Employee: Không tạo, không sửa, không xoá
-  - Admin: Không tạo, có thể sửa tất cả fields, có thể xoá (with confirmation)
-- ✅ **Hôm nay (appointmentDateTime = TODAY)**:
-  - Employee: Tạo được, sửa limited fields, không xoá
-  - Admin: Tạo được, sửa tất cả, xoá được
-- ✅ **Tương lai (appointmentDateTime > TODAY)**:
-  - Employee & Admin: Tạo, sửa, xoá tất cả
+**Quyền hạn dựa trên:**
+
+1. ⏰ **Timeline**: Quá khứ/Hôm nay/Tương lai
+2. 📊 **Status**: Chờ xác nhận → Đã xác nhận → Đã đến (check-in) → Đã đến (check-out) | Không đến | Đã hủy
+3. 👤 **Role**: Admin vs Employee
+4. ❌ **KHÔNG** dựa trên clinic (cross-clinic collaboration)
+
+**Lưu ý về Status Workflow:**
+
+- Check-out **không** thay đổi status, chỉ set `checkOutTime`
+- Status "Đã đến" là trạng thái cuối của appointment thành công (có thể có hoặc không có checkOutTime)
+
+#### **CREATE (Tạo lịch):**
+
+- ✅ **Employee & Admin**: Tạo được cho **bất kỳ clinic nào** (tương lai)
+- ❌ Không tạo lịch trong quá khứ
+
+#### **UPDATE (Sửa lịch):**
+
+| Timeline      | Status                      | Employee Permissions                                                                                    | Admin         |
+| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- | ------------- |
+| **Quá khứ**   | Any                         | ❌ Không sửa                                                                                            | ✅ Sửa tất cả |
+| **Hôm nay**   | Chờ xác nhận<br>Đã xác nhận | ✅ Sửa: duration, dentist, clinic, status, notes, checkIn, checkOut<br>❌ Không sửa: customer, dateTime | ✅ Sửa tất cả |
+| **Hôm nay**   | Đã đến<br>Đến đột xuất      | ❌ Không sửa (khóa sau khi check-in)                                                                    | ✅ Sửa tất cả |
+| **Hôm nay**   | Không đến<br>Đã hủy         | ❌ Không sửa                                                                                            | ✅ Sửa tất cả |
+| **Tương lai** | Any                         | ✅ Sửa tất cả (trừ checkIn/Out)                                                                         | ✅ Sửa tất cả |
+
+#### **DELETE (Xóa lịch):**
+
+| Timeline      | Status                                   | Employee     | Admin       |
+| ------------- | ---------------------------------------- | ------------ | ----------- |
+| **Quá khứ**   | Any                                      | ❌ Không xóa | ✅ Xóa được |
+| **Hôm nay**   | Chờ xác nhận<br>Đã xác nhận              | ✅ Xóa được  | ✅ Xóa được |
+| **Hôm nay**   | Đã đến/Đến đột xuất/<br>Không đến/Đã hủy | ❌ Không xóa | ✅ Xóa được |
+| **Tương lai** | Any                                      | ✅ Xóa được  | ✅ Xóa được |
+
+#### **QUICK ACTIONS (Check-in, Check-out, Confirm, No-show):**
+
+**Quyền dựa trên CLINIC:**
+
+- ✅ **Admin**: Thực hiện được tại **mọi clinic**
+- ⚠️ **Employee**: Chỉ thực hiện được tại **clinic của mình**
+  - ❌ Không check-in/out/confirm/no-show lịch hẹn của clinic khác
+  - ✅ Có thể VIEW lịch hẹn cross-clinic (trong Customer Detail)
+  - 💡 Rationale: Quick actions cần hiện diện tại clinic để thực hiện
+
+**Quick Actions bao gồm:**
+
+- `Check-in`: Đánh dấu khách đã đến
+- `Check-out`: Đánh dấu khách đã xong
+- `Confirm`: Xác nhận lịch hẹn
+- `Mark No-show`: Đánh dấu không đến
+
+### Multi-Clinic Collaboration
+
+- ✅ **CREATE/UPDATE/DELETE**: Không giới hạn clinic (cross-clinic workflow)
+- ⚠️ **QUICK ACTIONS**: Employee chỉ thực hiện tại clinic mình (on-site requirement)
+- ✅ **Use case**: Employee clinic A tạo lịch cho clinic B → Employee clinic B xử lý & check-in
+- ✅ **Workflow**: Cross-clinic booking, but on-site operations
+- ✅ **Quyền dựa trên**:
+  - CREATE/UPDATE/DELETE → Timeline & Status
+  - Quick Actions → Clinic ownership
 
 ### Update Pattern (Admin Override)
 
@@ -75,6 +129,51 @@
   - Frontend: Các button gọi `useUpdateAppointment()` với payload nhỏ
   - Backend: Service layer tự detect action và apply business logic
   - Không tạo endpoints riêng (giảm complexity)
+
+### Status Field Control
+
+- ✅ **Employee**: Status field **disabled** trong Create/Update forms
+  - Status thay đổi thông qua quick actions workflow
+  - Create → mặc định "Chờ xác nhận"
+  - Check-in → chuyển sang "Đã đến" (set checkInTime + status)
+  - Check-out → vẫn giữ "Đã đến" (chỉ set checkOutTime, không đổi status)
+  - Confirm → chuyển sang "Đã xác nhận"
+  - Mark No-show → chuyển sang "Không đến"
+  - Cancel → chuyển sang "Đã hủy"
+- ✅ **Admin**: Status field **enabled** trong tất cả forms
+  - Có thể thay đổi status thủ công để sửa lỗi
+  - Có quyền override bất kỳ status nào
+
+### Status "Đến đột xuất" (Walk-in)
+
+**Definition**: Khách hàng đến không hẹn trước → Tạo appointment + auto check-in ngay
+
+**Đặc điểm:**
+
+- ✅ Marker để phân biệt walk-in (createdAt ≈ appointmentDateTime)
+- ✅ Luôn có `checkInTime` (auto-set khi tạo)
+- ✅ **Treated same as "Đã đến"** trong tất cả logic:
+  - Validation: Cho phép có checkInTime
+  - Permissions: Khóa edit/delete giống "Đã đến"
+  - Quick actions: Không thể confirm/check-in (đã check-in rồi)
+  - Delete: Employee không xóa được (hôm nay + đã đến)
+- ✅ UI: Tag màu `cyan` (phân biệt với "Đã đến" màu `green`)
+
+**Use Case:**
+
+- Customer Daily View → Button "Check-in" → Nếu chưa có lịch → Modal walk-in
+- Chọn bác sĩ → Submit → Tạo appointment với:
+  - `appointmentDateTime = now`
+  - `status = "Đến đột xuất"`
+  - `checkInTime = now`
+  - `duration = 30` (mặc định)
+
+**Backend Validation:**
+
+- ✅ Cho phép tạo appointment trong **2 phút gần đây** (xử lý network latency)
+- ✅ Không có exception đặc biệt cho "Đến đột xuất"
+- ✅ Check conflict: 1 khách/1 lịch/ngày (áp dụng cho cả walk-in)
+- 💡 **Rationale**: Employee tuân theo workflow chuẩn, Admin có khả năng xử lý ngoại lệ
 
 ### Modal Pattern
 
@@ -464,9 +563,15 @@ stateDiagram-v2
     ĐãXácNhận --> ĐãHủy: Hủy
 
     KhôngĐến --> ĐãĐến: Admin override
+    KhôngĐến --> ĐãXácNhận: Admin override
     KhôngĐến --> ĐãHủy: Hủy
 
-    ĐãĐến --> [*]: Hoàn tất (có check-out)
+    ĐãĐến --> [*]: Kết thúc (có hoặc không có check-out time)
+
+    note right of ĐãĐến
+        Check-out chỉ set checkOutTime
+        Không thay đổi status
+    end note
 ```
 
 **Allowed Transitions:**

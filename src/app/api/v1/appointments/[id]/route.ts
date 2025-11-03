@@ -18,9 +18,6 @@ export async function GET(_req: Request, props: Params) {
     const data = await appointmentService.getById(user, params.id);
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
-    console.error("=== ERROR in GET /appointments/[id] ===");
-    console.error("Error message:", e instanceof Error ? e.message : e);
-
     if (e instanceof ServiceError) {
       return NextResponse.json(
         { error: e.message, code: e.code },
@@ -42,9 +39,6 @@ export async function PUT(req: Request, props: Params) {
     const data = await appointmentService.update(user, params.id, body);
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
-    console.error("=== ERROR in PUT /appointments/[id] ===");
-    console.error("Error message:", e instanceof Error ? e.message : e);
-
     if (e instanceof ServiceError) {
       return NextResponse.json(
         { error: e.message, code: e.code },
@@ -65,9 +59,6 @@ export async function DELETE(_req: Request, props: Params) {
     const data = await appointmentService.delete(user, params.id);
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
-    console.error("=== ERROR in DELETE /appointments/[id] ===");
-    console.error("Error message:", e instanceof Error ? e.message : e);
-
     if (e instanceof ServiceError) {
       return NextResponse.json(
         { error: e.message, code: e.code },

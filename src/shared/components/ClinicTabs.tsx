@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Tabs } from "antd";
 import { useClinics } from "@/features/clinics";
+import { useCurrentUser } from "@/shared/providers";
 
 type Props = {
   value?: string | null;
@@ -9,10 +10,30 @@ type Props = {
 };
 
 export default function ClinicTabs({ value, onChange }: Props) {
+  const { user: currentUser } = useCurrentUser();
   const { data: clinics, isLoading, error } = useClinics(true);
+
+  // Filter clinics based on user role
+  const filteredClinics = useMemo(() => {
+    if (!clinics) return [];
+
+    // Admin: Show all clinics
+    if (currentUser?.role === "admin") {
+      return clinics;
+    }
+
+    // Employee: Show only their clinic
+    if (currentUser?.clinicId) {
+      return clinics.filter((c) => c.id === currentUser.clinicId);
+    }
+
+    return [];
+  }, [clinics, currentUser?.role, currentUser?.clinicId]);
+
   const items = useMemo(
-    () => clinics?.map((c) => ({ key: c.id, label: c.clinicCode })) || [],
-    [clinics]
+    () =>
+      filteredClinics?.map((c) => ({ key: c.id, label: c.clinicCode })) || [],
+    [filteredClinics]
   );
 
   const [active, setActive] = useState<string | undefined>();
@@ -25,7 +46,6 @@ export default function ClinicTabs({ value, onChange }: Props) {
 
   // Handle error state
   if (error) {
-    console.error("Error loading clinics:", error);
     return null;
   }
 

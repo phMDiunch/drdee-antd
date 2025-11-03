@@ -34,6 +34,7 @@ export const appointmentRepo = {
     search?: string;
     page: number;
     pageSize: number;
+    customerId?: string; // Filter by customer (cross-clinic view)
     clinicId?: string;
     status?: AppointmentStatus;
     date?: string; // YYYY-MM-DD format
@@ -44,6 +45,7 @@ export const appointmentRepo = {
       search,
       page,
       pageSize,
+      customerId,
       clinicId,
       status,
       date,
@@ -54,6 +56,10 @@ export const appointmentRepo = {
 
     // Build where conditions
     const where: Prisma.AppointmentWhereInput = {};
+
+    if (customerId) {
+      where.customerId = customerId;
+    }
 
     if (clinicId) {
       where.clinicId = clinicId;

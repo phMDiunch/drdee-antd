@@ -18,24 +18,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
-    console.error("=== ERROR in GET /customers ===");
-    console.error(
-      "Error type:",
-      e instanceof ServiceError ? "ServiceError" : typeof e
-    );
-    console.error("Error message:", e instanceof Error ? e.message : e);
-    console.error(
-      "Error stack:",
-      e instanceof Error ? e.stack : "No stack trace"
-    );
-
     if (e instanceof ServiceError) {
-      console.error(
-        "ServiceError details - Code:",
-        e.code,
-        "HTTP Status:",
-        e.httpStatus
-      );
       return NextResponse.json(
         { error: e.message, code: e.code },
         { status: e.httpStatus }

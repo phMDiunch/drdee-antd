@@ -51,11 +51,12 @@ function getAppointmentTimeline(
 }
 
 /**
- * Check permissions for update based on timeline and role
+ * Check permissions for update based on timeline, status, and role
  */
 function checkUpdatePermissions(
   user: UserCore,
   appointmentDateTime: Date,
+  currentStatus: string,
   fields: string[]
 ) {
   const timeline = getAppointmentTimeline(appointmentDateTime);
@@ -64,7 +65,7 @@ function checkUpdatePermissions(
   // Admin can edit all fields in all timelines
   if (isAdmin) return;
 
-  // Employee restrictions
+  // Employee restrictions based on timeline and status
   if (timeline === "past") {
     throw new ServiceError(
       "PAST_APPOINTMENT_UPDATE_FORBIDDEN",
@@ -74,7 +75,18 @@ function checkUpdatePermissions(
   }
 
   if (timeline === "today") {
-    // Employee can only edit specific fields for today's appointments
+    // Employee cannot edit checked-in, cancelled, or no-show appointments
+    // Note: "Đến đột xuất" treated same as "Đã đến" (both have checkInTime)
+    const lockedStatuses = ["Đã đến", "Đến đột xuất", "Không đến", "Đã hủy"];
+    if (lockedStatuses.includes(currentStatus)) {
+      throw new ServiceError(
+        "LOCKED_APPOINTMENT_UPDATE_FORBIDDEN",
+        "Không thể chỉnh sửa lịch hẹn đã check-in, đã hủy hoặc không đến",
+        403
+      );
+    }
+
+    // For pending/confirmed status, can edit most fields (including check-in for quick actions)
     const allowedFields = [
       "duration",
       "primaryDentistId",
@@ -82,6 +94,8 @@ function checkUpdatePermissions(
       "clinicId",
       "status",
       "notes",
+      "checkInTime",
+      "checkOutTime",
     ];
 
     const restrictedFields = fields.filter(
@@ -91,7 +105,7 @@ function checkUpdatePermissions(
     if (restrictedFields.length > 0) {
       throw new ServiceError(
         "TODAY_APPOINTMENT_FIELD_RESTRICTED",
-        `Nhân viên không thể chỉnh sửa các trường: ${restrictedFields.join(
+        `Không thể sửa các trường: ${restrictedFields.join(
           ", "
         )} cho lịch hẹn hôm nay`,
         403
@@ -117,23 +131,48 @@ function checkUpdatePermissions(
 }
 
 /**
- * Check permissions for delete based on timeline and role
+ * Check permissions for delete based on timeline, status, and role
  */
-function checkDeletePermissions(user: UserCore, appointmentDateTime: Date) {
+function checkDeletePermissions(
+  user: UserCore,
+  appointmentDateTime: Date,
+  currentStatus: string
+) {
   const timeline = getAppointmentTimeline(appointmentDateTime);
   const isAdmin = user.role === "admin";
 
   // Admin can delete anytime
   if (isAdmin) return;
 
-  // Employee can only delete future appointments
-  if (timeline === "past" || timeline === "today") {
+  // Employee cannot delete past appointments
+  if (timeline === "past") {
     throw new ServiceError(
       "DELETE_FORBIDDEN",
-      "Nhân viên chỉ có thể xóa lịch hẹn trong tương lai",
+      "Nhân viên không thể xóa lịch hẹn trong quá khứ",
       403
     );
   }
+
+  // Employee cannot delete today's appointments if already checked in, cancelled, or no-show
+  // Note: "Đến đột xuất" treated same as "Đã đến" (both have checkInTime)
+  if (timeline === "today") {
+    const activeOrCompletedStatuses = [
+      "Đã đến",
+      "Đến đột xuất",
+      "Không đến",
+      "Đã hủy",
+    ];
+    if (activeOrCompletedStatuses.includes(currentStatus)) {
+      throw new ServiceError(
+        "DELETE_FORBIDDEN",
+        "Không thể xóa lịch hẹn đã có khách đến, đã hủy hoặc không đến",
+        403
+      );
+    }
+    // Allow delete for "Chờ xác nhận", "Đã xác nhận"
+  }
+
+  // Future: employee can delete
 }
 
 /**
@@ -176,6 +215,7 @@ export const appointmentService = {
       page,
       pageSize,
       search,
+      customerId,
       clinicId,
       status,
       date,
@@ -183,23 +223,46 @@ export const appointmentService = {
       sortDirection,
     } = parsed;
 
-    // Employee: auto-filter by their clinic
-    const effectiveClinicId =
-      currentUser?.role === "admin" ? clinicId : currentUser?.clinicId;
+    /**
+     * Clinic Filtering Strategy:
+     *
+     * CASE 1: Customer Detail View (customerId provided)
+     * - Show ALL appointments across all clinics (cross-clinic view)
+     * - Rationale: Employee needs full context, prevent duplicate bookings
+     * - Permission: View all, edit own clinic only (handled in frontend)
+     *
+     * CASE 2: Daily/List View (no customerId)
+     * - Show only appointments of employee's clinic
+     * - Rationale: Daily operations, clinic-specific workflow
+     * - Permission: Employee see/edit own clinic, Admin see/edit all
+     */
+    let effectiveClinicId: string | undefined;
 
-    if (!effectiveClinicId && currentUser?.role !== "admin") {
-      throw new ServiceError(
-        "MISSING_CLINIC",
-        "Nhân viên phải thuộc về một chi nhánh",
-        403
-      );
+    if (customerId) {
+      // CASE 1: Customer-centric view (cross-clinic)
+      effectiveClinicId = undefined;
+    } else {
+      // CASE 2: Clinic-centric view
+      effectiveClinicId =
+        currentUser?.role === "admin"
+          ? clinicId
+          : currentUser?.clinicId ?? undefined;
+
+      if (!effectiveClinicId && currentUser?.role !== "admin") {
+        throw new ServiceError(
+          "MISSING_CLINIC",
+          "Nhân viên phải thuộc về một chi nhánh",
+          403
+        );
+      }
     }
 
     const { items, count } = await appointmentRepo.list({
       search,
       page,
       pageSize,
-      clinicId: effectiveClinicId ?? undefined,
+      customerId,
+      clinicId: effectiveClinicId,
       status,
       date,
       sortField,
@@ -312,9 +375,12 @@ export const appointmentService = {
 
     const parsed = CreateAppointmentRequestSchema.parse(body);
 
-    // Validate: no past appointments
+    // Validate: no past appointments (allow within last 2 minutes for walk-in edge case)
+    // Note: "Đến đột xuất" is just a marker (createdAt ≈ appointmentDateTime),
+    // treated same as "Đã đến" in all logic
     const now = new Date();
-    if (parsed.appointmentDateTime < now) {
+    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+    if (parsed.appointmentDateTime < twoMinutesAgo) {
       throw new ServiceError(
         "PAST_APPOINTMENT_NOT_ALLOWED",
         "Không thể tạo lịch hẹn trong quá khứ",
@@ -322,17 +388,8 @@ export const appointmentService = {
       );
     }
 
-    // Employee can only create for their clinic
-    if (
-      currentUser.role !== "admin" &&
-      parsed.clinicId !== currentUser.clinicId
-    ) {
-      throw new ServiceError(
-        "CLINIC_MISMATCH",
-        "Nhân viên chỉ có thể tạo lịch hẹn cho chi nhánh của mình",
-        403
-      );
-    }
+    // Note: Both admin and employee can create appointments for any clinic
+    // (e.g., booking customer to another branch)
 
     // Check customer conflict (1 customer/1 appointment/day)
     const existingAppointment =
@@ -374,8 +431,9 @@ export const appointmentService = {
       );
     }
 
+    // Get fields from original body (not parsed) to check only fields actually sent
+    const fields = Object.keys(body as Record<string, unknown>);
     const parsed = UpdateAppointmentRequestSchema.parse(body);
-    const fields = Object.keys(parsed);
 
     // Get existing appointment
     const existing = await appointmentRepo.getById(id);
@@ -383,20 +441,13 @@ export const appointmentService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy lịch hẹn", 404);
     }
 
-    // Check clinic access
-    if (
-      currentUser.role !== "admin" &&
-      existing.clinicId !== currentUser.clinicId
-    ) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "Bạn không có quyền chỉnh sửa lịch hẹn này",
-        403
-      );
-    }
-
-    // Check permissions based on timeline
-    checkUpdatePermissions(currentUser, existing.appointmentDateTime, fields);
+    // Check permissions based on timeline and status (no clinic restriction)
+    checkUpdatePermissions(
+      currentUser,
+      existing.appointmentDateTime,
+      existing.status,
+      fields
+    );
 
     // Check customer conflict if changing date/customer
     if (parsed.appointmentDateTime || parsed.customerId) {
@@ -474,20 +525,12 @@ export const appointmentService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy lịch hẹn", 404);
     }
 
-    // Check clinic access
-    if (
-      currentUser?.role !== "admin" &&
-      existing.clinicId !== currentUser?.clinicId
-    ) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "Bạn không có quyền xóa lịch hẹn này",
-        403
-      );
-    }
-
-    // Check delete permissions based on timeline
-    checkDeletePermissions(currentUser, existing.appointmentDateTime);
+    // Check delete permissions based on timeline and status (no clinic restriction)
+    checkDeletePermissions(
+      currentUser!,
+      existing.appointmentDateTime,
+      existing.status
+    );
 
     await appointmentRepo.delete(id);
     return { success: true };

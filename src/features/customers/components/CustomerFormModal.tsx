@@ -26,7 +26,10 @@ import {
   type CustomerSource,
 } from "@/features/customers/constants";
 import provinces from "@/data/vietnamAdministrativeUnits.json";
-import { usePhoneDuplicateCheck, useCustomerFormOptions } from "@/features/customers";
+import {
+  usePhoneDuplicateCheck,
+  useCustomerFormOptions,
+} from "@/features/customers";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 
 // Import schemas and types

@@ -12,7 +12,6 @@ export async function getAppointmentApi(id: string) {
   if (!res.ok) throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
 
   const parsed = AppointmentResponseSchema.safeParse(json);
-  console.log("parsed:", parsed);
   if (!parsed.success) throw new Error("Dữ liệu lịch hẹn trả về không hợp lệ.");
 
   return parsed.data;

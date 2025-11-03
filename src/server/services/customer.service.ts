@@ -112,6 +112,18 @@ export const customerService = {
     }
     const data = parsed.data;
 
+    // Validate clinic access - Employee can only create for their clinic
+    if (
+      currentUser.role !== "admin" &&
+      data.clinicId !== currentUser.clinicId
+    ) {
+      throw new ServiceError(
+        "CLINIC_MISMATCH",
+        "Nhân viên chỉ có thể tạo khách hàng cho chi nhánh của mình",
+        403
+      );
+    }
+
     // Validate unique phone if provided
     if (data.phone) {
       const existingPhone = await customerRepo.findByPhone(data.phone);
@@ -148,8 +160,9 @@ export const customerService = {
     }
 
     // Generate customer code in transaction
+    // Use data.clinicId (from request) to generate correct clinic-specific code
     const result = await prisma.$transaction(async () => {
-      const customerCode = await generateCustomerCode(currentUser.clinicId!);
+      const customerCode = await generateCustomerCode(data.clinicId);
 
       const customer = await customerRepo.create({
         ...data,
@@ -236,7 +249,7 @@ export const customerService = {
       );
     }
 
-    const { date, clinicId } = parsed.data;
+    const { date, clinicId, includeAppointments } = parsed.data;
 
     // Parse date or use today
     const targetDate = date ? new Date(date) : new Date();
@@ -261,10 +274,19 @@ export const customerService = {
       clinicId: effectiveClinicId,
       dateStart,
       dateEnd,
+      includeAppointments,
+      appointmentDateStart: includeAppointments ? dateStart : undefined,
+      appointmentDateEnd: includeAppointments ? dateEnd : undefined,
     });
 
+    // When includeAppointments, items already have todayAppointment from repo
+    // Don't map through mapCustomerToResponse as it strips extra fields
+    const items = includeAppointments
+      ? result.items // Return raw with todayAppointment
+      : result.items.map(mapCustomerToResponse);
+
     return {
-      items: result.items.map(mapCustomerToResponse),
+      items,
       count: result.count,
     };
   },
