@@ -32,7 +32,17 @@ const CustomerCommonFieldsSchema = z.object({
     .refine((val) => val === null || VN_PHONE_RE.test(val), {
       message: "Số điện thoại không hợp lệ",
     }),
-  email: z.string().trim().email("Email không hợp lệ").optional().nullable(),
+  email: z
+    .string()
+    .trim()
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
+    .refine(
+      (val) => val === null || z.string().email().safeParse(val).success,
+      {
+        message: "Email không hợp lệ",
+      }
+    ),
 
   // Address fields - REQUIRED
   address: z.string().trim().min(1, "Vui lòng nhập địa chỉ"),
