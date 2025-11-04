@@ -10,6 +10,8 @@ export function useAppointments(params?: GetAppointmentsQuery) {
   return useQuery({
     queryKey: APPOINTMENT_QUERY_KEYS.list(params),
     queryFn: () => getAppointmentsApi(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 60 * 1000, // 1 phút - Transaction data thay đổi thường xuyên
+    gcTime: 5 * 60 * 1000, // 5 phút - Giữ trong memory
+    refetchOnWindowFocus: true, // Refetch khi user quay lại tab (nhưng vẫn show cache trước)
   });
 }

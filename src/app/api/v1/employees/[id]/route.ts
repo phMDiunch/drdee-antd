@@ -21,47 +21,14 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
+      return NextResponse.json(
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
+      );
     }
     return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
   }
 }
 
-/**
- * @description Cập nhật thông tin nhân viên
- * @method PUT
- * @path /api/v1/employees/:id
- */
-export async function PUT(req: Request, { params }: Params) {
-  try {
-    const user = await getSessionUser();
-    const body = await req.json().catch(() => ({}));
-    const { id } = await params;
-    const data = await employeeService.update(user, id, body);
-    return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
-    }
-    return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
-  }
-}
-
-/**
- * @description Xóa một nhân viên
- * @method DELETE
- * @path /api/v1/employees/:id
- */
-export async function DELETE(_req: Request, { params }: Params) {
-  try {
-    const user = await getSessionUser();
-    const { id } = await params;
-    const data = await employeeService.remove(user, id);
-    return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
-    }
-    return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
-  }
-}
+// PUT removed - Use updateEmployeeAction() Server Action instead
+// DELETE removed - Use deleteEmployeeAction() Server Action instead

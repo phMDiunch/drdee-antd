@@ -9,6 +9,7 @@ export function useWorkingEmployees() {
   return useQuery<WorkingEmployeeResponse, Error>({
     queryKey: EMPLOYEE_QUERY_KEYS.working(),
     queryFn: () => getWorkingEmployeesApi(),
-    staleTime: 30 * 60_000,
+    staleTime: 8 * 60 * 60 * 1000, // 8 giờ - Nhân viên ít thay đổi trong ca làm
+    gcTime: 24 * 60 * 60 * 1000, // 24 giờ - Giữ trong memory cả ngày
   });
 }

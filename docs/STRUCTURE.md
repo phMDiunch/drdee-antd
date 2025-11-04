@@ -21,17 +21,30 @@
 │   │   │   ├── employees/                     # Employee management
 │   │   │   ├── appointments/                  # Appointment management
 │   │   │   └── ...                           # Other protected routes
-│   │   ├── 🔌 api/                           # API routes
-│   │   │   ├── appointments/
-│   │   │   │   ├── [id]/
-│   │   │   │   │   ├── check-in/route.ts      # Check-in endpoint
-│   │   │   │   │   ├── confirm/route.ts       # Confirmation endpoint
-│   │   │   │   │   └── checkout/route.ts      # Check-out endpoint
-│   │   │   │   ├── checked-in/route.ts        # Checked-in list
-│   │   │   │   └── check-conflict/route.ts    # Conflict detection
-│   │   │   ├── customers/                     # Customer APIs
-│   │   │   ├── employees/                     # Employee APIs
-│   │   │   └── ...                           # Other API routes
+│   │   ├── 🔌 api/                           # API routes (GET only - Hybrid pattern)
+│   │   │   ├── v1/                            # Versioned API endpoints
+│   │   │   │   ├── appointments/
+│   │   │   │   │   ├── route.ts               # GET /appointments (list)
+│   │   │   │   │   ├── [id]/route.ts          # GET /appointments/:id (detail)
+│   │   │   │   │   ├── daily/route.ts         # GET /appointments/daily (by date)
+│   │   │   │   │   └── check-availability/route.ts # GET availability check
+│   │   │   │   ├── customers/
+│   │   │   │   │   ├── route.ts               # GET /customers (list)
+│   │   │   │   │   ├── [id]/route.ts          # GET /customers/:id (detail)
+│   │   │   │   │   ├── search/route.ts        # GET /customers/search
+│   │   │   │   │   └── daily/route.ts         # GET /customers/daily
+│   │   │   │   ├── employees/
+│   │   │   │   │   ├── route.ts               # GET /employees (list)
+│   │   │   │   │   ├── [id]/route.ts          # GET /employees/:id (detail)
+│   │   │   │   │   └── working/route.ts       # GET /employees/working
+│   │   │   │   ├── clinics/
+│   │   │   │   │   ├── route.ts               # GET /clinics (list)
+│   │   │   │   │   └── [id]/route.ts          # GET /clinics/:id (detail)
+│   │   │   │   └── dental-services/
+│   │   │   │       ├── route.ts               # GET /dental-services (list)
+│   │   │   │       └── [id]/route.ts          # GET /dental-services/:id (detail)
+│   │   │   └── public/                        # Public API endpoints
+│   │   │       └── employees/                 # Public employee endpoints
 │   │   ├── 🎨 globals.css                     # Global styles
 │   │   ├── 📄 layout.tsx                      # Root layout
 │   │   └── 🏠 page.tsx                        # Home page
@@ -98,25 +111,31 @@
 │   │   ├── AuthLayout/                        # Authentication layout
 │   │   └── index.ts                           # Layout exports
 │   │
-│   ├── 🎯 features/                          # Domain-driven features
+│   ├── 🎯 features/                          # Domain-driven features (Clean Architecture)
 │   │   ├── 👥 employees/
-│   │   │   ├── 🔄 api/                        # Domain API (React Query hooks)
-│   │   │   │   ├── queries.ts                 # useEmployeesQuery, useEmployeeQuery
-│   │   │   │   ├── mutations.ts               # useCreateEmployee, useUpdateEmployee
+│   │   │   ├── 🔄 api/                        # API client functions (GET requests only)
+│   │   │   │   ├── getEmployees.ts            # Fetch employees list
+│   │   │   │   ├── getEmployeeById.ts         # Fetch employee detail
+│   │   │   │   ├── getWorkingEmployees.ts     # Fetch working employees
 │   │   │   │   └── index.ts                   # API exports (barrel)
 │   │   │   ├── 🧩 components/                 # Domain-specific components
 │   │   │   │   ├── EmployeeForm.tsx           # Employee form component
 │   │   │   │   ├── EmployeeTable.tsx          # Employee table component
 │   │   │   │   └── EmployeeCard.tsx           # Employee card component
-│   │   │   ├── 🪝 hooks/                      # Domain-specific hooks
-│   │   │   │   ├── useEmployeeValidation.ts   # Employee validation
-│   │   │   │   ├── useEmployeeFilters.ts      # Employee filters
+│   │   │   ├── 🪝 hooks/                      # React Query hooks (mutations use Server Actions)
+│   │   │   │   ├── useEmployees.ts            # Query hook: GET /employees
+│   │   │   │   ├── useEmployeeById.ts         # Query hook: GET /employees/:id
+│   │   │   │   ├── useCreateEmployee.ts       # Mutation: createEmployeeAction()
+│   │   │   │   ├── useUpdateEmployee.ts       # Mutation: updateEmployeeAction()
+│   │   │   │   ├── useDeleteEmployee.ts       # Mutation: deleteEmployeeAction()
+│   │   │   │   ├── useSetEmployeeStatus.ts    # Mutation: setEmployeeStatusAction()
+│   │   │   │   ├── useResendEmployeeInvite.ts # Mutation: resendEmployeeInviteAction()
 │   │   │   │   └── index.ts                   # Hook exports (barrel)
 │   │   │   ├── 📱 views/                      # Page-level components
 │   │   │   │   ├── EmployeeListView.tsx       # Employee list page
 │   │   │   │   ├── EmployeeDetailView.tsx     # Employee detail page
 │   │   │   │   └── EmployeeCreateView.tsx     # Employee creation page
-│   │   │   └── 📋 constants.ts                # Domain constants, endpoints, query keys
+│   │   │   └── 📋 constants.ts                # Domain constants, query keys, messages
 │   │   │
 │   │   ├── 👤 customers/                      # Customer management
 │   │   │   ├── api/                           # Customer APIs
@@ -141,13 +160,30 @@
 │   │   └── 📈 dashboard/                      # Dashboard features
 │   │
 │   ├── 🖥️ server/                            # Server-side logic (Clean Architecture)
+│   │   ├── ⚡ actions/                        # 🆕 Server Actions (Next.js 15 RPC layer)
+│   │   │   ├── customer.actions.ts            # Customer mutations (create, update)
+│   │   │   ├── appointment.actions.ts         # Appointment mutations (create, update, delete, check-in/out)
+│   │   │   ├── clinic.actions.ts              # Clinic mutations (create, update, archive, unarchive)
+│   │   │   ├── dental-service.actions.ts      # Dental service mutations (create, update, archive, unarchive)
+│   │   │   ├── employee.actions.ts            # Employee mutations (create, update, delete, setStatus, resendInvite)
+│   │   │   └── index.ts                       # Action exports
+│   │   │
 │   │   ├── 🗃️ repos/                         # Data access layer (Prisma queries)
+│   │   │   ├── customer.repo.ts               # Customer data access
+│   │   │   ├── appointment.repo.ts            # Appointment data access
+│   │   │   ├── clinic.repo.ts                 # Clinic data access
+│   │   │   ├── dental-service.repo.ts         # Dental service data access
 │   │   │   ├── employee.repo.ts               # Employee data access
 │   │   │   └── index.ts                       # Repository exports
 │   │   │
-│   │   └── ⚙️ services/                       # Business logic layer
-│   │       ├── auth.service.ts                # Authentication business logic
+│   │   └── ⚙️ services/                       # Business logic layer (orchestration)
+│   │       ├── auth.service.ts                # Authentication & session management
+│   │       ├── customer.service.ts            # Customer business logic
+│   │       ├── appointment.service.ts         # Appointment business logic
+│   │       ├── clinic.service.ts              # Clinic business logic
+│   │       ├── dental-service.service.ts      # Dental service business logic
 │   │       ├── employee.service.ts            # Employee business logic
+│   │       ├── errors.ts                      # Custom error classes
 │   │       └── index.ts                       # Service exports
 │   │
 │   ├── 📚 lib/                               # Third-party configurations

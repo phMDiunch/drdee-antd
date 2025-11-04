@@ -2,8 +2,7 @@
 export const CLINIC_ENDPOINTS = {
   ROOT: "/api/v1/clinics",
   BY_ID: (id: string) => `/api/v1/clinics/${id}`,
-  ARCHIVE: (id: string) => `/api/v1/clinics/${id}/archive`,
-  UNARCHIVE: (id: string) => `/api/v1/clinics/${id}/unarchive`,
+  // ARCHIVE, UNARCHIVE removed - Use archiveClinicAction(), unarchiveClinicAction() instead
 } as const;
 
 export const CLINIC_QUERY_KEYS = {

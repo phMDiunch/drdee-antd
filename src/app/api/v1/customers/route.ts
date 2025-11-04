@@ -7,6 +7,11 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export const runtime = "nodejs";
 
+/**
+ * GET /api/v1/customers - List customers
+ * Query params: page, limit, search, clinicId, etc.
+ * Used by: useCustomers() hook
+ */
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser();
@@ -31,22 +36,4 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
-  try {
-    const user = await getSessionUser();
-    const body = await req.json().catch(() => ({}));
-    const data = await customerService.create(user, body);
-    return NextResponse.json(data, { status: 201 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
-    }
-    return NextResponse.json(
-      { error: COMMON_MESSAGES.SERVER_ERROR },
-      { status: 500 }
-    );
-  }
-}
+// POST removed - Use createCustomerAction() Server Action instead

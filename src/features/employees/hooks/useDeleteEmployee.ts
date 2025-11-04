@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { deleteEmployeeApi } from "../api/deleteEmployee";
+import { deleteEmployeeAction } from "@/server/actions/employee.actions";
 import { EMPLOYEE_MESSAGES } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
@@ -11,7 +11,7 @@ export function useDeleteEmployee() {
   const notify = useNotify();
 
   return useMutation({
-    mutationFn: (id: string) => deleteEmployeeApi(id),
+    mutationFn: (id: string) => deleteEmployeeAction(id),
     onSuccess: () => {
       notify.success(EMPLOYEE_MESSAGES.DELETE_SUCCESS);
       qc.invalidateQueries({ queryKey: ["employees"] });

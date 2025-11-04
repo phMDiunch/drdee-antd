@@ -15,10 +15,21 @@ export async function GET() {
   try {
     const user = await getSessionUser();
     const data = await employeeService.listWorking(user);
-    return NextResponse.json(data, { status: 200 });
+
+    // 🚀 Task 4: API Response Caching
+    // Cache 1 phút, serve stale up to 5 phút while revalidating
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
+      return NextResponse.json(
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
+      );
     }
     return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
   }

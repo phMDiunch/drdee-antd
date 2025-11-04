@@ -3,7 +3,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { deleteAppointmentApi } from "../api/deleteAppointment";
+import { deleteAppointmentAction } from "@/server/actions/appointment.actions";
 import { APPOINTMENT_MESSAGES } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
@@ -12,7 +12,7 @@ export function useDeleteAppointment() {
   const notify = useNotify();
 
   return useMutation({
-    mutationFn: (id: string) => deleteAppointmentApi(id),
+    mutationFn: (id: string) => deleteAppointmentAction(id),
     onSuccess: () => {
       notify.success(APPOINTMENT_MESSAGES.DELETE_SUCCESS);
       qc.invalidateQueries({ queryKey: ["appointments"] });

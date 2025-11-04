@@ -17,37 +17,17 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
+      return NextResponse.json(
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
+      );
     }
-    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
+    return NextResponse.json(
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(req: Request, { params }: Params) {
-  try {
-    const user = await getSessionUser();
-    const body = await req.json().catch(() => ({}));
-    const { id } = await params;
-    const data = await dentalServiceService.update(user, { ...body, id });
-    return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
-    }
-    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
-  }
-}
-
-export async function DELETE(_req: Request, { params }: Params) {
-  try {
-    const user = await getSessionUser();
-    const { id } = await params;
-    const data = await dentalServiceService.remove(user, id);
-    return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json({ error: e.message, code: e.code }, { status: e.httpStatus });
-    }
-    return NextResponse.json({ error: COMMON_MESSAGES.SERVER_ERROR }, { status: 500 });
-  }
-}
+// PUT removed - Use updateDentalServiceAction() Server Action instead
+// DELETE removed - Use archiveDentalServiceAction() Server Action instead

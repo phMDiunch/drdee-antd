@@ -147,6 +147,10 @@ model Employee {
   // Liên kết đến nhà cung cấp
   createdSuppliers Supplier[] @relation("CreatedSuppliers")
   updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
+
+  // 🚀 Performance Indexes
+  @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
+  @@index([email]) // Optimize: Login by email
 }
 
 model DentalService {
@@ -247,6 +251,10 @@ model Customer {
 
   // Liên kết đến chăm sóc sau điều trị (aftercare)
   treatmentCares TreatmentCare[]
+
+  // 🚀 Performance Indexes
+  @@index([clinicId, createdAt]) // Optimize: Daily view - customers by clinic & date
+  @@index([phone]) // Optimize: Search by phone number
 }
 
 model Appointment {
@@ -292,6 +300,11 @@ model Appointment {
 
   // Liên kết đến nhật ký điều trị
   treatmentLogs TreatmentLog[]
+
+  // 🚀 Performance Indexes
+  @@index([clinicId, appointmentDateTime]) // Optimize: Daily view - appointments by clinic & date
+  @@index([customerId]) // Optimize: Customer detail - all appointments
+  @@index([primaryDentistId]) // Optimize: Dentist schedule
 }
 
 model ConsultedService {

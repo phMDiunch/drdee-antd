@@ -11,6 +11,10 @@ type Params = {
   params: Promise<{ id: string }>;
 };
 
+/**
+ * GET /api/v1/appointments/[id] - Get appointment detail
+ * Used by: useAppointment(id) hook
+ */
 export async function GET(_req: Request, props: Params) {
   try {
     const params = await props.params;
@@ -31,43 +35,5 @@ export async function GET(_req: Request, props: Params) {
   }
 }
 
-export async function PUT(req: Request, props: Params) {
-  try {
-    const params = await props.params;
-    const user = await getSessionUser();
-    const body = await req.json().catch(() => ({}));
-    const data = await appointmentService.update(user, params.id, body);
-    return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
-    }
-    return NextResponse.json(
-      { error: COMMON_MESSAGES.SERVER_ERROR },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(_req: Request, props: Params) {
-  try {
-    const params = await props.params;
-    const user = await getSessionUser();
-    const data = await appointmentService.delete(user, params.id);
-    return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
-    if (e instanceof ServiceError) {
-      return NextResponse.json(
-        { error: e.message, code: e.code },
-        { status: e.httpStatus }
-      );
-    }
-    return NextResponse.json(
-      { error: COMMON_MESSAGES.SERVER_ERROR },
-      { status: 500 }
-    );
-  }
-}
+// PUT removed - Use updateAppointmentAction() Server Action instead
+// DELETE removed - Use deleteAppointmentAction() Server Action instead

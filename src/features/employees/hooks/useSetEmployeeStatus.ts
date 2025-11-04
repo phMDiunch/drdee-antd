@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { setEmployeeStatusApi } from "../api/setEmployeeStatus";
+import { setEmployeeStatusAction } from "@/server/actions/employee.actions";
 import { EMPLOYEE_MESSAGES, EMPLOYEE_QUERY_KEYS } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
@@ -17,7 +17,7 @@ export function useSetEmployeeStatus() {
     }: {
       id: string;
       status: "WORKING" | "RESIGNED";
-    }) => setEmployeeStatusApi(id, status),
+    }) => setEmployeeStatusAction(id, status),
     onSuccess: (_data, variables) => {
       notify.success(EMPLOYEE_MESSAGES.SET_STATUS_SUCCESS);
       qc.invalidateQueries({ queryKey: ["employees"] });

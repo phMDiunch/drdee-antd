@@ -22,43 +22,24 @@ Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
 - Feature module: `src/features/<feature>/{api,components,hooks,views}` + `constants.ts` + **`index.ts`** (barrel export tổng).
 - Layout: `src/layouts/AppLayout/*` (Header, Sider, Content, menu, theme).
 
-## 3.1) Barrel Exports Pattern - Single index.ts
+## 3.1) Barrel Exports Pattern
 
-Mỗi feature có **1 file `index.ts` duy nhất** ở root làm Public API. Các subfolder (`api/`, `hooks/`, `components/`, `views/`) **KHÔNG CÓ** `index.ts`.
-
-**Template:**
+**1 file `index.ts` ở root feature**, subfolder (`api/`, `hooks/`, `components/`, `views/`) KHÔNG CÓ `index.ts`.
 
 ```typescript
 // src/features/customers/index.ts
-
-// ===== VIEWS =====
 export { default as CustomerDailyView } from "./views/CustomerDailyView";
-
-// ===== COMPONENTS =====
 export { default as CustomerTable } from "./components/CustomerTable";
-
-// ===== HOOKS =====
 export * from "./hooks/useCustomers";
-export * from "./hooks/useCreateCustomer";
-
-// ===== CONSTANTS =====
 export * from "./constants";
-
-// NOTE: API layer KHÔNG export (internal - hooks wrap them)
+// NOTE: API layer KHÔNG export (internal)
 ```
 
-**Import Rules:**
+**Import:**
 
-```typescript
-// ✅ External → Feature barrel
-import { CustomerDailyView, useCustomers } from "@/features/customers";
-
-// ✅ Internal → Specific file
-import { useCustomers } from "../hooks/useCustomers";
-
-// ❌ External → Deep path
-import { useCustomers } from "@/features/customers/hooks/useCustomers"; // BAD
-```
+- ✅ External: `import { CustomerDailyView, useCustomers } from "@/features/customers"`
+- ✅ Internal: `import { useCustomers } from "../hooks/useCustomers"`
+- ❌ Deep path: `import { useCustomers } from "@/features/customers/hooks/useCustomers"`
 
 ## 4) Next.js & Supabase
 
@@ -83,10 +64,194 @@ import { useCustomers } from "@/features/customers/hooks/useCustomers"; // BAD
   - Không redirect trong API; redirect ở UI/hook.
 - API client (`features/<feature>/api`): `fetch` + parse response bằng Zod; nếu `!ok` ném `Error(message)`.
 
-## 7) React Query vs Zustand
+## 6.1) Server Actions Pattern (Next.js 15)
 
-- React Query (server‑state): `useQuery` cho GET, `useMutation` cho ghi; quản lý loading/error/success + invalidate.
-- Không dùng Zustand/Context để cache dữ liệu server. Zustand chỉ cho UI‑state cục bộ (toggle, filters, modal…).
+**Hybrid Architecture**: GET qua API Routes + Mutations qua Server Actions.
+
+```typescript
+// ✅ Server Action (src/server/actions/<feature>.actions.ts)
+"use server";
+export async function createCustomerAction(data: CreateCustomerRequest) {
+  const user = await getSessionUser(); // Auth
+  return customerService.create(user, data); // Delegate to service
+}
+
+// ✅ Hook with Optimistic Update
+export function useCreateCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => createCustomerAction(data),
+    onMutate: async (newData) => {
+      // Optimistic: Show immediately
+      await qc.cancelQueries(["customers"]);
+      const previous = qc.getQueryData(["customers"]);
+      qc.setQueryData(["customers"], (old) => [
+        { ...newData, id: "temp" },
+        ...old,
+      ]);
+      return { previous };
+    },
+    onSuccess: () => qc.invalidateQueries(["customers"]),
+    onError: (_, __, ctx) => qc.setQueryData(["customers"], ctx?.previous),
+  });
+}
+```
+
+**3-Layer Responsibilities**:
+
+| Layer             | Purpose                                     | Example                       |
+| ----------------- | ------------------------------------------- | ----------------------------- |
+| **Server Action** | Auth gate + RPC wrapper                     | `getSessionUser()` + delegate |
+| **Service**       | Business logic + validation + orchestration | Rules, Zod, multiple repos    |
+| **Repo**          | Pure data access (Prisma)                   | `prisma.customer.create()`    |
+
+**Rules**:
+
+- ✅ Mutations (POST/PUT/DELETE) → Server Actions
+- ✅ Queries (GET) → API Routes + Cache headers
+- ✅ Optimistic updates cho high-frequency mutations (Customer, Appointment)
+- ✅ End-to-end type safety (TypeScript inference)
+- ❌ KHÔNG gọi Service trực tiếp từ components (phải qua Server Actions)
+
+## 6.2) API Response Caching (HTTP Headers)
+
+**Master Data APIs** - Apply caching headers:
+
+```typescript
+// GET /api/v1/clinics
+export async function GET(req: Request) {
+  const data = await clinicService.list(user);
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+    },
+  });
+}
+```
+
+**Cache Strategy**:
+
+| API                  | Cache Time | Stale Time | Reason                    |
+| -------------------- | ---------- | ---------- | ------------------------- |
+| `/clinics`           | 5 min      | 10 min     | Rarely changes            |
+| `/dental-services`   | 5 min      | 10 min     | Rarely changes            |
+| `/employees/working` | 1 min      | 5 min      | May add new employees     |
+| `/customers`         | No cache   | -          | Frequent changes (use RQ) |
+| `/appointments`      | No cache   | -          | Real-time data (use RQ)   |
+
+**Rules**:
+
+- ✅ `public, s-maxage, stale-while-revalidate` for master data
+- ❌ NO cache for transaction data (React Query handles this)
+- ✅ Vercel Edge Network auto-enabled with `Cache-Control`
+
+## 7) React Query Patterns
+
+### 7.1) Query Hooks - Caching Strategy
+
+**Master Data** (ít thay đổi):
+
+```typescript
+export function useClinics() {
+  return useQuery({
+    queryKey: ["clinics"],
+    queryFn: () => getClinicsApi(),
+    staleTime: Infinity, // Cache forever (chỉ fetch khi invalidate)
+    gcTime: 24 * 60 * 60 * 1000, // Keep in memory 24h
+  });
+}
+```
+
+**Transaction Data** (thay đổi thường xuyên):
+
+```typescript
+export function useCustomers(params?: GetCustomersQuery) {
+  return useQuery({
+    queryKey: ["customers", params],
+    queryFn: () => getCustomersApi(params),
+    staleTime: 60 * 1000, // Fresh for 1 min
+    gcTime: 5 * 60 * 1000, // Keep 5 min
+    refetchOnWindowFocus: true, // Sync when user returns
+  });
+}
+```
+
+**Rules**:
+
+- ✅ Master data: `Infinity` or 5-8h cache
+- ✅ Transaction data: 1 min cache + `refetchOnWindowFocus`
+- ✅ Consistent `queryKey` structure: `[feature, id/params]`
+
+### 7.2) Mutation Hooks - Optimistic Updates
+
+**Create Pattern**:
+
+```typescript
+export function useCreateCustomer() {
+  const qc = useQueryClient();
+  const notify = useNotify();
+
+  return useMutation({
+    mutationFn: (data) => createCustomerAction(data),
+
+    // 1. Optimistic: Insert into cache immediately
+    onMutate: async (newData) => {
+      await qc.cancelQueries(["customers"]);
+      const previous = qc.getQueryData(["customers"]);
+
+      qc.setQueryData(["customers"], (old) => [
+        { ...newData, id: `temp-${Date.now()}`, ...defaults },
+        ...(old || []),
+      ]);
+
+      return { previous };
+    },
+
+    // 2. Success: Sync with server
+    onSuccess: () => {
+      notify.success(MESSAGES.CREATE_SUCCESS);
+      qc.invalidateQueries(["customers"]);
+    },
+
+    // 3. Error: Rollback
+    onError: (e, _, context) => {
+      if (context?.previous) qc.setQueryData(["customers"], context.previous);
+      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR });
+    },
+  });
+}
+```
+
+**Update Pattern**:
+
+```typescript
+onMutate: async (updatedData) => {
+  await qc.cancelQueries(["customers"]);
+  const previous = qc.getQueryData(["customers"]);
+
+  qc.setQueryData(["customers"], (old) =>
+    old?.map((item) =>
+      item.id === id
+        ? { ...item, ...updatedData, updatedAt: new Date().toISOString() }
+        : item
+    )
+  );
+
+  return { previous };
+};
+```
+
+**Rules**:
+
+- ✅ Optimistic updates for Customer, Appointment (high frequency)
+- ❌ No optimistic for Clinic, Service (low frequency - overkill)
+- ✅ Always rollback on error
+- ✅ Snapshot previous data for rollback
+
+### 7.3) Zustand (UI State Only)
+
+- ❌ KHÔNG dùng Zustand/Context để cache server data
+- ✅ Chỉ dùng cho UI state: modal visibility, filters, pagination, theme
 
 ## 7.1) React Hooks Best Practices
 
@@ -361,29 +526,26 @@ await repo.listDaily({ clinicId, dateStart, dateEnd });
 - Daily view return `{ items, count }` (consistent API shape)
 - Filter dùng `gte/lt` (không `lte` để tránh overlap)
 
-## 14) Validation Layers
+## 14) Validation Strategy
 
-**Validation chỉ ở 3 nơi**:
+**Validate ONLY at boundaries** - 3 layers:
 
-1. **Frontend form** (`CreateCustomerFormSchema`) - User input validation
-2. **API Route** (Zod schema) - Request/response validation at boundary
-3. **Service layer** (Business logic) - Email uniqueness, FK existence, state transitions
+1. **Frontend form** - User input (Zod + AntD rules)
+2. **API boundary** - Request/response (Zod parse)
+3. **Service layer** - Business rules (uniqueness, FK, state transitions)
 
-**Quy tắc**:
+**Rules**:
 
-- ✅ Validate ở boundaries: API routes, external input
-- ✅ Validate business rules ở Service layer
-- ❌ KHÔNG validate internal transformations: Mappers, repo results, type conversions
+- ✅ Validate external input: API routes, form submissions
+- ✅ Validate business logic: Service layer only
+- ❌ NO validation in: Mappers, repos, type conversions (trust internal data)
 
-**Mapper Pattern** (`src/server/services/<feature>/_mappers.ts`):
+**Mapper Pattern** (Transform only):
 
 ```typescript
-// ✅ Transform only - NO validation
+// ✅ NO validation - just transform
 export function mapCustomerToResponse(row: Customer): CustomerResponse {
-  return {
-    id: row.id,
-    dob: row.dob ? row.dob.toISOString() : null, // Date → ISO
-  };
+  return { id: row.id, dob: row.dob?.toISOString() ?? null };
 }
 ```
 
@@ -548,3 +710,57 @@ export function useCreateCustomer() {
 | Component file  | Singular        | PascalCase           | `CreateCustomerModal.tsx` |
 | View file       | Singular        | PascalCase           | `CustomerDailyView.tsx`   |
 | Constants file  | Singular        | lowercase            | `constants.ts`            |
+
+---
+
+## 20. Performance Optimization
+
+### React Query Caching
+
+**Master Data** (rarely changes):
+
+- staleTime: `Infinity` or `8 hours`
+- gcTime: `24 hours`
+- Examples: Clinics, Working Employees, Dental Services
+
+**Transaction Data** (frequently changes):
+
+- staleTime: `1 minute`
+- gcTime: `5 minutes`
+- refetchOnWindowFocus: `true`
+- Examples: Customers, Appointments
+
+### Optimistic Updates
+
+Use `onMutate` + `onError` rollback for all mutations:
+
+- Create: Insert temp item with optimistic ID (`temp-${Date.now()}`)
+- Update: Modify item in cache directly
+- Delete: Remove item from cache
+- Rollback: Restore previous cache state on error
+
+### Database Indexes
+
+Add composite indexes for common queries:
+
+- Employee: `[clinicId, employeeStatus]`, `[email]`
+- Customer: `[clinicId, createdAt]`, `[phone]`
+- Appointment: `[clinicId, appointmentDateTime]`, `[customerId]`, `[primaryDentistId]`
+
+### API Response Caching (HTTP)
+
+| Endpoint Type   | Cache-Control Header                                                |
+| --------------- | ------------------------------------------------------------------- |
+| Master data     | `public, s-maxage=300, stale-while-revalidate=600` (5 min + 10 min) |
+| Frequently used | `public, s-maxage=60, stale-while-revalidate=300` (1 min + 5 min)   |
+| User-specific   | `private, s-maxage=30, stale-while-revalidate=60` (30s + 1 min)     |
+
+**Expected Performance:**
+
+- 90% reduction in API calls
+- 95% reduction in query time
+- 0ms perceived latency for mutations (optimistic)
+
+```
+
+```

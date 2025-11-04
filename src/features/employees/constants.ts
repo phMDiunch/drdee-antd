@@ -4,8 +4,7 @@ export const EMPLOYEE_ENDPOINTS = {
   BY_ID: (id: string) => `/api/v1/employees/${id}`,
   PUBLIC_BY_ID: (id: string) => `/api/public/employees/${id}`,
   WORKING: "/api/v1/employees/working",
-  SET_STATUS: (id: string) => `/api/v1/employees/${id}/status`,
-  INVITE: (id: string) => `/api/v1/employees/${id}/invite`,
+  // SET_STATUS, INVITE removed - Use setEmployeeStatusAction(), resendEmployeeInviteAction() instead
   PUBLIC_COMPLETE_PROFILE: (id: string) =>
     `/api/public/employees/${id}/complete-profile`,
 } as const;

@@ -3,8 +3,7 @@
 export const DENTAL_SERVICE_ENDPOINTS = {
   ROOT: "/api/v1/dental-services",
   BY_ID: (id: string) => `/api/v1/dental-services/${id}`,
-  ARCHIVE: (id: string) => `/api/v1/dental-services/${id}/archive`,
-  UNARCHIVE: (id: string) => `/api/v1/dental-services/${id}/unarchive`,
+  // ARCHIVE, UNARCHIVE removed - Use archiveDentalServiceAction(), unarchiveDentalServiceAction() instead
 } as const;
 
 export const DENTAL_SERVICE_QUERY_KEYS = {
