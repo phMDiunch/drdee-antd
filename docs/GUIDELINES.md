@@ -761,6 +761,95 @@ Add composite indexes for common queries:
 - 95% reduction in query time
 - 0ms perceived latency for mutations (optimistic)
 
+---
+
+## 21. Shared Permissions (Frontend + Backend)
+
+**Pattern:** Pure TypeScript logic dùng chung - 1 file cho cả Frontend & Backend
+
+**Location:** `src/shared/permissions/<feature>.permissions.ts`
+
+**Nguyên tắc:**
+
+- Pure TypeScript (no DB, no React hooks)
+- 0ms latency (no API call)
+- Single source of truth
+
+**Frontend (0ms):**
+
+```typescript
+import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
+
+const permission = appointmentPermissions.canEdit(user, appointment);
+<Button disabled={!permission.allowed} title={permission.reason}>
+  Edit
+</Button>;
 ```
 
+**Backend (Validation):**
+
+```typescript
+import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
+
+try {
+  appointmentPermissions.validateUpdateFields(user, existing, fields);
+} catch (error) {
+  throw new ServiceError("PERMISSION_DENIED", error.message, 403);
+}
 ```
+
+**API:**
+
+- `canEdit(user, item)` → `{ allowed, reason?, disabledFields? }`
+- `canDelete(user, item)` → `{ allowed, reason? }`
+- `validateUpdateFields(user, item, fields)` → throws Error
+- `validateDelete(user, item)` → throws Error
+
+**Why NOT API endpoint?** Chậm (+50-100ms), phức tạp, vẫn cần frontend logic
+
+---
+
+## 22. Session User Caching (React `cache()`)
+
+**Problem:** Multiple `getSessionUser()` calls per request = N+1 DB queries (slow)
+
+**Solution:** React `cache()` wrapper - Request-scoped memoization (50-66% faster)
+
+**Implementation:**
+
+```typescript
+// src/server/utils/sessionCache.ts
+import { cache } from "react";
+import { getSessionUser as original } from "@/server/services/auth.service";
+
+export const getSessionUser = cache(original); // ← Request-scoped cache
+```
+
+**Usage:**
+
+```typescript
+// ✅ ALL Server Actions, API Routes, Server Components
+import { getSessionUser } from "@/server/utils/sessionCache"; // ← Use cached version
+
+export async function createCustomerAction(data) {
+  const user = await getSessionUser(); // First call: query DB (30ms)
+  return customerService.create(user, data);
+}
+
+export async function updateCustomerAction(id, data) {
+  const user = await getSessionUser(); // Subsequent: from cache (0ms)
+  return customerService.update(id, user, data);
+}
+```
+
+**Performance:**
+
+- Before: 3 actions × 30ms = 90ms overhead
+- After: 1 query (30ms) + 2 cache hits (0ms) = 30ms (-66%)
+
+**Security:** ✅ Request-scoped (no cross-user leakage), auto cleanup
+
+**Rules:**
+
+- ❌ NEVER import from `@/server/services/auth.service` in Server Actions/Routes/Components
+- ✅ ALWAYS import from `@/server/utils/sessionCache`

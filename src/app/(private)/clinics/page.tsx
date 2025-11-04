@@ -1,5 +1,5 @@
 import ClinicsPageView from "@/features/clinics/views/ClinicsPageView";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 
 export default async function ClinicsPage() {
   const user = await getSessionUser();

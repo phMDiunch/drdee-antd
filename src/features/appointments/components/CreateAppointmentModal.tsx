@@ -25,7 +25,6 @@ import { useClinics } from "@/features/clinics/hooks/useClinics";
 import { useDentistAvailability } from "../hooks/useDentistAvailability";
 import { APPOINTMENT_STATUS_OPTIONS } from "../constants";
 import { getAppointmentDateTimePickerConfig } from "../utils/dateTimePickerConfig";
-import { canEditStatusField } from "../utils/appointmentPermissions";
 import type {
   CreateAppointmentFormData,
   CreateAppointmentRequest,
@@ -410,7 +409,7 @@ export default function CreateAppointmentModal({
                 >
                   <Select
                     {...field}
-                    disabled={!canEditStatusField(currentUser)}
+                    disabled={currentUser?.role !== "admin"}
                     options={[...APPOINTMENT_STATUS_OPTIONS]}
                   />
                 </Form.Item>

@@ -28,7 +28,7 @@ import { useClinics } from "@/features/clinics/hooks/useClinics";
 import { useDentistAvailability } from "../hooks/useDentistAvailability";
 import { APPOINTMENT_STATUS_OPTIONS } from "../constants";
 import { getAppointmentDateTimePickerConfig } from "../utils/dateTimePickerConfig";
-import { getFieldPermissions } from "../utils/appointmentPermissions";
+import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
 import type {
   UpdateAppointmentFormData,
   UpdateAppointmentRequest,
@@ -76,7 +76,7 @@ export default function UpdateAppointmentModal({
     canEditNotes,
     canEditCheckInTime,
     canEditCheckOutTime,
-  } = getFieldPermissions(appointment, currentUser);
+  } = appointmentPermissions.getFieldPermissions(currentUser, appointment);
 
   const {
     control,

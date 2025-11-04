@@ -26,11 +26,7 @@ import Link from "next/link";
 import { APPOINTMENT_STATUS_COLORS } from "../constants";
 import type { AppointmentResponse } from "@/shared/validation/appointment.schema";
 import { useCurrentUser } from "@/shared/providers";
-import {
-  canEditAppointment,
-  canDeleteAppointment,
-  canPerformQuickAction,
-} from "../utils/appointmentPermissions";
+import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
 
 const { Text } = Typography;
 
@@ -224,10 +220,13 @@ export default function AppointmentTable({
           }
 
           if (isToday(record.appointmentDateTime) && !checkInTime) {
-            const permission = canPerformQuickAction(record, currentUser);
+            const permission = appointmentPermissions.canPerformQuickAction(
+              currentUser,
+              record
+            );
             return (
               <Tooltip
-                title={!permission.canPerform ? permission.reason : undefined}
+                title={!permission.allowed ? permission.reason : undefined}
               >
                 <Button
                   type="primary"
@@ -235,7 +234,7 @@ export default function AppointmentTable({
                   icon={<CheckOutlined />}
                   onClick={() => onCheckIn(record.id)}
                   loading={actionLoading}
-                  disabled={!permission.canPerform}
+                  disabled={!permission.allowed}
                 >
                   Check-in
                 </Button>
@@ -270,17 +269,20 @@ export default function AppointmentTable({
             record.checkInTime &&
             !checkOutTime
           ) {
-            const permission = canPerformQuickAction(record, currentUser);
+            const permission = appointmentPermissions.canPerformQuickAction(
+              currentUser,
+              record
+            );
             return (
               <Tooltip
-                title={!permission.canPerform ? permission.reason : undefined}
+                title={!permission.allowed ? permission.reason : undefined}
               >
                 <Button
                   size="small"
                   icon={<CheckOutlined />}
                   onClick={() => onCheckOut(record.id)}
                   loading={actionLoading}
-                  disabled={!permission.canPerform}
+                  disabled={!permission.allowed}
                 >
                   Check-out
                 </Button>
@@ -304,11 +306,15 @@ export default function AppointmentTable({
               {record.status === "Chờ xác nhận" &&
                 dayjs(record.appointmentDateTime).isAfter(dayjs(), "day") &&
                 (() => {
-                  const permission = canPerformQuickAction(record, currentUser);
+                  const permission =
+                    appointmentPermissions.canPerformQuickAction(
+                      currentUser,
+                      record
+                    );
                   return (
                     <Tooltip
                       title={
-                        !permission.canPerform ? permission.reason : undefined
+                        !permission.allowed ? permission.reason : undefined
                       }
                     >
                       <Button
@@ -317,7 +323,7 @@ export default function AppointmentTable({
                         icon={<CheckCircleOutlined />}
                         onClick={() => onConfirm(record.id)}
                         loading={actionLoading}
-                        disabled={!permission.canPerform}
+                        disabled={!permission.allowed}
                       >
                         Xác nhận
                       </Button>
@@ -330,11 +336,15 @@ export default function AppointmentTable({
                 record.status !== "Không đến" &&
                 dayjs(record.appointmentDateTime) <= dayjs() &&
                 (() => {
-                  const permission = canPerformQuickAction(record, currentUser);
+                  const permission =
+                    appointmentPermissions.canPerformQuickAction(
+                      currentUser,
+                      record
+                    );
                   return (
                     <Tooltip
                       title={
-                        !permission.canPerform ? permission.reason : undefined
+                        !permission.allowed ? permission.reason : undefined
                       }
                     >
                       <Button
@@ -343,7 +353,7 @@ export default function AppointmentTable({
                         icon={<UserDeleteOutlined />}
                         onClick={() => onMarkNoShow(record.id)}
                         loading={actionLoading}
-                        disabled={!permission.canPerform}
+                        disabled={!permission.allowed}
                       >
                         Không đến
                       </Button>
@@ -355,26 +365,29 @@ export default function AppointmentTable({
             {/* Group 2: Edit & Delete - icon only */}
             <Space size="small">
               {(() => {
-                const editPermission = canEditAppointment(record, currentUser);
+                const editPermission = appointmentPermissions.canEdit(
+                  currentUser,
+                  record
+                );
                 return (
                   <Tooltip
                     title={
-                      editPermission.canEdit ? "Sửa" : editPermission.reason
+                      editPermission.allowed ? "Sửa" : editPermission.reason
                     }
                   >
                     <Button
                       icon={<EditOutlined />}
                       onClick={() => onEdit(record)}
-                      disabled={!editPermission.canEdit}
+                      disabled={!editPermission.allowed}
                     />
                   </Tooltip>
                 );
               })()}
 
               {(() => {
-                const deletePermission = canDeleteAppointment(
-                  record,
-                  currentUser
+                const deletePermission = appointmentPermissions.canDelete(
+                  currentUser,
+                  record
                 );
                 return (
                   <Popconfirm
@@ -384,11 +397,11 @@ export default function AppointmentTable({
                     okText="Xóa"
                     cancelText="Hủy"
                     okButtonProps={{ danger: true }}
-                    disabled={!deletePermission.canDelete}
+                    disabled={!deletePermission.allowed}
                   >
                     <Tooltip
                       title={
-                        deletePermission.canDelete
+                        deletePermission.allowed
                           ? "Xóa"
                           : deletePermission.reason
                       }
@@ -397,7 +410,7 @@ export default function AppointmentTable({
                         danger
                         icon={<DeleteOutlined />}
                         loading={actionLoading}
-                        disabled={!deletePermission.canDelete}
+                        disabled={!deletePermission.allowed}
                       />
                     </Tooltip>
                   </Popconfirm>

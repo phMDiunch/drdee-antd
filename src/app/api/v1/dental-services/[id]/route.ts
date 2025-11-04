@@ -1,6 +1,6 @@
 // src/app/api/v1/dental-services/[id]/route.ts
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { dentalServiceService } from "@/server/services/dental-service.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";

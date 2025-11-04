@@ -1,6 +1,6 @@
 "use server";
 
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { dentalServiceService } from "@/server/services/dental-service.service";
 import type {
   CreateDentalServiceRequest,

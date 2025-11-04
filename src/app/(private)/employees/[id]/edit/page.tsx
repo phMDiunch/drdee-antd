@@ -1,8 +1,9 @@
 import React from "react";
 import { notFound, redirect } from "next/navigation";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { employeeService } from "@/server/services/employee.service";
 import EmployeeEditView from "@/features/employees/views/EmployeeEditView";
+import type { EmployeeResponse } from "@/shared/validation/employee.schema";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,11 +16,15 @@ export default async function EmployeeEditPage({ params }: Props) {
     redirect("/employees");
   }
 
-  const employee = await employeeService.findById(currentUser, id).catch(() => null);
+  const employee = await employeeService
+    .findById(currentUser, id)
+    .catch(() => null);
 
   if (!employee) {
     notFound();
   }
 
-  return <EmployeeEditView employee={employee} />;
+  // Type assertion: DB types (nullable) → EmployeeResponse (required fields)
+  // Safe because service layer validates data structure
+  return <EmployeeEditView employee={employee as EmployeeResponse} />;
 }

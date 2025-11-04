@@ -1,6 +1,6 @@
 import { employeeRepo } from "@/server/repos/employee.repo";
 import type { EmployeeUpdateInput } from "@/server/repos/employee.repo";
-import { ERR } from "@/server/services/errors";
+import { ERR, ServiceError } from "@/server/services/errors";
 import {
   SetEmployeeStatusRequestSchema,
   UpdateEmployeeRequestSchema,
@@ -8,8 +8,8 @@ import {
 import type { UserCore } from "@/shared/types/user";
 import { mapEmployeeToResponse } from "./_mappers";
 import { ensureSelfOrAdmin, isAdmin } from "./_guards";
-import { requireAdmin } from "../auth.service";
 import { getSupabaseAdminClient } from "@/services/supabase/admin";
+import { employeePermissions } from "@/shared/permissions/employee.permissions";
 
 /**
  * Cập nhật thông tin nhân viên
@@ -20,8 +20,6 @@ export async function updateEmployee(
   id: string,
   body: unknown
 ) {
-  if (!currentUser) throw ERR.UNAUTHORIZED();
-
   const parsed = UpdateEmployeeRequestSchema.safeParse({
     ...(body as object),
     id,
@@ -34,10 +32,19 @@ export async function updateEmployee(
 
   const { clinicId, ...restData } = parsed.data;
 
-  // TODO: enforce field-level permissions (admin/backOffice vs self)
-
   const existing = await employeeRepo.findById(id);
   if (!existing) throw ERR.NOT_FOUND("Employee not found.");
+
+  // ✅ Validate edit permission
+  try {
+    employeePermissions.validateEdit(currentUser, existing);
+  } catch (error) {
+    throw new ServiceError(
+      "PERMISSION_DENIED",
+      error instanceof Error ? error.message : "Không có quyền chỉnh sửa",
+      403
+    );
+  }
 
   ensureSelfOrAdmin(currentUser, existing.id);
   if (!isAdmin(currentUser) && currentUser?.employeeId === existing.id) {
@@ -65,7 +72,7 @@ export async function updateEmployee(
 
   const dataToUpdate: EmployeeUpdateInput = {
     ...restData,
-    updatedBy: currentUser.employeeId
+    updatedBy: currentUser?.employeeId
       ? { connect: { id: currentUser.employeeId } }
       : undefined,
   };
@@ -89,7 +96,18 @@ export async function setEmployeeStatus(
   id: string,
   body: unknown
 ) {
-  requireAdmin(currentUser);
+  // ✅ Validate change status permission
+  try {
+    employeePermissions.validateChangeStatus(currentUser);
+  } catch (error) {
+    throw new ServiceError(
+      "PERMISSION_DENIED",
+      error instanceof Error
+        ? error.message
+        : "Không có quyền thay đổi trạng thái",
+      403
+    );
+  }
 
   const existing = await employeeRepo.findById(id);
   if (!existing) throw ERR.NOT_FOUND("Employee not found.");

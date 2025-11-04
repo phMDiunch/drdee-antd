@@ -1,6 +1,6 @@
 "use server";
 
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { employeeService } from "@/server/services/employee.service";
 import type {
   CreateEmployeeRequest,

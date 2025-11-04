@@ -18,22 +18,7 @@ import {
   mapCustomerToResponse,
   mapCustomerDetailToResponse,
 } from "./customer/_mappers";
-
-/**
- * Require authenticated user (not just admin)
- */
-function requireAuth(user: UserCore | null | undefined) {
-  if (!user) {
-    throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
-  }
-  if (!user.employeeId) {
-    throw new ServiceError(
-      "MISSING_EMPLOYEE_ID",
-      "Tài khoản chưa được liên kết với nhân viên",
-      403
-    );
-  }
-}
+import { customerPermissions } from "@/shared/permissions/customer.permissions";
 
 /**
  * Generate customer code according to requirements: ${prefix}-${YY}${MM}-${NNN}
@@ -92,13 +77,16 @@ export const customerService = {
    * Create customer with business logic and validation
    */
   async create(currentUser: UserCore | null, body: unknown) {
-    requireAuth(currentUser);
-
-    if (!currentUser?.clinicId || !currentUser?.employeeId) {
+    // ✅ Use shared permission logic
+    try {
+      customerPermissions.validateCreate(currentUser);
+    } catch (error) {
       throw new ServiceError(
-        "MISSING_CLINIC_OR_EMPLOYEE",
-        "User phải thuộc về một chi nhánh và có employeeId",
-        400
+        "PERMISSION_DENIED",
+        error instanceof Error
+          ? error.message
+          : "Không có quyền tạo khách hàng",
+        403
       );
     }
 
@@ -114,8 +102,8 @@ export const customerService = {
 
     // Validate clinic access - Employee can only create for their clinic
     if (
-      currentUser.role !== "admin" &&
-      data.clinicId !== currentUser.clinicId
+      currentUser?.role !== "admin" &&
+      data.clinicId !== currentUser?.clinicId
     ) {
       throw new ServiceError(
         "CLINIC_MISMATCH",
@@ -181,7 +169,16 @@ export const customerService = {
    * List customers with pagination and filters
    */
   async list(currentUser: UserCore | null, query: unknown) {
-    requireAuth(currentUser);
+    // ✅ Validate authentication
+    try {
+      customerPermissions.validateCreate(currentUser); // Check basic auth
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error ? error.message : "Bạn chưa đăng nhập",
+        401
+      );
+    }
 
     const parsed = GetCustomersQuerySchema.safeParse(query);
     if (!parsed.success) {
@@ -238,7 +235,16 @@ export const customerService = {
    * Get daily customers list with KPI stats
    */
   async daily(currentUser: UserCore | null, query: unknown) {
-    requireAuth(currentUser);
+    // ✅ Validate authentication
+    try {
+      customerPermissions.validateCreate(currentUser);
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error ? error.message : "Bạn chưa đăng nhập",
+        401
+      );
+    }
 
     const parsed = GetCustomersDailyQuerySchema.safeParse(query);
     if (!parsed.success) {
@@ -296,7 +302,16 @@ export const customerService = {
    * Supports: phone lookup, primary contact, customer source, global header search
    */
   async searchCustomers(currentUser: UserCore | null, query: unknown) {
-    requireAuth(currentUser);
+    // ✅ Validate authentication
+    try {
+      customerPermissions.validateCreate(currentUser);
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error ? error.message : "Bạn chưa đăng nhập",
+        401
+      );
+    }
 
     const parsed = SearchQuerySchema.safeParse(query);
     if (!parsed.success) {
@@ -324,11 +339,22 @@ export const customerService = {
    * Conditional metadata (createdBy, updatedBy) only for admin users
    */
   async getById(currentUser: UserCore | null, id: string) {
-    requireAuth(currentUser);
-
     const customer = await customerRepo.findById(id);
     if (!customer) {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy khách hàng", 404);
+    }
+
+    // ✅ Validate view permission
+    try {
+      customerPermissions.validateView(currentUser, customer);
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error
+          ? error.message
+          : "Không có quyền xem khách hàng",
+        403
+      );
     }
 
     // Populate sourceEmployee if source = 'employee_referral'
@@ -381,16 +407,6 @@ export const customerService = {
    * Immutable fields (customerCode, clinicId) are rejected if present in request
    */
   async update(currentUser: UserCore | null, id: string, body: unknown) {
-    requireAuth(currentUser);
-
-    if (!currentUser?.employeeId) {
-      throw new ServiceError(
-        "MISSING_EMPLOYEE_ID",
-        "Tài khoản chưa được liên kết với nhân viên",
-        403
-      );
-    }
-
     // Validate request body
     const parsed = UpdateCustomerRequestSchema.safeParse(body);
     if (!parsed.success) {
@@ -406,6 +422,17 @@ export const customerService = {
     const existing = await customerRepo.findById(id);
     if (!existing) {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy khách hàng", 404);
+    }
+
+    // ✅ Validate edit permission
+    try {
+      customerPermissions.validateEdit(currentUser, existing);
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error ? error.message : "Không có quyền chỉnh sửa",
+        403
+      );
     }
 
     // Enforce clinic-based access control (non-admin)
@@ -457,7 +484,7 @@ export const customerService = {
     // Update customer with audit trail
     const updated = await customerRepo.update(id, {
       ...data,
-      updatedById: currentUser.employeeId,
+      updatedById: currentUser!.employeeId!,
     });
 
     // Use getById to return full detail with populated relations

@@ -1,6 +1,6 @@
 // src/app/api/v1/employees/route.ts
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { employeeService } from "@/server/services/employee.service";
 import { ServiceError } from "@/server/services/errors";
 import { GetEmployeesQuerySchema } from "@/shared/validation/employee.schema";

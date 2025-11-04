@@ -6,8 +6,8 @@ import {
 } from "@/shared/validation/employee.schema";
 import type { UserCore } from "@/shared/types/user";
 import { mapEmployeeToResponse } from "./_mappers";
-import { requireAdmin } from "@/server/services/auth.service";
 import { getSupabaseAdminClient } from "@/services/supabase/admin";
+import { employeePermissions } from "@/shared/permissions/employee.permissions";
 
 function buildInviteRedirectUrl(employeeId: string) {
   const baseUrl =
@@ -86,8 +86,16 @@ export async function createEmployee(
   currentUser: UserCore | null,
   body: unknown
 ) {
-  // TODO: allow back office role once role helpers are updated
-  requireAdmin(currentUser);
+  // ✅ Validate admin permission
+  try {
+    employeePermissions.validateCreate(currentUser);
+  } catch (error) {
+    throw new ServiceError(
+      "PERMISSION_DENIED",
+      error instanceof Error ? error.message : "Không có quyền tạo nhân viên",
+      403
+    );
+  }
 
   const parsed = CreateEmployeeRequestSchema.safeParse(body);
   if (!parsed.success) {
@@ -271,7 +279,16 @@ export async function resendEmployeeInvite(
   currentUser: UserCore | null,
   id: string
 ) {
-  requireAdmin(currentUser);
+  // ✅ Validate resend invite permission
+  try {
+    employeePermissions.validateResendInvite(currentUser);
+  } catch (error) {
+    throw new ServiceError(
+      "PERMISSION_DENIED",
+      error instanceof Error ? error.message : "Không có quyền gửi lại lời mời",
+      403
+    );
+  }
 
   const employee = await employeeRepo.findById(id);
   if (!employee) throw ERR.NOT_FOUND("Employee not found.");

@@ -1,6 +1,6 @@
 // src/app/api/v1/appointments/check-availability/route.ts
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { appointmentService } from "@/server/services/appointment.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";

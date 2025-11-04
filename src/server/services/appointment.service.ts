@@ -13,6 +13,7 @@ import {
 import type { UserCore } from "@/shared/types/user";
 import { appointmentRepo } from "@/server/repos/appointment.repo";
 import { mapAppointmentToResponse } from "./appointment/_mappers";
+import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
 
 /**
  * Require authenticated user (not just admin)
@@ -28,151 +29,6 @@ function requireAuth(user: UserCore | null | undefined) {
       403
     );
   }
-}
-
-/**
- * Determine appointment timeline relative to today
- */
-function getAppointmentTimeline(
-  appointmentDateTime: Date
-): "past" | "today" | "future" {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const aptDate = new Date(appointmentDateTime);
-  aptDate.setHours(0, 0, 0, 0);
-
-  if (aptDate < today) return "past";
-  if (aptDate.getTime() === today.getTime()) return "today";
-  return "future";
-}
-
-/**
- * Check permissions for update based on timeline, status, and role
- */
-function checkUpdatePermissions(
-  user: UserCore,
-  appointmentDateTime: Date,
-  currentStatus: string,
-  fields: string[]
-) {
-  const timeline = getAppointmentTimeline(appointmentDateTime);
-  const isAdmin = user.role === "admin";
-
-  // Admin can edit all fields in all timelines
-  if (isAdmin) return;
-
-  // Employee restrictions based on timeline and status
-  if (timeline === "past") {
-    throw new ServiceError(
-      "PAST_APPOINTMENT_UPDATE_FORBIDDEN",
-      "Nhân viên không thể chỉnh sửa lịch hẹn trong quá khứ",
-      403
-    );
-  }
-
-  if (timeline === "today") {
-    // Employee cannot edit checked-in, cancelled, or no-show appointments
-    // Note: "Đến đột xuất" treated same as "Đã đến" (both have checkInTime)
-    const lockedStatuses = ["Đã đến", "Đến đột xuất", "Không đến", "Đã hủy"];
-    if (lockedStatuses.includes(currentStatus)) {
-      throw new ServiceError(
-        "LOCKED_APPOINTMENT_UPDATE_FORBIDDEN",
-        "Không thể chỉnh sửa lịch hẹn đã check-in, đã hủy hoặc không đến",
-        403
-      );
-    }
-
-    // For pending/confirmed status, can edit most fields (including check-in for quick actions)
-    const allowedFields = [
-      "duration",
-      "primaryDentistId",
-      "secondaryDentistId",
-      "clinicId",
-      "status",
-      "notes",
-      "checkInTime",
-      "checkOutTime",
-    ];
-
-    const restrictedFields = fields.filter(
-      (f) => !allowedFields.includes(f) && f !== "updatedById"
-    );
-
-    if (restrictedFields.length > 0) {
-      throw new ServiceError(
-        "TODAY_APPOINTMENT_FIELD_RESTRICTED",
-        `Không thể sửa các trường: ${restrictedFields.join(
-          ", "
-        )} cho lịch hẹn hôm nay`,
-        403
-      );
-    }
-  }
-
-  // Future: employee can edit all fields except checkInTime/checkOutTime
-  if (timeline === "future") {
-    const adminOnlyFields = ["checkInTime", "checkOutTime"];
-    const restrictedFields = fields.filter((f) => adminOnlyFields.includes(f));
-
-    if (restrictedFields.length > 0) {
-      throw new ServiceError(
-        "ADMIN_ONLY_FIELDS",
-        `Chỉ quản trị viên mới có thể chỉnh sửa: ${restrictedFields.join(
-          ", "
-        )}`,
-        403
-      );
-    }
-  }
-}
-
-/**
- * Check permissions for delete based on timeline, status, and role
- */
-function checkDeletePermissions(
-  user: UserCore,
-  appointmentDateTime: Date,
-  currentStatus: string
-) {
-  const timeline = getAppointmentTimeline(appointmentDateTime);
-  const isAdmin = user.role === "admin";
-
-  // Admin can delete anytime
-  if (isAdmin) return;
-
-  // Employee cannot delete past appointments
-  if (timeline === "past") {
-    throw new ServiceError(
-      "DELETE_FORBIDDEN",
-      "Nhân viên không thể xóa lịch hẹn trong quá khứ",
-      403
-    );
-  }
-
-  // Employee cannot delete today's appointments if already checked in, cancelled, or no-show
-  // Note: "Đến đột xuất" treated same as "Đã đến" (both have checkInTime)
-  if (timeline === "today") {
-    const activeOrCompletedStatuses = [
-      "Đã đến",
-      "Đến đột xuất",
-      "Không đến",
-      "Đã hủy",
-    ];
-    if (activeOrCompletedStatuses.includes(currentStatus)) {
-      throw new ServiceError(
-        "DELETE_FORBIDDEN",
-        "Không thể xóa lịch hẹn đã có khách đến, đã hủy hoặc không đến",
-        403
-      );
-    }
-    // Allow delete for "Chờ xác nhận", "Đã xác nhận"
-  }
-
-  // Future: employee can delete
 }
 
 /**
@@ -441,13 +297,20 @@ export const appointmentService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy lịch hẹn", 404);
     }
 
-    // Check permissions based on timeline and status (no clinic restriction)
-    checkUpdatePermissions(
-      currentUser,
-      existing.appointmentDateTime,
-      existing.status,
-      fields
-    );
+    // ✅ Use shared permission logic
+    try {
+      appointmentPermissions.validateUpdateFields(
+        currentUser,
+        existing,
+        fields
+      );
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error ? error.message : "Không có quyền chỉnh sửa",
+        403
+      );
+    }
 
     // Check customer conflict if changing date/customer
     if (parsed.appointmentDateTime || parsed.customerId) {
@@ -525,12 +388,16 @@ export const appointmentService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy lịch hẹn", 404);
     }
 
-    // Check delete permissions based on timeline and status (no clinic restriction)
-    checkDeletePermissions(
-      currentUser!,
-      existing.appointmentDateTime,
-      existing.status
-    );
+    // ✅ Use shared permission logic
+    try {
+      appointmentPermissions.validateDelete(currentUser, existing);
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error ? error.message : "Không có quyền xóa",
+        403
+      );
+    }
 
     await appointmentRepo.delete(id);
     return { success: true };

@@ -1,6 +1,6 @@
 // src/app/(private)/dental-services/page.tsx
 import React from "react";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import DentalServicesPageView from "@/features/dental-services/views/DentalServicesPageView";
 
 export default async function DentalServicesPage() {

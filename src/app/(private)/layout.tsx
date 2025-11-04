@@ -1,7 +1,7 @@
 // src/app/(private)/layout.tsx
 
 import AppLayout from "@/layouts/AppLayout/AppLayout";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import Providers from "@/app/providers";
 
 export default async function PrivateLayout({

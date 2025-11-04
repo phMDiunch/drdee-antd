@@ -1,6 +1,6 @@
 // src/app/api/v1/clinics/route.ts
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/services/auth.service";
+import { getSessionUser } from "@/server/utils/sessionCache";
 import { clinicService } from "@/server/services/clinic.service";
 import { GetClinicsQuerySchema } from "@/shared/validation/clinic.schema";
 import { ServiceError } from "@/server/services/errors";
