@@ -1,9 +1,5 @@
 import { employeeRepo } from "@/server/repos/employee.repo";
 import { ERR } from "@/server/services/errors";
-import {
-  EmployeesResponseSchema,
-  WorkingEmployeeResponseSchema,
-} from "@/shared/validation/employee.schema";
 import type { UserCore } from "@/shared/types/user";
 import { mapEmployeeToResponse } from "./_mappers";
 import { ensureSelfOrAdmin } from "./_guards";
@@ -23,7 +19,7 @@ export async function listEmployees(
     search,
   });
 
-  return EmployeesResponseSchema.parse(employees.map(mapEmployeeToResponse));
+  return employees.map(mapEmployeeToResponse);
 }
 
 /**
@@ -32,7 +28,7 @@ export async function listEmployees(
 export async function listWorkingEmployees(currentUser: UserCore | null) {
   if (!currentUser) throw ERR.UNAUTHORIZED();
   const employees = await employeeRepo.listWorking();
-  return WorkingEmployeeResponseSchema.parse(employees);
+  return employees;
 }
 
 /**

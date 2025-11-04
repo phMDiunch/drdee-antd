@@ -361,7 +361,33 @@ await repo.listDaily({ clinicId, dateStart, dateEnd });
 - Daily view return `{ items, count }` (consistent API shape)
 - Filter dùng `gte/lt` (không `lte` để tránh overlap)
 
-## 14) Naming & Zod Schemas
+## 14) Validation Layers
+
+**Validation chỉ ở 3 nơi**:
+
+1. **Frontend form** (`CreateCustomerFormSchema`) - User input validation
+2. **API Route** (Zod schema) - Request/response validation at boundary
+3. **Service layer** (Business logic) - Email uniqueness, FK existence, state transitions
+
+**Quy tắc**:
+
+- ✅ Validate ở boundaries: API routes, external input
+- ✅ Validate business rules ở Service layer
+- ❌ KHÔNG validate internal transformations: Mappers, repo results, type conversions
+
+**Mapper Pattern** (`src/server/services/<feature>/_mappers.ts`):
+
+```typescript
+// ✅ Transform only - NO validation
+export function mapCustomerToResponse(row: Customer): CustomerResponse {
+  return {
+    id: row.id,
+    dob: row.dob ? row.dob.toISOString() : null, // Date → ISO
+  };
+}
+```
+
+## 15) Naming & Zod Schemas
 
 ### Schema Organization (3-Layer Pattern)
 

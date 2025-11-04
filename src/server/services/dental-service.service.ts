@@ -9,66 +9,12 @@ import { requireAdmin } from "./auth.service";
 import {
   CreateDentalServiceRequestSchema,
   UpdateDentalServiceRequestSchema,
-  DentalServiceResponseSchema,
-  DentalServicesResponseSchema,
 } from "@/shared/validation/dental-service.schema";
 import type { UserCore } from "@/shared/types/user";
-import type { DentalService, Employee } from "@prisma/client";
-
-// DentalService với relations từ Prisma
-type DentalServiceWithRelations = DentalService & {
-  createdBy?: Pick<Employee, "id" | "fullName"> | null;
-  updatedBy?: Pick<Employee, "id" | "fullName"> | null;
-};
+import { mapDentalServiceToResponse } from "./dental-service/_mappers";
 
 function normalizeName(name: string) {
   return name.trim();
-}
-
-/** Map Prisma entity -> API response shape (string ISO date) */
-function mapDentalServiceToResponse(row: DentalServiceWithRelations) {
-  const sanitized = {
-    id: row.id,
-    name: row.name,
-    description: row.description ?? null,
-    serviceGroup: row.serviceGroup ?? null,
-    department: row.department ?? null,
-    tags: row.tags ?? [],
-    unit: row.unit,
-    price: row.price,
-    minPrice: row.minPrice ?? null,
-    officialWarranty: row.officialWarranty ?? null,
-    clinicWarranty: row.clinicWarranty ?? null,
-    origin: row.origin ?? null,
-    avgTreatmentMinutes: row.avgTreatmentMinutes ?? null,
-    avgTreatmentSessions: row.avgTreatmentSessions ?? null,
-    archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
-    createdById: row.createdById,
-    updatedById: row.updatedById,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    // Nested objects - giữ nguyên cấu trúc quan hệ, bao gồm id
-    createdBy: row.createdBy
-      ? {
-          id: row.createdBy.id,
-          fullName: row.createdBy.fullName,
-        }
-      : null,
-    updatedBy: row.updatedBy
-      ? {
-          id: row.updatedBy.id,
-          fullName: row.updatedBy.fullName,
-        }
-      : null,
-  };
-
-  const parsed = DentalServiceResponseSchema.safeParse(sanitized);
-  if (!parsed.success) {
-    throw ERR.INVALID(
-      "Dữ liệu dịch vụ nha khoa ở database trả về không hợp lệ. Kiểm tra database trong supabase"
-    );
-  }
-  return parsed.data;
 }
 
 export const dentalServiceService = {
@@ -78,9 +24,7 @@ export const dentalServiceService = {
   async list(currentUser: UserCore | null, includeArchived: boolean) {
     // (Nếu cần phân quyền xem ở đây; hiện tại ai đã login cũng xem được)
     const rows = await dentalServiceRepo.list(includeArchived);
-    return DentalServicesResponseSchema.parse(
-      rows.map(mapDentalServiceToResponse)
-    );
+    return rows.map(mapDentalServiceToResponse);
   },
 
   /**

@@ -5,12 +5,10 @@ import { requireAdmin } from "./auth.service";
 import {
   CreateClinicRequestSchema,
   UpdateClinicRequestSchema,
-  ClinicResponseSchema,
-  ClinicsResponseSchema,
   type CreateClinicRequest,
 } from "@/shared/validation/clinic.schema";
 import type { UserCore } from "@/shared/types/user";
-import type { Clinic } from "@prisma/client";
+import { mapClinicToResponse } from "./clinic/_mappers";
 
 function normalizeClinicCode(code: string) {
   return code.trim().toUpperCase();
@@ -20,22 +18,6 @@ function normalizeName(name: string) {
   return name.trim();
 }
 
-/** Map Prisma entity -> API response shape (string ISO date) */
-function mapClinicToResponse(row: Clinic) {
-  return ClinicResponseSchema.parse({
-    id: row.id,
-    clinicCode: row.clinicCode,
-    name: row.name,
-    address: row.address,
-    phone: row.phone ?? null,
-    email: row.email ?? null,
-    colorCode: row.colorCode,
-    archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  });
-}
-
 export const clinicService = {
   /**
    * GET /clinics
@@ -43,7 +25,7 @@ export const clinicService = {
   async list(currentUser: UserCore | null, includeArchived: boolean) {
     // (Nếu cần phân quyền xem ở đây; hiện tại ai đã login cũng xem được)
     const rows = await clinicRepo.list(includeArchived);
-    return ClinicsResponseSchema.parse(rows.map(mapClinicToResponse));
+    return rows.map(mapClinicToResponse);
   },
 
   /**

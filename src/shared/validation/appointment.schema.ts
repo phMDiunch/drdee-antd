@@ -167,7 +167,7 @@ export const CreateAppointmentRequestSchema =
       .number()
       .int("Thời lượng phải là số nguyên")
       .min(1, "Thời lượng tối thiểu là 1 phút")
-      .default(30),
+      .default(15),
     status: z.enum(APPOINTMENT_STATUSES).default("Chờ xác nhận"),
     checkInTime: z.coerce.date().optional().nullable(), // For walk-in appointments
   });

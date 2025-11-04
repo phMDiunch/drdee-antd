@@ -1,5 +1,3 @@
-import { EmployeeResponseSchema } from "@/shared/validation/employee.schema";
-import { ERR } from "@/server/services/errors";
 import type { Employee, Clinic } from "@prisma/client";
 
 // Employee với all relations từ Prisma
@@ -46,11 +44,5 @@ export function mapEmployeeToResponse(row: EmployeeWithRelations) {
         }
       : null,
   };
-  const parsed = EmployeeResponseSchema.safeParse(sanitized);
-  if (!parsed.success) {
-    throw ERR.INVALID(
-      "Dữ liệu nhân viên ở database trả về không hợp lệ. Kiểm tra database trong supabase"
-    );
-  }
-  return parsed.data;
+  return sanitized;
 }
