@@ -1,0 +1,437 @@
+// src/app/api/v1/consulted-services/consulted-service.http
+
+// Biến cho host
+@host = http://localhost:3000
+
+// Biến để lưu ID sau khi tạo để test các API khác
+@consultedServiceId = 12345678-90ab-cdef-1234-567890abcdef
+@clinicId = 797e0cc1-5dfd-469d-a003-6c9aa100057b
+@customerId = 98765432-10ba-fedc-9876-543210fedcba
+@dentalServiceId = 11111111-2222-3333-4444-555555555555
+@consultingDoctorId = 22222222-3333-4444-5555-666666666666
+@consultingSaleId = 33333333-4444-5555-6666-777777777777
+@treatingDoctorId = 44444444-5555-6666-7777-888888888888
+
+###
+# @name login
+# Chạy request này đầu tiên để lấy cookie xác thực
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "dr.phamminhduc@gmail.com",
+  "password": "123123"
+}
+
+###############################################################################
+# GET REQUESTS - QUERIES
+###############################################################################
+
+###
+# Lấy danh sách dịch vụ tư vấn trong ngày (daily view)
+# Mặc định: hôm nay, clinic của user đang đăng nhập
+GET {{host}}/api/v1/consulted-services/daily?date=2025-11-06&clinicId={{clinicId}}
+
+###
+# Lấy dịch vụ tư vấn theo ngày cụ thể
+GET {{host}}/api/v1/consulted-services/daily?date=2025-11-05&clinicId={{clinicId}}
+
+###
+# Lấy danh sách dịch vụ tư vấn của khách hàng cụ thể (Customer Detail view)
+# Cross-clinic view - hiển thị tất cả dịch vụ của khách
+GET {{host}}/api/v1/consulted-services?customerId={{customerId}}
+
+###
+# Lấy danh sách dịch vụ tư vấn với pagination
+GET {{host}}/api/v1/consulted-services?page=1&pageSize=20&clinicId={{clinicId}}
+
+###
+# Lấy danh sách với filter theo serviceStatus
+GET {{host}}/api/v1/consulted-services?clinicId={{clinicId}}&serviceStatus=Chưa chốt
+
+###
+# Lấy danh sách với filter theo treatmentStatus
+GET {{host}}/api/v1/consulted-services?clinicId={{clinicId}}&treatmentStatus=Chưa điều trị
+
+###
+# Lấy danh sách với search (tìm theo tên khách, mã khách, SĐT, tên dịch vụ)
+GET {{host}}/api/v1/consulted-services?clinicId={{clinicId}}&search=Nguyễn
+
+###
+# Lấy danh sách với sort theo finalPrice
+GET {{host}}/api/v1/consulted-services?clinicId={{clinicId}}&sortField=finalPrice&sortDirection=desc
+
+###
+# Lấy danh sách với sort theo consultationDate
+GET {{host}}/api/v1/consulted-services?clinicId={{clinicId}}&sortField=consultationDate&sortDirection=desc
+
+###
+# Lấy chi tiết một dịch vụ tư vấn theo ID
+GET {{host}}/api/v1/consulted-services/{{consultedServiceId}}
+
+###############################################################################
+# MUTATIONS - Server Actions (No HTTP endpoints)
+###############################################################################
+# 
+# ⚠️ IMPORTANT: Theo guidelines, mutations (CREATE/UPDATE/DELETE) đều dùng Server Actions,
+# KHÔNG có HTTP endpoints tương ứng.
+#
+# Để test mutations, sử dụng:
+# 1. Frontend UI (sau khi implement hooks + components)
+# 2. Node.js scripts (gọi trực tiếp Server Actions)
+# 3. Postman/Thunder Client với Next.js Server Actions endpoint (nếu có)
+#
+# Tham khảo:
+# - src/server/actions/consulted-service.actions.ts
+#   - createConsultedServiceAction(data)
+#   - updateConsultedServiceAction(id, data)
+#   - deleteConsultedServiceAction(id)
+#   - confirmConsultedServiceAction(id)
+#
+###############################################################################
+
+###############################################################################
+# TEST SCENARIOS - Giả lập mutations qua Server Actions
+###############################################################################
+
+###
+# Scenario 1: CREATE - Tạo dịch vụ tư vấn mới
+# Server Action: createConsultedServiceAction(data)
+# Note: Khách hàng PHẢI check-in hôm nay trước khi tạo
+# 
+# Data example:
+# {
+#   "customerId": "{{customerId}}",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "{{dentalServiceId}}",
+#   "quantity": 1,
+#   "preferentialPrice": 1000000,
+#   "toothPositions": [],
+#   "consultingDoctorId": "{{consultingDoctorId}}",
+#   "consultingSaleId": "{{consultingSaleId}}",
+#   "treatingDoctorId": "{{treatingDoctorId}}",
+#   "specificStatus": "Răng số 16 bị sâu nặng, cần điều trị tủy"
+# }
+
+###
+# Scenario 2: CREATE - Dịch vụ với đơn vị "Răng" (bắt buộc chọn vị trí răng)
+# Data example:
+# {
+#   "customerId": "{{customerId}}",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "{{dentalServiceId}}",
+#   "quantity": 2,
+#   "preferentialPrice": 500000,
+#   "toothPositions": ["R16", "R26"],
+#   "consultingDoctorId": "{{consultingDoctorId}}",
+#   "treatingDoctorId": "{{treatingDoctorId}}"
+# }
+
+###
+# Scenario 3: CREATE - Dịch vụ với giá ưu đãi = 0 (miễn phí)
+# Data example:
+# {
+#   "customerId": "{{customerId}}",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "{{dentalServiceId}}",
+#   "quantity": 1,
+#   "preferentialPrice": 0,
+#   "toothPositions": []
+# }
+
+###
+# Scenario 4: UPDATE - Thay đổi số lượng (dịch vụ chưa chốt)
+# Server Action: updateConsultedServiceAction(id, data)
+# Data example:
+# {
+#   "quantity": 3
+# }
+
+###
+# Scenario 5: UPDATE - Thay đổi nhân sự (Employee có thể sửa trong 33 ngày sau khi chốt)
+# Data example:
+# {
+#   "consultingDoctorId": "{{treatingDoctorId}}",
+#   "treatingDoctorId": "{{consultingDoctorId}}"
+# }
+
+###
+# Scenario 6: UPDATE - Admin cập nhật serviceStatus
+# Data example:
+# {
+#   "serviceStatus": "Đã chốt",
+#   "serviceConfirmDate": "2025-11-06T10:00:00.000Z"
+# }
+
+###
+# Scenario 7: CONFIRM - Chốt dịch vụ
+# Server Action: confirmConsultedServiceAction(id)
+# No data required, just the ID
+
+###
+# Scenario 8: DELETE - Xóa dịch vụ
+# Server Action: deleteConsultedServiceAction(id)
+# No data required, just the ID
+
+###############################################################################
+# VALIDATION TEST SCENARIOS
+###############################################################################
+
+###
+# Test 1: CREATE khi chưa check-in (nên fail với needsCheckin: true)
+# Data:
+# {
+#   "customerId": "new-customer-without-checkin",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "{{dentalServiceId}}",
+#   "quantity": 1,
+#   "preferentialPrice": 1000000,
+#   "toothPositions": []
+# }
+# Expected: Error "Khách hàng chưa check-in hôm nay"
+
+###
+# Test 2: CREATE với preferentialPrice không hợp lệ (0 < price < minPrice)
+# Giả sử dentalService có minPrice = 500000, price = 1000000
+# Data:
+# {
+#   "customerId": "{{customerId}}",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "{{dentalServiceId}}",
+#   "quantity": 1,
+#   "preferentialPrice": 100000,
+#   "toothPositions": []
+# }
+# Expected: Error "Giá ưu đãi phải là 0 (miễn phí) hoặc từ 500000 đến 1000000"
+
+###
+# Test 3: CREATE với preferentialPrice vượt quá price
+# Data:
+# {
+#   "customerId": "{{customerId}}",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "{{dentalServiceId}}",
+#   "quantity": 1,
+#   "preferentialPrice": 5000000,
+#   "toothPositions": []
+# }
+# Expected: Error "Giá ưu đãi không được vượt quá giá niêm yết"
+
+###
+# Test 4: CREATE đơn vị "Răng" nhưng không chọn vị trí răng
+# Data:
+# {
+#   "customerId": "{{customerId}}",
+#   "clinicId": "{{clinicId}}",
+#   "dentalServiceId": "tooth-service-id",
+#   "quantity": 1,
+#   "preferentialPrice": 500000,
+#   "toothPositions": []
+# }
+# Expected: Error "Vui lòng chọn vị trí răng"
+
+###
+# Test 5: UPDATE - Employee sửa dịch vụ đã chốt >33 ngày
+# Data:
+# {
+#   "quantity": 5
+# }
+# Expected: Error "Không thể chỉnh sửa dịch vụ đã chốt quá 33 ngày"
+
+###
+# Test 6: UPDATE - Employee sửa admin-only fields
+# Data:
+# {
+#   "serviceStatus": "Đã chốt"
+# }
+# Expected: Error "Chỉ admin mới có thể cập nhật: serviceStatus"
+
+###
+# Test 7: DELETE - Employee xóa dịch vụ "Đã chốt"
+# Expected: Error "Không thể xóa dịch vụ đã chốt"
+
+###
+# Test 8: CONFIRM - Chốt lại dịch vụ đã chốt
+# Expected: Error "Dịch vụ đã được chốt trước đó"
+
+###############################################################################
+# GET REQUESTS - QUERIES (CHỈ CÁC REQUEST NÀY LÀ HTTP ENDPOINTS)
+###############################################################################
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 1000000,
+  "toothPositions": [],
+  "consultingDoctorId": "{{consultingDoctorId}}",
+  "consultingSaleId": "{{consultingSaleId}}",
+  "treatingDoctorId": "{{treatingDoctorId}}",
+  "specificStatus": "Răng số 16 bị sâu nặng, cần điều trị tủy"
+}
+
+###
+# Tạo dịch vụ tư vấn với đơn vị "Răng" (bắt buộc chọn vị trí răng)
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 2,
+  "preferentialPrice": 500000,
+  "toothPositions": ["R16", "R26"],
+  "consultingDoctorId": "{{consultingDoctorId}}",
+  "treatingDoctorId": "{{treatingDoctorId}}"
+}
+
+###
+# Tạo dịch vụ với giá ưu đãi = 0 (miễn phí)
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 0,
+  "toothPositions": [],
+  "consultingDoctorId": "{{consultingDoctorId}}"
+}
+
+###
+# Tạo dịch vụ không có nhân sự (optional fields)
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 800000,
+  "toothPositions": []
+}
+
+###
+# Test validation - Tạo khi chưa check-in (nên fail)
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "new-customer-without-checkin",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 1000000,
+  "toothPositions": []
+}
+
+###
+# Test validation - preferentialPrice không hợp lệ (0 < price < minPrice, nên fail)
+# Giả sử dentalService có minPrice = 500000, price = 1000000
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 100000,
+  "toothPositions": []
+}
+
+###
+# Test validation - preferentialPrice vượt quá price (nên fail)
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 5000000,
+  "toothPositions": []
+}
+
+###
+# Test validation - Đơn vị "Răng" nhưng không chọn vị trí răng (nên fail)
+POST {{host}}/api/v1/consulted-services
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "clinicId": "{{clinicId}}",
+  "dentalServiceId": "{{dentalServiceId}}",
+  "quantity": 1,
+  "preferentialPrice": 500000,
+  "toothPositions": []
+}
+
+###############################################################################
+# UPDATE - Mutations
+###############################################################################
+
+###
+# Cập nhật dịch vụ tư vấn - Thay đổi số lượng (dịch vụ chưa chốt)
+PUT {{host}}/api/v1/consulted-services/{{consultedServiceId}}
+
+
+###
+# Scenario: Lấy tất cả dịch vụ của khách theo thời gian (oldest first)
+GET {{host}}/api/v1/consulted-services?customerId={{customerId}}&sortField=consultationDate&sortDirection=asc
+
+###
+# Scenario: Filter dịch vụ đã chốt + đang điều trị
+GET {{host}}/api/v1/consulted-services?clinicId={{clinicId}}&serviceStatus=Đã chốt&treatmentStatus=Đang điều trị
+
+###
+# Scenario: Thống kê daily - lấy số liệu chi tiết cho dashboard
+# Response sẽ có statistics: { total, confirmed, unconfirmed, totalValue, confirmedValue }
+GET {{host}}/api/v1/consulted-services/daily?date=2025-11-06&clinicId={{clinicId}}
+
+###############################################################################
+# NOTES:
+###############################################################################
+# 1. Check-in Requirement:
+#    - Khách PHẢI check-in hôm nay (có appointment với checkInTime !== null)
+#    - Backend tự động lookup appointmentId từ check-in today
+#
+# 2. Pricing Rules:
+#    - preferentialPrice === 0 (miễn phí) HOẶC minPrice <= preferentialPrice <= price
+#    - Invalid: 0 < preferentialPrice < minPrice
+#
+# 3. Tooth Positions:
+#    - Bắt buộc nếu consultedServiceUnit === "Răng"
+#    - Optional nếu unit khác (Hàm, Lần, v.v.)
+#
+# 4. Permission Rules (Employee):
+#    - "Chưa chốt": Sửa tất cả fields
+#    - "Đã chốt" <33d: Chỉ sửa nhân sự (consultingDoctorId, consultingSaleId, treatingDoctorId)
+#    - "Đã chốt" >33d: Không sửa được
+#    - Delete: Chỉ xóa "Chưa chốt"
+#
+# 5. Permission Rules (Admin):
+#    - Full access: Sửa/xóa tất cả, bất kể status hay timeline
+#    - Có thể sửa admin-only fields: serviceStatus, treatmentStatus, dates
+#
+# 6. Workflow:
+#    - Tạo → "Chưa chốt" (employee hoặc admin)
+#    - Chốt → "Đã chốt" (employee hoặc admin)
+#    - Sau khi chốt: Giá trị được cố định, restrictions bắt đầu
+#
+# 7. Denormalized Data:
+#    - consultedServiceName, consultedServiceUnit, price được copy từ DentalService tại thời điểm tạo
+#    - Đảm bảo dữ liệu lịch sử không thay đổi khi master data thay đổi
+#
+# 8. Calculated Fields:
+#    - finalPrice = preferentialPrice * quantity
+#    - debt = finalPrice - amountPaid
+#    - Backend tự động tính toán khi create/update
+###############################################################################

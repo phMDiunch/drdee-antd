@@ -11,6 +11,7 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import { useCustomerDetail } from "@/features/customers";
+import { useConsultedServicesByCustomer } from "@/features/consulted-services";
 import CustomerInfoTab from "../components/detail-tabs/CustomerInfoTab";
 import AppointmentsTab from "../components/detail-tabs/AppointmentsTab";
 import ConsultedServicesTab from "../components/detail-tabs/ConsultedServicesTab";
@@ -42,13 +43,36 @@ export default function CustomerDetailView({
     refetch,
   } = useCustomerDetail(customerId);
 
+  // Fetch consulted services for count
+  const { data: consultedServicesData } =
+    useConsultedServicesByCustomer(customerId);
+  const consultedServicesCount = consultedServicesData?.items?.length || 0;
+
   // Calculate age from dob
   const getAge = (dob: string | null) => {
     if (!dob) return null;
     return dayjs().diff(dayjs(dob), "year");
   };
 
-  // Calculate today's check-in status (memoized)
+  // Calculate today's check-in info (memoized)
+  const todayCheckIn = useMemo(() => {
+    if (!customer?.appointments) return null;
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const todayAppointment = customer.appointments.find((apt) => {
+      const aptDate = dayjs(apt.appointmentDateTime).format("YYYY-MM-DD");
+      return aptDate === today;
+    });
+
+    if (!todayAppointment?.checkInTime) return null;
+
+    return {
+      appointmentId: todayAppointment.id,
+      checkInTime: todayAppointment.checkInTime,
+    };
+  }, [customer?.appointments]);
+
+  // Calculate today's check-in status for display (memoized)
   const checkInStatus = useMemo(() => {
     if (!customer?.appointments) {
       return {
@@ -209,8 +233,17 @@ export default function CustomerDetailView({
             },
             {
               key: "consultedServices",
-              label: "Dịch vụ (0)",
-              children: <ConsultedServicesTab />,
+              label: `Dịch vụ tư vấn (${consultedServicesCount})`,
+              children: (
+                <ConsultedServicesTab
+                  customerId={customer.id}
+                  customerCode={customer.customerCode || ""}
+                  customerName={customer.fullName}
+                  clinicId={customer.clinicId || ""}
+                  todayCheckIn={todayCheckIn}
+                  onDataChange={() => refetch()}
+                />
+              ),
             },
             {
               key: "payments",

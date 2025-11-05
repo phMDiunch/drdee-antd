@@ -1,0 +1,427 @@
+// src/features/consulted-services/components/ConsultedServiceTable.tsx
+"use client";
+
+import React from "react";
+import {
+  Button,
+  Divider,
+  Popconfirm,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from "antd";
+import { CheckOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
+import dayjs from "dayjs";
+import Link from "next/link";
+import {
+  SERVICE_STATUS_TAGS,
+  TREATMENT_STATUS_TAGS,
+  CONSULTED_SERVICE_MESSAGES,
+} from "../constants";
+import type { ConsultedServiceResponse } from "@/shared/validation/consulted-service.schema";
+import { useCurrentUser } from "@/shared/providers";
+import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
+
+const { Text } = Typography;
+
+type Props = {
+  data: ConsultedServiceResponse[];
+  loading?: boolean;
+  isCustomerDetailView?: boolean; // Customer Detail context: hide customer column
+  onConfirm: (id: string) => void;
+  onEdit: (service: ConsultedServiceResponse) => void;
+  onDelete: (id: string) => void;
+  actionLoading?: boolean;
+};
+
+/**
+ * Format number to VND currency
+ */
+function formatVND(value: number): string {
+  return new Intl.NumberFormat("vi-VN").format(value);
+}
+
+export default function ConsultedServiceTable({
+  data,
+  loading,
+  isCustomerDetailView = false,
+  onConfirm,
+  onEdit,
+  onDelete,
+  actionLoading,
+}: Props) {
+  const { user: currentUser } = useCurrentUser();
+
+  const columns = React.useMemo<ColumnsType<ConsultedServiceResponse>>(() => {
+    // Calculate unique values for filters
+    const serviceNames = Array.from(
+      new Set(data.map((s) => s.consultedServiceName))
+    ).sort();
+
+    const consultingDoctors = Array.from(
+      new Set(
+        data
+          .map((s) => s.consultingDoctor?.fullName)
+          .filter((name): name is string => !!name)
+      )
+    ).sort();
+
+    const treatingDoctors = Array.from(
+      new Set(
+        data
+          .map((s) => s.treatingDoctor?.fullName)
+          .filter((name): name is string => !!name)
+      )
+    ).sort();
+
+    const sales = Array.from(
+      new Set(
+        data
+          .map((s) => s.consultingSale?.fullName)
+          .filter((name): name is string => !!name)
+      )
+    ).sort();
+
+    const baseColumns: ColumnsType<ConsultedServiceResponse> = [
+      ...(!isCustomerDetailView
+        ? [
+            {
+              title: "Khách hàng",
+              dataIndex: "customer",
+              key: "customer",
+              width: 180,
+              fixed: "left" as const,
+              render: (customer: {
+                id: string;
+                fullName: string;
+                customerCode: string | null;
+                dob: string | null;
+              }) => {
+                const age = customer.dob
+                  ? `${dayjs().diff(dayjs(customer.dob), "year")} tuổi`
+                  : "—";
+                return (
+                  <div>
+                    <Space size={4}>
+                      <Link
+                        href={`/customers/${customer.id}`}
+                        style={{ fontWeight: 600 }}
+                      >
+                        {customer.fullName}
+                      </Link>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        ({age})
+                      </Text>
+                    </Space>
+                    <br />
+                    <Space size={4} style={{ marginTop: 4 }}>
+                      {customer.customerCode && (
+                        <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
+                          {customer.customerCode}
+                        </Tag>
+                      )}
+                    </Space>
+                  </div>
+                );
+              },
+            },
+          ]
+        : []),
+      // Customer Detail View: Add "Ngày tư vấn" column
+      ...((isCustomerDetailView
+        ? [
+            {
+              title: "Ngày tư vấn",
+              dataIndex: "consultationDate",
+              key: "consultationDate",
+              width: 140,
+              sorter: (
+                a: ConsultedServiceResponse,
+                b: ConsultedServiceResponse
+              ) => {
+                return (
+                  dayjs(a.consultationDate).valueOf() -
+                  dayjs(b.consultationDate).valueOf()
+                );
+              },
+              render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+            },
+          ]
+        : []) as ColumnsType<ConsultedServiceResponse>),
+      {
+        title: "Dịch vụ",
+        dataIndex: "consultedServiceName",
+        key: "service",
+        width: 200,
+        filters: serviceNames.map((name) => ({ text: name, value: name })),
+        onFilter: (value, record) => record.consultedServiceName === value,
+        ellipsis: true,
+      },
+      {
+        title: "SL",
+        dataIndex: "quantity",
+        key: "quantity",
+        width: 60,
+        align: "center",
+      },
+      {
+        title: "Đơn giá",
+        dataIndex: "price",
+        key: "price",
+        width: 120,
+        align: "right",
+        render: (price) => <Text>{formatVND(price)}</Text>,
+      },
+      {
+        title: "Giá ưu đãi",
+        dataIndex: "preferentialPrice",
+        key: "preferentialPrice",
+        width: 120,
+        align: "right",
+        render: (price) => <Text>{formatVND(price)}</Text>,
+      },
+      {
+        title: "Thành tiền",
+        dataIndex: "finalPrice",
+        key: "finalPrice",
+        width: 140,
+        align: "right",
+        sorter: (a, b) => a.finalPrice - b.finalPrice,
+        render: (price) => <Text strong>{formatVND(price)}</Text>,
+      },
+      // Customer Detail View: Add "Công nợ" column
+      ...((isCustomerDetailView
+        ? [
+            {
+              title: "Công nợ",
+              dataIndex: "debt",
+              key: "debt",
+              width: 120,
+              align: "right" as const,
+              sorter: (
+                a: ConsultedServiceResponse,
+                b: ConsultedServiceResponse
+              ) => a.debt - b.debt,
+              render: (debt: number) => (
+                <Text
+                  strong
+                  style={{ color: debt > 0 ? "#ff4d4f" : undefined }}
+                >
+                  {formatVND(debt)}
+                </Text>
+              ),
+            },
+          ]
+        : []) as ColumnsType<ConsultedServiceResponse>),
+      {
+        title: "Bác sĩ tư vấn",
+        dataIndex: ["consultingDoctor", "fullName"],
+        key: "consultingDoctor",
+        width: 140,
+        filters: [
+          { text: "Chưa chọn", value: "NONE" },
+          ...consultingDoctors.map((name) => ({ text: name, value: name })),
+        ],
+        onFilter: (value, record) => {
+          if (value === "NONE") return !record.consultingDoctor;
+          return record.consultingDoctor?.fullName === value;
+        },
+        render: (name) => name || <Text type="secondary">—</Text>,
+      },
+      {
+        title: "Bác sĩ điều trị",
+        dataIndex: ["treatingDoctor", "fullName"],
+        key: "treatingDoctor",
+        width: 140,
+        filters: [
+          { text: "Chưa chọn", value: "NONE" },
+          ...treatingDoctors.map((name) => ({ text: name, value: name })),
+        ],
+        onFilter: (value, record) => {
+          if (value === "NONE") return !record.treatingDoctor;
+          return record.treatingDoctor?.fullName === value;
+        },
+        render: (name) => name || <Text type="secondary">—</Text>,
+      },
+      {
+        title: "Sale",
+        dataIndex: ["consultingSale", "fullName"],
+        key: "consultingSale",
+        width: 120,
+        filters: [
+          { text: "Chưa chọn", value: "NONE" },
+          ...sales.map((name) => ({ text: name, value: name })),
+        ],
+        onFilter: (value, record) => {
+          if (value === "NONE") return !record.consultingSale;
+          return record.consultingSale?.fullName === value;
+        },
+        render: (name) => name || <Text type="secondary">—</Text>,
+      },
+      {
+        title: "Trạng thái dịch vụ",
+        dataIndex: "serviceStatus",
+        key: "serviceStatus",
+        width: 120,
+        filters: [
+          { text: "Chưa chốt", value: "Chưa chốt" },
+          { text: "Đã chốt", value: "Đã chốt" },
+        ],
+        onFilter: (value, record) => record.serviceStatus === value,
+        render: (status) => {
+          const tag =
+            SERVICE_STATUS_TAGS[status as keyof typeof SERVICE_STATUS_TAGS];
+          return <Tag color={tag.color}>{tag.text}</Tag>;
+        },
+      },
+      // Customer Detail View: Add "Trạng thái điều trị" column
+      ...((isCustomerDetailView
+        ? [
+            {
+              title: "Trạng thái điều trị",
+              dataIndex: "treatmentStatus",
+              key: "treatmentStatus",
+              width: 120,
+              filters: [
+                { text: "Chưa điều trị", value: "Chưa điều trị" },
+                { text: "Đang điều trị", value: "Đang điều trị" },
+                { text: "Hoàn thành", value: "Hoàn thành" },
+              ],
+              onFilter: (value, record) => record.treatmentStatus === value,
+              render: (status: string) => {
+                const tag =
+                  TREATMENT_STATUS_TAGS[
+                    status as keyof typeof TREATMENT_STATUS_TAGS
+                  ];
+                return <Tag color={tag.color}>{tag.text}</Tag>;
+              },
+            },
+          ]
+        : []) as ColumnsType<ConsultedServiceResponse>),
+      {
+        title: "Ngày chốt",
+        dataIndex: "serviceConfirmDate",
+        key: "serviceConfirmDate",
+        width: 140,
+        sorter: (a, b) => {
+          if (!a.serviceConfirmDate) return 1;
+          if (!b.serviceConfirmDate) return -1;
+          return (
+            dayjs(a.serviceConfirmDate).valueOf() -
+            dayjs(b.serviceConfirmDate).valueOf()
+          );
+        },
+        render: (date, record) => {
+          if (record.serviceStatus === "Đã chốt" && date) {
+            return dayjs(date).format("DD/MM/YYYY HH:mm");
+          }
+          // Show inline confirm button
+          const canConfirm = consultedServicePermissions.canConfirm(
+            currentUser,
+            record
+          );
+          return (
+            <Popconfirm
+              title={CONSULTED_SERVICE_MESSAGES.CONFIRM_SERVICE}
+              onConfirm={() => onConfirm(record.id)}
+              disabled={!canConfirm.allowed}
+            >
+              <Button
+                type="dashed"
+                size="small"
+                icon={<CheckOutlined />}
+                disabled={!canConfirm.allowed}
+                loading={actionLoading}
+              >
+                Chốt
+              </Button>
+            </Popconfirm>
+          );
+        },
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        width: 120,
+        fixed: "right",
+        render: (_, record) => {
+          const editPermission = consultedServicePermissions.canEdit(
+            currentUser,
+            record
+          );
+          const deletePermission = consultedServicePermissions.canDelete(
+            currentUser,
+            record
+          );
+
+          const deleteMessage =
+            record.serviceStatus === "Đã chốt"
+              ? CONSULTED_SERVICE_MESSAGES.DELETE_CONFIRM_CONFIRMED
+              : CONSULTED_SERVICE_MESSAGES.DELETE_CONFIRM_UNCONFIRMED;
+
+          return (
+            <Space split={<Divider type="vertical" />} size="small">
+              <Tooltip
+                title={editPermission.allowed ? "Sửa" : editPermission.reason}
+              >
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => onEdit(record)}
+                  disabled={!editPermission.allowed}
+                />
+              </Tooltip>
+              <Popconfirm
+                title={deleteMessage}
+                onConfirm={() => onDelete(record.id)}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+                disabled={!deletePermission.allowed}
+              >
+                <Tooltip
+                  title={
+                    deletePermission.allowed ? "Xóa" : deletePermission.reason
+                  }
+                >
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    disabled={!deletePermission.allowed}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </Space>
+          );
+        },
+      },
+    ];
+
+    return baseColumns;
+  }, [
+    data,
+    currentUser,
+    onConfirm,
+    onEdit,
+    onDelete,
+    actionLoading,
+    isCustomerDetailView,
+  ]);
+
+  return (
+    <Table
+      columns={columns}
+      dataSource={data}
+      loading={loading}
+      rowKey="id"
+      scroll={{ x: 1800 }}
+      pagination={{
+        pageSize: 20,
+        showSizeChanger: true,
+        showTotal: (total) => `Tổng ${total} dịch vụ`,
+      }}
+    />
+  );
+}

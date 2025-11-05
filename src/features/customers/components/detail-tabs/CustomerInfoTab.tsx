@@ -117,7 +117,9 @@ export default function CustomerInfoTab({
     <Space direction="vertical" size="large" style={{ width: "100%" }}>
       {/* Title + Edit Button */}
       <Row justify="space-between" align="middle">
-        <Title level={4}>Thông tin chi tiết</Title>
+        <Title level={5} style={{ margin: 0 }}>
+          Thông tin chi tiết
+        </Title>
         <Button
           type="primary"
           icon={<EditOutlined />}

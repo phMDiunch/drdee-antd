@@ -9,6 +9,7 @@ import {
   DollarOutlined,
   BarChartOutlined,
   SettingOutlined,
+  MedicineBoxOutlined,
 } from "@ant-design/icons";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -38,6 +39,12 @@ export const menuItems: MenuItem[] = [
       { key: "/appointments/daily", label: "Theo ngày" },
       { key: "/appointments", label: "Danh sách" },
     ],
+  },
+  {
+    key: "consulted-services",
+    icon: <MedicineBoxOutlined />,
+    label: "Dịch vụ tư vấn",
+    children: [{ key: "/consulted-services/daily", label: "Theo ngày" }],
   },
   {
     key: "payments",
