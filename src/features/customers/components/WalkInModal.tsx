@@ -8,6 +8,7 @@ import { z } from "zod";
 import { useCreateAppointment } from "@/features/appointments";
 import { useWorkingEmployees } from "@/features/employees";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/shared/providers/user-provider";
 import type { CustomerDailyResponse } from "@/shared/validation/customer.schema";
 
 const WalkInFormSchema = z.object({
@@ -29,6 +30,7 @@ export default function WalkInModal({ open, customer, onClose }: Props) {
     resolver: zodResolver(WalkInFormSchema),
   });
 
+  const { user: currentUser } = useCurrentUser();
   const createMutation = useCreateAppointment();
   const { data: employees } = useWorkingEmployees();
   const qc = useQueryClient();
@@ -36,7 +38,7 @@ export default function WalkInModal({ open, customer, onClose }: Props) {
   const onSubmit = async (formData: WalkInForm) => {
     await createMutation.mutateAsync({
       customerId: customer.id,
-      clinicId: customer.clinicId,
+      clinicId: customer.clinicId || currentUser?.clinicId || "",
       primaryDentistId: formData.primaryDentistId,
       appointmentDateTime: new Date(), // Now
       duration: 30,

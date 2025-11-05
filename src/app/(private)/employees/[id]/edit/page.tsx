@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/server/utils/sessionCache";
 import { employeeService } from "@/server/services/employee.service";
 import EmployeeEditView from "@/features/employees/views/EmployeeEditView";
-import type { EmployeeResponse } from "@/shared/validation/employee.schema";
+import { EmployeeResponse } from "@/shared/validation/employee.schema";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -24,7 +24,5 @@ export default async function EmployeeEditPage({ params }: Props) {
     notFound();
   }
 
-  // Type assertion: DB types (nullable) → EmployeeResponse (required fields)
-  // Safe because service layer validates data structure
   return <EmployeeEditView employee={employee as EmployeeResponse} />;
 }

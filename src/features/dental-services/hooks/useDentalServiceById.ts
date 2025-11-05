@@ -3,7 +3,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getDentalServiceByIdApi } from "../api/getDentalServiceById";
+import { getDentalServiceByIdApi } from "../api";
 import { DENTAL_SERVICE_QUERY_KEYS } from "../constants";
 
 export function useDentalServiceById(id?: string) {

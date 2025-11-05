@@ -1,7 +1,7 @@
 // src/features/employees/hooks/useWorkingEmployees.ts
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { getWorkingEmployeesApi } from "../api/getWorkingEmployees";
+import { getWorkingEmployeesApi } from "../api";
 import { EMPLOYEE_QUERY_KEYS } from "../constants";
 import type { WorkingEmployeeResponse } from "@/shared/validation/employee.schema";
 

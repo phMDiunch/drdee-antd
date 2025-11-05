@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getAppointmentApi } from "../api/getAppointment";
+import { getAppointmentApi } from "../api";
 import { APPOINTMENT_QUERY_KEYS } from "../constants";
 
 export function useAppointment(id: string) {

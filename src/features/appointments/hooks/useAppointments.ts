@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getAppointmentsApi } from "../api/getAppointments";
+import { getAppointmentsApi } from "../api";
 import { APPOINTMENT_QUERY_KEYS } from "../constants";
 import type { GetAppointmentsQuery } from "@/shared/validation/appointment.schema";
 

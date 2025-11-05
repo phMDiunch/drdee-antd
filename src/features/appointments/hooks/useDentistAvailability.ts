@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { checkDentistAvailabilityApi } from "../api/checkDentistAvailability";
+import { checkDentistAvailabilityApi } from "../api";
 import { APPOINTMENT_QUERY_KEYS } from "../constants";
 import type { CheckDentistAvailabilityQuery } from "@/shared/validation/appointment.schema";
 

@@ -62,7 +62,19 @@ export * from "./constants";
   - Parse request bằng Zod → trả 400 nếu invalid.
   - Map lỗi dịch vụ → `{ error: string }` + status phù hợp (401/403/404/409/500).
   - Không redirect trong API; redirect ở UI/hook.
-- API client (`features/<feature>/api`): `fetch` + parse response bằng Zod; nếu `!ok` ném `Error(message)`.
+
+### 6.0) API Client Organization
+
+**Single File Pattern**: Mỗi feature có 1 file `api.ts` chứa tất cả query functions (GET).
+
+```typescript
+// ✅ src/features/customers/api.ts
+export async function getCustomersApi(params?: GetCustomersQuery) { ... }
+export async function getCustomerDetailApi(id: string) { ... }
+export async function searchCustomersApi(query: string) { ... }
+```
+
+**Import**: `import { getCustomersApi } from "../api"`
 
 ## 6.1) Server Actions Pattern (Next.js 15)
 

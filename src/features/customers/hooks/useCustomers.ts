@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getCustomersApi } from "../api/getCustomers";
+import { getCustomersApi } from "../api";
 import { CUSTOMER_QUERY_KEYS } from "../constants";
 import type { GetCustomersQuery } from "@/shared/validation/customer.schema";
 
