@@ -90,9 +90,17 @@
 │   │   ├── ✅ validation/                     # Zod schemas (single source of truth)
 │   │   │   ├── auth.schema.ts                 # Auth validation schemas & types (z.infer)
 │   │   │   ├── employee.schema.ts             # Employee schemas & types
+│   │   │   ├── customer.schema.ts             # Customer schemas & types
+│   │   │   ├── appointment.schema.ts          # Appointment schemas & types
 │   │   │   ├── clinic.schema.ts               # Clinic schemas & types
 │   │   │   ├── dental-service.schema.ts       # Service schemas & types
 │   │   │   └── common.schema.ts               # Shared validation schemas
+│   │   │
+│   │   ├── 🔐 permissions/                    # 🆕 Shared permission logic (Frontend + Backend)
+│   │   │   ├── appointment.permissions.ts     # Appointment permission checks
+│   │   │   ├── customer.permissions.ts        # Customer permission checks
+│   │   │   ├── employee.permissions.ts        # Employee permission checks
+│   │   │   └── index.ts                       # Permission exports
 │   │   │
 │   │   ├── 🔧 providers/                      # React context providers
 │   │   │   ├── antd.tsx                       # Ant Design theme provider
@@ -113,46 +121,59 @@
 │   │
 │   ├── 🎯 features/                          # Domain-driven features (Clean Architecture)
 │   │   ├── 👥 employees/
-│   │   │   ├── 🔄 api/                        # API client functions (GET requests only)
-│   │   │   │   ├── getEmployees.ts            # Fetch employees list
-│   │   │   │   ├── getEmployeeById.ts         # Fetch employee detail
-│   │   │   │   ├── getWorkingEmployees.ts     # Fetch working employees
-│   │   │   │   └── index.ts                   # API exports (barrel)
+│   │   │   ├── 🔄 api.ts                      # 🆕 Single API file (consolidated query functions)
+│   │   │   │                                  # getEmployeesApi(), getEmployeeByIdApi(), etc.
 │   │   │   ├── 🧩 components/                 # Domain-specific components
 │   │   │   │   ├── EmployeeForm.tsx           # Employee form component
 │   │   │   │   ├── EmployeeTable.tsx          # Employee table component
 │   │   │   │   └── EmployeeCard.tsx           # Employee card component
 │   │   │   ├── 🪝 hooks/                      # React Query hooks (mutations use Server Actions)
-│   │   │   │   ├── useEmployees.ts            # Query hook: GET /employees
-│   │   │   │   ├── useEmployeeById.ts         # Query hook: GET /employees/:id
+│   │   │   │   ├── useEmployees.ts            # Query hook: import from "../api"
+│   │   │   │   ├── useEmployeeById.ts         # Query hook: import from "../api"
 │   │   │   │   ├── useCreateEmployee.ts       # Mutation: createEmployeeAction()
 │   │   │   │   ├── useUpdateEmployee.ts       # Mutation: updateEmployeeAction()
 │   │   │   │   ├── useDeleteEmployee.ts       # Mutation: deleteEmployeeAction()
 │   │   │   │   ├── useSetEmployeeStatus.ts    # Mutation: setEmployeeStatusAction()
-│   │   │   │   ├── useResendEmployeeInvite.ts # Mutation: resendEmployeeInviteAction()
-│   │   │   │   └── index.ts                   # Hook exports (barrel)
+│   │   │   │   └── useResendEmployeeInvite.ts # Mutation: resendEmployeeInviteAction()
 │   │   │   ├── 📱 views/                      # Page-level components
 │   │   │   │   ├── EmployeeListView.tsx       # Employee list page
 │   │   │   │   ├── EmployeeDetailView.tsx     # Employee detail page
 │   │   │   │   └── EmployeeCreateView.tsx     # Employee creation page
-│   │   │   └── 📋 constants.ts                # Domain constants, query keys, messages
+│   │   │   ├── 📋 constants.ts                # Domain constants, query keys, messages
+│   │   │   └── 📦 index.ts                    # Barrel export (components, hooks, views only)
 │   │   │
 │   │   ├── 👤 customers/                      # Customer management
-│   │   │   ├── api/                           # Customer APIs
+│   │   │   ├── api.ts                         # Single API file (getCustomersApi, etc.)
 │   │   │   ├── components/                    # Customer components
 │   │   │   ├── hooks/                         # Customer hooks
 │   │   │   ├── views/                         # Customer views
-│   │   │   └── constants.ts                   # Customer constants
+│   │   │   ├── constants.ts                   # Customer constants
+│   │   │   └── index.ts                       # Barrel export
+│   │   │
+│   │   ├── 📅 appointments/                   # Appointment management
+│   │   │   ├── api.ts                         # Single API file (getAppointmentsApi, etc.)
+│   │   │   ├── components/                    # Appointment components
+│   │   │   ├── hooks/                         # Appointment hooks
+│   │   │   ├── views/                         # Appointment views
+│   │   │   ├── constants.ts                   # Appointment constants
+│   │   │   └── index.ts                       # Barrel export
+│   │   │
+│   │   ├── 🏥 clinics/                        # Clinic management
+│   │   │   ├── api.ts                         # Single API file (getClinicsApi, etc.)
+│   │   │   ├── components/                    # Clinic components
+│   │   │   ├── hooks/                         # Clinic hooks
+│   │   │   ├── views/                         # Clinic views
+│   │   │   ├── constants.ts                   # Clinic constants
+│   │   │   └── index.ts                       # Barrel export
 │   │   │
 │   │   ├── 🦷 dental-services/                # Dental service catalog
-│   │   │   ├── api/                           # Service APIs
+│   │   │   ├── api.ts                         # Single API file (getDentalServicesApi, etc.)
 │   │   │   ├── components/                    # Service components
 │   │   │   ├── hooks/                         # Service hooks
 │   │   │   ├── views/                         # Service views
-│   │   │   └── constants.ts                   # Service constants
+│   │   │   ├── constants.ts                   # Service constants
+│   │   │   └── index.ts                       # Barrel export
 │   │   │
-│   │   ├── 📅 appointments/                   # Appointment management
-│   │   ├── 🦷 dental-services/                # Dental service catalog
 │   │   ├── 💰 payments/                       # Payment processing
 │   │   ├── 📊 reports/                        # Reporting & analytics
 │   │   ├── 🏪 suppliers/                      # Supplier management
@@ -176,15 +197,18 @@
 │   │   │   ├── employee.repo.ts               # Employee data access
 │   │   │   └── index.ts                       # Repository exports
 │   │   │
-│   │   └── ⚙️ services/                       # Business logic layer (orchestration)
-│   │       ├── auth.service.ts                # Authentication & session management
-│   │       ├── customer.service.ts            # Customer business logic
-│   │       ├── appointment.service.ts         # Appointment business logic
-│   │       ├── clinic.service.ts              # Clinic business logic
-│   │       ├── dental-service.service.ts      # Dental service business logic
-│   │       ├── employee.service.ts            # Employee business logic
-│   │       ├── errors.ts                      # Custom error classes
-│   │       └── index.ts                       # Service exports
+│   │   ├── ⚙️ services/                       # Business logic layer (orchestration)
+│   │   │   ├── auth.service.ts                # Authentication & session management
+│   │   │   ├── customer.service.ts            # Customer business logic
+│   │   │   ├── appointment.service.ts         # Appointment business logic
+│   │   │   ├── clinic.service.ts              # Clinic business logic
+│   │   │   ├── dental-service.service.ts      # Dental service business logic
+│   │   │   ├── employee.service.ts            # Employee business logic
+│   │   │   ├── errors.ts                      # Custom error classes
+│   │   │   └── index.ts                       # Service exports
+│   │   │
+│   │   └── 🛠️ utils/                         # Server-side utilities
+│   │       └── sessionCache.ts                # 🆕 React cache() wrapper for session
 │   │
 │   ├── 📚 lib/                               # Third-party configurations
 │   │   ├── QueryProvider.tsx                  # React Query setup
