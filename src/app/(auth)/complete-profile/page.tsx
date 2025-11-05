@@ -15,14 +15,20 @@ import {
   Select,
   Button,
   ColorPicker,
-  App,
 } from "antd";
 import dayjs from "dayjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CompleteProfileRequestSchema, type CompleteProfileRequest } from "@/shared/validation/employee.schema";
-import { useCompleteProfilePublic, useEmployeeForProfileCompletion } from "@/features/employees";
+import {
+  CompleteProfileRequestSchema,
+  type CompleteProfileRequest,
+} from "@/shared/validation/employee.schema";
+import {
+  useCompleteProfilePublic,
+  useEmployeeForProfileCompletion,
+} from "@/features/employees";
+import { useNotify } from "@/shared/hooks/useNotify";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -66,7 +72,7 @@ export default function CompleteProfilePage() {
 }
 
 function CompleteProfileContent() {
-  const { message } = App.useApp();
+  const notify = useNotify();
   const searchParams = useSearchParams();
   const employeeId = searchParams?.get("employeeId") ?? undefined;
   const router = useRouter();
@@ -120,7 +126,9 @@ function CompleteProfileContent() {
       currentAddress: emp.currentAddress ?? "",
       hometown: emp.hometown ?? "",
       nationalId: emp.nationalId ?? "",
-      nationalIdIssueDate: emp.nationalIdIssueDate ? new Date(emp.nationalIdIssueDate) : undefined,
+      nationalIdIssueDate: emp.nationalIdIssueDate
+        ? new Date(emp.nationalIdIssueDate)
+        : undefined,
       nationalIdIssuePlace: emp.nationalIdIssuePlace ?? "",
       taxId: emp.taxId ?? "",
       insuranceNumber: emp.insuranceNumber ?? "",
@@ -138,14 +146,16 @@ function CompleteProfileContent() {
     redirectGuardRef.current = true;
 
     if (status === "RESIGNED") {
-      message.error("Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
+      notify.error(
+        "Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên."
+      );
       router.replace("/login");
       return;
     }
 
-    message.info("Hồ sơ đã hoàn tất. Đang chuyển về trang chính.");
+    notify.info("Hồ sơ đã hoàn tất. Đang chuyển về trang chính.");
     router.replace("/dashboard");
-  }, [employeeQuery.data?.employeeStatus, message, router]);
+  }, [employeeQuery.data?.employeeStatus, notify, router]);
 
   const submit = handleSubmit(async (values) => {
     const payload: CompleteProfileRequest = {
@@ -160,8 +170,12 @@ function CompleteProfileContent() {
       nationalIdIssueDate: values.nationalIdIssueDate!,
       nationalIdIssuePlace: values.nationalIdIssuePlace.trim(),
       taxId: values.taxId?.trim() ? values.taxId.trim() : null,
-      insuranceNumber: values.insuranceNumber?.trim() ? values.insuranceNumber.trim() : null,
-      bankAccountNumber: values.bankAccountNumber?.trim() ? values.bankAccountNumber.trim() : null,
+      insuranceNumber: values.insuranceNumber?.trim()
+        ? values.insuranceNumber.trim()
+        : null,
+      bankAccountNumber: values.bankAccountNumber?.trim()
+        ? values.bankAccountNumber.trim()
+        : null,
       bankName: values.bankName?.trim() ? values.bankName.trim() : null,
       password: values.password,
       confirmPassword: values.confirmPassword,
@@ -178,7 +192,10 @@ function CompleteProfileContent() {
 
   if (!employeeId) {
     return (
-      <Empty description="Không tìm thấy mã nhân viên. Vui lòng kiểm tra lại link mời." style={{ marginTop: 80 }} />
+      <Empty
+        description="Không tìm thấy mã nhân viên. Vui lòng kiểm tra lại link mời."
+        style={{ marginTop: 80 }}
+      />
     );
   }
 
@@ -196,7 +213,8 @@ function CompleteProfileContent() {
     return (
       <Empty
         description={
-          employeeQuery.error?.message || "Không thể tải thông tin nhân viên. Vui lòng liên hệ quản trị viên."
+          employeeQuery.error?.message ||
+          "Không thể tải thông tin nhân viên. Vui lòng liên hệ quản trị viên."
         }
         style={{ marginTop: 80 }}
       />
@@ -204,7 +222,12 @@ function CompleteProfileContent() {
   }
 
   if (!employeeQuery.data) {
-    return <Empty description="Không thể tải thông tin nhân viên. Vui lòng thử lại sau." style={{ marginTop: 80 }} />;
+    return (
+      <Empty
+        description="Không thể tải thông tin nhân viên. Vui lòng thử lại sau."
+        style={{ marginTop: 80 }}
+      />
+    );
   }
 
   return (
@@ -222,8 +245,8 @@ function CompleteProfileContent() {
           Hoàn thiện hồ sơ
         </Title>
         <Paragraph style={{ textAlign: "center", marginBottom: 28 }}>
-          Xin chào <Text strong>{employeeQuery.data.fullName}</Text>. Vui lòng cập nhật thông tin để hoàn thiện hồ sơ
-          của bạn.
+          Xin chào <Text strong>{employeeQuery.data.fullName}</Text>. Vui lòng
+          cập nhật thông tin để hoàn thiện hồ sơ của bạn.
         </Paragraph>
 
         <Form layout="vertical" onFinish={submit}>
@@ -258,7 +281,9 @@ function CompleteProfileContent() {
                     <DatePicker
                       style={{ width: "100%" }}
                       value={field.value ? dayjs(field.value) : undefined}
-                      onChange={(date) => field.onChange(date ? date.toDate() : undefined)}
+                      onChange={(date) =>
+                        field.onChange(date ? date.toDate() : undefined)
+                      }
                       format="DD/MM/YYYY"
                     />
                   </Form.Item>
@@ -378,7 +403,9 @@ function CompleteProfileContent() {
                     <DatePicker
                       style={{ width: "100%" }}
                       value={field.value ? dayjs(field.value) : undefined}
-                      onChange={(date) => field.onChange(date ? date.toDate() : undefined)}
+                      onChange={(date) =>
+                        field.onChange(date ? date.toDate() : undefined)
+                      }
                       format="DD/MM/YYYY"
                     />
                   </Form.Item>
@@ -500,7 +527,10 @@ function CompleteProfileContent() {
                     validateStatus={fieldState.error ? "error" : ""}
                     help={fieldState.error?.message}
                   >
-                    <Input.Password {...field} placeholder="Nhập lại mật khẩu" />
+                    <Input.Password
+                      {...field}
+                      placeholder="Nhập lại mật khẩu"
+                    />
                   </Form.Item>
                 )}
               />
@@ -514,7 +544,11 @@ function CompleteProfileContent() {
               marginTop: 24,
             }}
           >
-            <Button type="primary" htmlType="submit" loading={isSubmitting || completeMutation.isPending}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isSubmitting || completeMutation.isPending}
+            >
               Hoàn tất
             </Button>
           </div>

@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { archiveClinicAction } from "@/server/actions/clinic.actions";
+import { deleteClinicAction } from "@/server/actions/clinic.actions";
 import { CLINIC_MESSAGES } from "../constants";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
@@ -11,7 +11,7 @@ export function useDeleteClinic() {
   const notify = useNotify();
 
   return useMutation({
-    mutationFn: (id: string) => archiveClinicAction(id),
+    mutationFn: (id: string) => deleteClinicAction(id),
     onSuccess: () => {
       notify.success(CLINIC_MESSAGES.DELETE_SUCCESS);
       qc.invalidateQueries({

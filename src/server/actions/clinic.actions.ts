@@ -29,6 +29,15 @@ export async function updateClinicAction(
 }
 
 /**
+ * Server Action: Delete clinic (hard delete - permanently remove)
+ * Usage: await deleteClinicAction(id);
+ */
+export async function deleteClinicAction(clinicId: string) {
+  const user = await getSessionUser();
+  return await clinicService.remove(user, clinicId);
+}
+
+/**
  * Server Action: Archive clinic (soft delete)
  * Usage: await archiveClinicAction(id);
  */

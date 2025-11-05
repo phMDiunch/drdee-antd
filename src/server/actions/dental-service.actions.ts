@@ -31,6 +31,15 @@ export async function updateDentalServiceAction(
 }
 
 /**
+ * Server Action: Delete dental service (hard delete - permanently remove)
+ * Usage: await deleteDentalServiceAction(id);
+ */
+export async function deleteDentalServiceAction(serviceId: string) {
+  const user = await getSessionUser();
+  return await dentalServiceService.remove(user, serviceId);
+}
+
+/**
  * Server Action: Archive dental service (soft delete)
  * Usage: await archiveDentalServiceAction(id);
  */

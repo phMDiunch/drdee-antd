@@ -1,405 +1,517 @@
 # Project Guidelines (Single Source of Truth)
 
-Stack: Next.js 15 (App Router) · Ant Design · Supabase · React Query · Zod
+# I. TỔNG QUAN
+
+## 1. Stack Công Nghệ
+
+- **Frontend**: Next.js 15 (App Router), React 18, TypeScript, Ant Design 5
+- **State**: React Query (server), Zustand (UI state only)
+- **Backend**: Next.js Server Actions, API Routes, Prisma ORM
+- **Database**: Supabase (PostgreSQL), Prisma
+- **Validation**: Zod (shared FE/BE)
+- **Utils**: dayjs, lodash
+
+## 2. Chính Sách Dependency
+
+- ❌ Không thêm thư viện khi chưa được duyệt
+- ✅ Ưu tiên: Ant Design, React Query, Supabase, dayjs, Zod
+- ✅ Zod làm single source of truth cho schemas (client + server)
+
+## 3. Kiến Trúc & Luồng Phát Triển
+
+**2 Approaches:**
+
+- **API-first** (mặc định): Requirements → Database → API Contract → Backend → Frontend
+- **Frontend-driven** (khi cần UX trước): Requirements → UI/UX → Frontend → API Contract → Backend → Database
+
+## 4. Cấu Trúc Thư Mục
+
+```
+src/
+├── shared/
+│   ├── validation/         # Zod schemas (FE + BE)
+│   ├── permissions/        # Permission logic (FE + BE)
+│   ├── components/         # Reusable UI
+│   ├── constants/          # COMMON_MESSAGES, etc.
+│   └── utils/
+├── server/
+│   ├── repos/              # Data access (Prisma)
+│   ├── services/           # Business logic
+│   ├── actions/            # Server Actions
+│   └── utils/              # sessionCache.ts
+├── features/<feature>/
+│   ├── api.ts              # Query functions (GET)
+│   ├── components/         # Feature UI
+│   ├── hooks/              # React Query hooks
+│   ├── views/              # Pages
+│   ├── constants.ts        # Feature-specific
+│   └── index.ts            # Barrel export
+├── layouts/AppLayout/
+└── app/
+    ├── (auth)/             # Public routes
+    ├── (private)/          # Protected routes
+    └── api/v1/             # API routes
+```
 
 ---
 
-## 1) Chính Sách Dependency
+# II. LUỒNG PHÁT TRIỂN
 
-- Không thêm thư viện khi chưa được duyệt. Ưu tiên: AntD, @tanstack/react-query, Supabase, dayjs, Zod.
-- Dùng Zod để chuẩn hóa request/response schema dùng chung client + server (giảm bug, dễ scale).
+## 1. Prisma Model
 
-## 2) Kiến Trúc & Luồng Phát Triển
+**Conventions:**
 
-- API‑first (mặc định): Requirements → Database → API Contract → Backend → Frontend.
-- Frontend‑driven (khi cần): Requirements → UI/UX → Frontend → API Contract → Backend → Database.
+- PascalCase, singular (`Customer`, `Appointment`)
+- Audit fields: `createdAt`, `updatedAt`, `createdById`, `updatedById`
+- Soft delete: `deletedAt DateTime?`
+- Relations: `@@index` cho FK, composite indexes cho queries thường dùng
 
-## 3) Cấu Trúc Thư Mục
+**Performance - Database Indexes:**
 
-- Zod schemas: `src/shared/validation/*` (request/response, types via `z.infer`, tái dùng FE/BE).
-- Business logic: `src/server/services/*` (Supabase/Prisma + rule nghiệp vụ).
-- Data access: `src/server/repos/*` (Prisma + Zod types, 3 patterns chuẩn hoá).
-- Feature module: `src/features/<feature>/{api,components,hooks,views}` + `constants.ts` + **`index.ts`** (barrel export tổng).
-- Layout: `src/layouts/AppLayout/*` (Header, Sider, Content, menu, theme).
+- Single-column: Unique fields hoặc search fields (`phone`, `email`)
+- Composite: Common query patterns (`[clinicId, createdAt]`, `[clinicId, status]`)
+- Foreign keys: Luôn index FK để JOIN nhanh (`clinicId`, `customerId`)
 
-## 3.1) Barrel Exports Pattern
+```prisma
+model Customer {
+  id          String    @id @default(cuid())
+  fullName    String
+  phone       String?
+  clinicId    String
+  clinic      Clinic    @relation(...)
+  createdAt   DateTime  @default(now())
+  createdById String
 
-**1 file `index.ts` ở root feature**, subfolder (`api/`, `hooks/`, `components/`, `views/`) KHÔNG CÓ `index.ts`.
-
-```typescript
-// src/features/customers/index.ts
-export { default as CustomerDailyView } from "./views/CustomerDailyView";
-export { default as CustomerTable } from "./components/CustomerTable";
-export * from "./hooks/useCustomers";
-export * from "./constants";
-// NOTE: API layer KHÔNG export (internal)
+  @@index([clinicId, createdAt]) // Daily view queries
+  @@index([phone])                // Search by phone
+}
 ```
 
-**Import:**
+## 2. Zod Schema
 
-- ✅ External: `import { CustomerDailyView, useCustomers } from "@/features/customers"`
-- ✅ Internal: `import { useCustomers } from "../hooks/useCustomers"`
-- ❌ Deep path: `import { useCustomers } from "@/features/customers/hooks/useCustomers"`
+**3-Layer Pattern:** Base → Frontend → Backend
 
-## 4) Next.js & Supabase
-
-- `cookies()` là async; trong server/route luôn `const supabase = await createClient()`.
-- Session Supabase qua HttpOnly cookie (không lưu token ở JS).
-- `(private)/layout.tsx` (SSR) gọi `getSessionUser()` để inject `currentUser`.
-- Middleware bảo vệ `(private)`; chặn truy cập nếu chưa đăng nhập.
-- **useSearchParams()**: Luôn wrap trong `<Suspense>` boundary (Next.js 15 requirement) để tránh pre-render errors.
-- **User Context Pattern**: Server Component fetch user → `<Providers user={currentUser}>` → Client Components dùng `useCurrentUser()` (không cần loading state).
-
-## 5) Auth
-
-- Login: `POST /api/v1/auth/login` (Zod validate) → `supabase.auth.signInWithPassword` → set cookie → trả `{ user }`.
-- Logout: `POST /api/v1/auth/logout` → `supabase.auth.signOut()`.
-- Chặn open‑redirect bằng `sanitizeNext()` (chỉ chấp nhận đường dẫn nội bộ).
-
-## 6) API Conventions
-
-- Mọi route dưới `/api/v1/...`:
-  - Parse request bằng Zod → trả 400 nếu invalid.
-  - Map lỗi dịch vụ → `{ error: string }` + status phù hợp (401/403/404/409/500).
-  - Không redirect trong API; redirect ở UI/hook.
-
-### 6.0) API Client Organization
-
-**Single File Pattern**: Mỗi feature có 1 file `api.ts` chứa tất cả query functions (GET).
+**Layer 1 - Base (Shared):**
 
 ```typescript
-// ✅ src/features/customers/api.ts
-export async function getCustomersApi(params?: GetCustomersQuery) { ... }
-export async function getCustomerDetailApi(id: string) { ... }
-export async function searchCustomersApi(query: string) { ... }
+const CustomerCommonFieldsSchema = z.object({
+  fullName: z.string().min(1),
+  gender: z.enum(["MALE", "FEMALE"]),
+  // NO dob (khác type FE/BE)
+});
+
+const validateConditionalFields = (data, ctx) => {
+  /* reuse */
+};
 ```
 
-**Import**: `import { getCustomersApi } from "../api"`
-
-## 6.1) Server Actions Pattern (Next.js 15)
-
-**Hybrid Architecture**: GET qua API Routes + Mutations qua Server Actions.
+**Layer 2 - Frontend (nếu cần):**
 
 ```typescript
-// ✅ Server Action (src/server/actions/<feature>.actions.ts)
+export const CreateCustomerFormSchema = CustomerCommonFieldsSchema.extend({
+  dob: z.string().min(1),
+}) // STRING cho DatePicker
+  .superRefine(validateConditionalFields);
+
+export type CreateCustomerFormData = z.infer<typeof CreateCustomerFormSchema>;
+```
+
+**Layer 3 - Backend:**
+
+```typescript
+const CustomerRequestBaseSchema = CustomerCommonFieldsSchema.extend({
+  dob: z.coerce.date(),
+}); // DATE cho API
+
+export const CreateCustomerRequestSchema =
+  CustomerRequestBaseSchema.superRefine(validateConditionalFields);
+
+export const CustomerResponseSchema = z.object({
+  id: z.string(),
+  fullName: z.string(),
+  dob: z.string().datetime().nullable(),
+});
+
+export type CreateCustomerRequest = z.infer<typeof CreateCustomerRequestSchema>;
+export type CustomerResponse = z.infer<typeof CustomerResponseSchema>;
+```
+
+**Naming:**
+
+- Frontend: `Create<Feature>FormSchema`
+- Backend Request: `Create<Feature>RequestSchema`, `Update<Feature>RequestSchema`
+- Backend Response: `<Feature>ResponseSchema`, `<Feature>ListResponseSchema`
+- Query: `Get<Feature>QuerySchema`
+
+## 3. Backend Layer
+
+**Hybrid Architecture Overview:**
+
+```
+Frontend
+    ↓
+┌─────────────────────────────────────┐
+│ Queries (GET)    → API Routes       │ ← HTTP caching
+│ Mutations (CUD)  → Server Actions   │ ← Type-safe RPC
+└─────────────────────────────────────┘
+    ↓
+Service Layer (Business logic)
+    ↓
+Repository Layer (Prisma)
+    ↓
+Database (Supabase PostgreSQL)
+```
+
+**Tại sao dùng pattern này?**
+
+- **API Routes (GET)**: Cache HTTP, tối ưu CDN, chuẩn REST, dễ tích hợp bên ngoài
+- **Server Actions (CUD)**: Type-safe end-to-end, không cần tạo endpoint thủ công, code đơn giản hơn
+
+### 3.1. Repository (`src/server/repos/<feature>.repo.ts`)
+
+**3 Patterns dựa trên Zod schemas:**
+
+**Pattern 1 - Simple (Master Data):**
+
+```typescript
+// API Schema = Repo Type (direct)
+async create(data: CreateClinicRequest) { ... }
+```
+
+**Pattern 2 - Complex (Business Data):**
+
+```typescript
+// API Schema + Server Metadata
+export type CustomerCreateInput = CreateCustomerRequest & {
+  createdById: string;
+  updatedById: string;
+};
+
+export const customerRepo = {
+  async create(data: CustomerCreateInput) { ... },
+  async findById(id: string) { ... },
+  async list(filters) { ... },
+  async listDaily(params: { clinicId, dateStart, dateEnd }) {
+    return { items, count };
+  },
+};
+```
+
+**Pattern 3 - Relations:**
+
+```typescript
+// API Schema + Prisma Relations
+export type EmployeeCreateInput = Omit<CreateEmployeeRequest, "clinicId"> & {
+  clinic: { connect: { id: string } };
+  createdBy: { connect: { id: string } };
+};
+```
+
+**Method Naming:**
+
+- `list()` - Paginated
+- `listDaily()` - Date range, return `{ items, count }`
+- `create()`, `update()`, `delete()`, `findById()`
+
+### 3.2. Service (`src/server/services/<feature>.service.ts`)
+
+**Responsibilities:** Business logic, validation, orchestration
+
+```typescript
+export const customerService = {
+  async create(currentUser: SessionUser, body: CreateCustomerRequest) {
+    // 1. Validate business rules
+    const existing = await customerRepo.findByPhone(body.phone);
+    if (existing) throw new ServiceError("DUPLICATE_PHONE", "...", 409);
+
+    // 2. Prepare data
+    const data: CustomerCreateInput = {
+      ...body,
+      createdById: currentUser.id,
+      updatedById: currentUser.id,
+    };
+
+    // 3. Execute
+    const created = await customerRepo.create(data);
+
+    // 4. Map response
+    return mapCustomerToResponse(created);
+  },
+
+  async listDaily(currentUser, date: string) {
+    // Calculate time range
+    const dateStart = new Date(date);
+    dateStart.setHours(0, 0, 0, 0);
+    const dateEnd = new Date(date);
+    dateEnd.setHours(23, 59, 59, 999);
+
+    const { items, count } = await customerRepo.listDaily({
+      clinicId: currentUser.clinicId,
+      dateStart,
+      dateEnd,
+    });
+
+    return {
+      items: items.map(mapCustomerToResponse),
+      count,
+    };
+  },
+};
+```
+
+**Error Handling:**
+
+```typescript
+throw new ServiceError("ERROR_CODE", "Message tiếng Việt", httpStatus);
+```
+
+### 3.3. Server Actions (`src/server/actions/<feature>.actions.ts`)
+
+**Hybrid Architecture Pattern:**
+
+- ✅ **Mutations** (POST/PUT/DELETE) → **Server Actions**
+- ✅ **Queries** (GET) → **API Routes** (section 3.4)
+
+**Tại sao dùng Server Actions cho Mutations?**
+
+- Type-safe từ đầu đến cuối (TypeScript tự suy luận kiểu)
+- Không cần tạo API endpoint thủ công
+- Tự động serialize dữ liệu
+- Đơn giản hơn API Routes cho các thao tác ghi
+
+**Pattern:** Auth gate + delegate to service
+
+```typescript
 "use server";
+
+import { getSessionUser } from "@/server/utils/sessionCache"; // ← Cached
+
 export async function createCustomerAction(data: CreateCustomerRequest) {
-  const user = await getSessionUser(); // Auth
-  return customerService.create(user, data); // Delegate to service
+  const user = await getSessionUser(); // Auth + cached
+  return customerService.create(user, data);
 }
 
-// ✅ Hook with Optimistic Update
-export function useCreateCustomer() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => createCustomerAction(data),
-    onMutate: async (newData) => {
-      // Optimistic: Show immediately
-      await qc.cancelQueries(["customers"]);
-      const previous = qc.getQueryData(["customers"]);
-      qc.setQueryData(["customers"], (old) => [
-        { ...newData, id: "temp" },
-        ...old,
-      ]);
-      return { previous };
-    },
-    onSuccess: () => qc.invalidateQueries(["customers"]),
-    onError: (_, __, ctx) => qc.setQueryData(["customers"], ctx?.previous),
-  });
+export async function updateCustomerAction(
+  id: string,
+  data: UpdateCustomerRequest
+) {
+  const user = await getSessionUser();
+  return customerService.update(id, user, data);
+}
+
+export async function deleteCustomerAction(id: string) {
+  const user = await getSessionUser();
+  return customerService.delete(id, user);
 }
 ```
 
-**3-Layer Responsibilities**:
+**3-Layer Responsibilities:**
 
-| Layer             | Purpose                                     | Example                       |
-| ----------------- | ------------------------------------------- | ----------------------------- |
-| **Server Action** | Auth gate + RPC wrapper                     | `getSessionUser()` + delegate |
-| **Service**       | Business logic + validation + orchestration | Rules, Zod, multiple repos    |
-| **Repo**          | Pure data access (Prisma)                   | `prisma.customer.create()`    |
+| Layer         | Purpose                     | Example                    |
+| ------------- | --------------------------- | -------------------------- |
+| Server Action | Auth gate + RPC             | `getSessionUser()` + call  |
+| Service       | Business logic + validation | Rules, Zod, multiple repos |
+| Repo          | Data access (Prisma)        | `prisma.customer.create()` |
 
-**Rules**:
+**Quy tắc:**
 
-- ✅ Mutations (POST/PUT/DELETE) → Server Actions
-- ✅ Queries (GET) → API Routes + Cache headers
-- ✅ Optimistic updates cho high-frequency mutations (Customer, Appointment)
-- ✅ End-to-end type safety (TypeScript inference)
-- ❌ KHÔNG gọi Service trực tiếp từ components (phải qua Server Actions)
+- ✅ Tất cả mutations (tạo/sửa/xóa) đều dùng Server Actions
+- ✅ Gọi trực tiếp từ React Query mutation hooks
+- ❌ KHÔNG gọi Service trực tiếp từ components
 
-## 6.2) API Response Caching (HTTP Headers)
+### 3.4. API Routes (`src/app/api/v1/<features>/route.ts`)
 
-**Master Data APIs** - Apply caching headers:
+**Hybrid Architecture Pattern:**
+
+- ✅ **Queries** (GET) → **API Routes** (có HTTP caching)
+- ✅ **Mutations** (POST/PUT/DELETE) → **Server Actions** (section 3.3)
+
+**Tại sao dùng API Routes cho Queries?**
+
+- Có HTTP caching headers (Cache-Control, stale-while-revalidate)
+- Tối ưu hóa CDN/Edge (Vercel)
+- Chuẩn REST API
+- Dễ tích hợp từ bên ngoài
+
+**GET queries với caching:**
 
 ```typescript
-// GET /api/v1/clinics
 export async function GET(req: Request) {
-  const data = await clinicService.list(user);
+  const user = await getSessionUser();
+  const data = await customerService.list(user, params);
+
   return NextResponse.json(data, {
     headers: {
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
     },
   });
 }
 ```
 
-**Cache Strategy**:
+**Chiến lược Caching:**
 
-| API                  | Cache Time | Stale Time | Reason                    |
-| -------------------- | ---------- | ---------- | ------------------------- |
-| `/clinics`           | 5 min      | 10 min     | Rarely changes            |
-| `/dental-services`   | 5 min      | 10 min     | Rarely changes            |
-| `/employees/working` | 1 min      | 5 min      | May add new employees     |
-| `/customers`         | No cache   | -          | Frequent changes (use RQ) |
-| `/appointments`      | No cache   | -          | Real-time data (use RQ)   |
+| Data Type        | Cache-Control                                               |
+| ---------------- | ----------------------------------------------------------- |
+| Master data      | `public, s-maxage=300, stale-while-revalidate=600` (5m+10m) |
+| Transaction data | `public, s-maxage=60, stale-while-revalidate=300` (1m+5m)   |
 
-**Rules**:
-
-- ✅ `public, s-maxage, stale-while-revalidate` for master data
-- ❌ NO cache for transaction data (React Query handles this)
-- ✅ Vercel Edge Network auto-enabled with `Cache-Control`
-
-## 7) React Query Patterns
-
-### 7.1) Query Hooks - Caching Strategy
-
-**Master Data** (ít thay đổi):
+**Error Handling:**
 
 ```typescript
-export function useClinics() {
-  return useQuery({
-    queryKey: ["clinics"],
-    queryFn: () => getClinicsApi(),
-    staleTime: Infinity, // Cache forever (chỉ fetch khi invalidate)
-    gcTime: 24 * 60 * 60 * 1000, // Keep in memory 24h
-  });
+try {
+  // ...
+} catch (error) {
+  if (error instanceof ServiceError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.httpStatus }
+    );
+  }
+  return NextResponse.json(
+    { error: COMMON_MESSAGES.SERVER_ERROR },
+    { status: 500 }
+  );
 }
 ```
 
-**Transaction Data** (thay đổi thường xuyên):
+## 4. Frontend Layer
+
+**Client-Side Pattern:**
+
+```
+Components
+    ↓
+React Query Hooks
+    ↓
+┌─────────────────────────────────────────┐
+│ Query hooks    → API Client (fetch)     │ ← Call API Routes
+│ Mutation hooks → Server Actions (direct)│ ← Type-safe import
+└─────────────────────────────────────────┘
+```
+
+### 4.1. API Client (`src/features/<features>/api.ts`)
+
+**Single file pattern - CHỈ cho queries (GET):**
 
 ```typescript
+// src/features/customers/api.ts
+export async function getCustomersApi(params?: GetCustomersQuery) {
+  const query = new URLSearchParams(params as any);
+  const res = await fetch(`/api/v1/customers?${query}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getCustomerDetailApi(id: string) {
+  const res = await fetch(`/api/v1/customers/${id}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+```
+
+**Rules:**
+
+- ✅ CHỈ queries (GET): `getCustomersApi()`, `getCustomerDetailApi()`, `searchCustomersApi()`
+- ❌ KHÔNG có mutations: Không có `createCustomerApi()`, `updateCustomerApi()`, `deleteCustomerApi()`
+- ✅ Mutations → import Server Actions trực tiếp: `import { createCustomerAction } from "@/server/actions/customer.actions"`
+
+### 4.2. React Query Hooks (`src/features/<features>/hooks/`)
+
+**Query Hook:**
+
+```typescript
+// useCustomers.ts
 export function useCustomers(params?: GetCustomersQuery) {
   return useQuery({
     queryKey: ["customers", params],
     queryFn: () => getCustomersApi(params),
-    staleTime: 60 * 1000, // Fresh for 1 min
-    gcTime: 5 * 60 * 1000, // Keep 5 min
-    refetchOnWindowFocus: true, // Sync when user returns
+    staleTime: 60 * 1000, // 1 min
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 }
 ```
 
-**Rules**:
-
-- ✅ Master data: `Infinity` or 5-8h cache
-- ✅ Transaction data: 1 min cache + `refetchOnWindowFocus`
-- ✅ Consistent `queryKey` structure: `[feature, id/params]`
-
-### 7.2) Mutation Hooks - Optimistic Updates
-
-**Create Pattern**:
+**Mutation Hook:**
 
 ```typescript
 export function useCreateCustomer() {
-  const qc = useQueryClient();
-  const notify = useNotify();
-
   return useMutation({
-    mutationFn: (data) => createCustomerAction(data),
-
-    // 1. Optimistic: Insert into cache immediately
-    onMutate: async (newData) => {
-      await qc.cancelQueries(["customers"]);
-      const previous = qc.getQueryData(["customers"]);
-
-      qc.setQueryData(["customers"], (old) => [
-        { ...newData, id: `temp-${Date.now()}`, ...defaults },
-        ...(old || []),
-      ]);
-
-      return { previous };
-    },
-
-    // 2. Success: Sync with server
+    mutationFn: createCustomerAction,
     onSuccess: () => {
-      notify.success(MESSAGES.CREATE_SUCCESS);
-      qc.invalidateQueries(["customers"]);
+      notify.success(CUSTOMER_MESSAGES.CREATE_SUCCESS);
+      qc.invalidateQueries({ queryKey: ["customers"] });
     },
-
-    // 3. Error: Rollback
-    onError: (e, _, context) => {
-      if (context?.previous) qc.setQueryData(["customers"], context.previous);
-      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR });
-    },
+    onError: (e) =>
+      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
 }
+
+// Update: invalidate detail + list
+qc.invalidateQueries({ queryKey: ["customers", "detail", id] });
+qc.invalidateQueries({ queryKey: ["customers"] });
+
+// Delete: invalidate list only
+qc.invalidateQueries({ queryKey: ["customers"] });
 ```
 
-**Update Pattern**:
+**Caching Strategy:**
+
+| Data Type    | staleTime  | gcTime | refetchOnWindowFocus |
+| ------------ | ---------- | ------ | -------------------- |
+| Master data  | `Infinity` | 24h    | false                |
+| Transactions | 1 min      | 5 min  | true                 |
+
+**Quy tắc:**
+
+- ✅ Pattern đơn giản (KHÔNG dùng optimistic updates) - đáng tin cậy, nhất quán, dễ debug
+- ✅ Luôn dùng `useNotify()` (KHÔNG BAO GIỜ dùng `App.useApp().message`)
+- ✅ Cấu trúc nhất quán cho tất cả mutations
+- ✅ Dữ liệu luôn đồng bộ với server (đánh đổi: loading nhỏ để đảm bảo ổn định)
+
+### 4.3. Components (`src/features/<features>/components/`)
+
+**Naming:** `Create<Feature>Modal`, `<Feature>Table`, `<Feature>Filters`
+
+**Table Columns Memoization:**
 
 ```typescript
-onMutate: async (updatedData) => {
-  await qc.cancelQueries(["customers"]);
-  const previous = qc.getQueryData(["customers"]);
-
-  qc.setQueryData(["customers"], (old) =>
-    old?.map((item) =>
-      item.id === id
-        ? { ...item, ...updatedData, updatedAt: new Date().toISOString() }
-        : item
-    )
-  );
-
-  return { previous };
-};
-```
-
-**Rules**:
-
-- ✅ Optimistic updates for Customer, Appointment (high frequency)
-- ❌ No optimistic for Clinic, Service (low frequency - overkill)
-- ✅ Always rollback on error
-- ✅ Snapshot previous data for rollback
-
-### 7.3) Zustand (UI State Only)
-
-- ❌ KHÔNG dùng Zustand/Context để cache server data
-- ✅ Chỉ dùng cho UI state: modal visibility, filters, pagination, theme
-
-## 7.1) React Hooks Best Practices
-
-- **Memoization**: Objects/arrays trong dependencies của `useEffect`/`useCallback`/`useMemo` phải được memoize để tránh infinite re-render.
-
-- **Form defaultValues Pattern**: Khi dùng `useForm` với dynamic `defaultValues` + `useEffect` reset, luôn inline logic trong `useMemo`:
-
-  ```typescript
-  const defaultValues = useMemo(
-    () => ({
-      field1: initialData?.field1 || "",
-      field2: initialData?.field2 || "",
-    }),
-    [initialData]
-  );
-
-  useEffect(() => {
-    if (open) reset(defaultValues);
-  }, [open, reset, defaultValues]);
-  ```
-
-## 8) Ant Design & UI
-
-- Hạn chế CSS ngoài; ưu tiên token trong `ConfigProvider`.
-- Header sticky; Sider/Content scroll độc lập. Responsive bằng `Grid.useBreakpoint()`.
-- Menu: icon cấp 1; children không icon; `key` = path để sync state.
-- **Modal**: Luôn dùng `destroyOnHidden` (thay vì `destroyOnClose` - deprecated trong AntD v5.21+).
-
-## 8.1) Daily View Pattern
-
-**Cấu trúc chuẩn cho `<Feature>DailyView`** (áp dụng cho Customer, Appointment, etc.):
-
-1. **PageHeaderWithDateNav** (`src/shared/components`) - Date navigation với prev/today/next
-2. **ClinicTabs** (`src/shared/components`) - Tab switcher cho admin (ẩn nếu ≤1 clinic)
-3. **Statistics Component** - Cards hiển thị metrics (tổng, trạng thái, etc.)
-4. **Filters Component** - Search bar + action buttons (Create, Export, etc.)
-5. **Table Component** - Data table với actions
-
-```typescript
-export default function FeatureDailyView() {
-  const { user } = useCurrentUser();
-  const { selectedDate, goToPreviousDay, goToToday, goToNextDay, handleDateChange } = useDateNavigation();
-  const [selectedClinicId, setSelectedClinicId] = useState(user?.clinicId);
-
-  return (
-    <div>
-      <PageHeaderWithDateNav {...dateNavProps} />
-      <ClinicTabs value={selectedClinicId} onChange={setSelectedClinicId} />
-      <FeatureStatistics data={data} loading={isLoading} />
-      <FeatureFilters onCreate={...} dailyCount={total} />
-      <FeatureTable data={data} loading={isLoading} />
-      <CreateModal ... />
-    </div>
-  );
-}
-```
-
-## 8.2) Table Actions Column Pattern
-
-**Cột "Thao tác" chuẩn** với 2 nhóm button có phân cách:
-
-```typescript
-{
-  title: "Thao tác",
-  key: "actions",
-  width: 250-300, // Tùy số lượng buttons + text
-  fixed: "right",
-  render: (_, record) => (
-    <Space split={<Divider type="vertical" />}>
-      {/* Group 1: Quick Actions - text + icon, có màu */}
-      <Space size="small">
-        {condition1 && (
-          <Button type="primary" size="small" icon={<Icon1 />} onClick={...}>
-            Action Text
-          </Button>
-        )}
-        {condition2 && (
-          <Button type="default" size="small" icon={<Icon2 />} onClick={...}>
-            Action Text
-          </Button>
-        )}
-      </Space>
-
-      {/* Group 2: Edit & Delete - icon only */}
-      <Space size="small">
-        <Tooltip title="Sửa">
-          <Button icon={<EditOutlined />} onClick={...} />
-        </Tooltip>
-        <Popconfirm title="..." description="..." onConfirm={...}>
-          <Tooltip title="Xóa">
-            <Button danger icon={<DeleteOutlined />} />
-          </Tooltip>
-        </Popconfirm>
-      </Space>
-    </Space>
-  ),
-}
-```
-
-**Rules:**
-
-- ✅ **2 nhóm button phân biệt**: Quick Actions (text + icon) | Edit & Delete (icon only)
-- ✅ **Divider phân cách**: `<Space split={<Divider type="vertical" />}>`
-- ✅ **Nhóm 1 - Quick Actions**: Text + icon, có màu `type="primary"/"default"`, `size="small"`
-- ✅ **Nhóm 2 - Edit/Delete**: Icon-only với Tooltip, always visible, cuối cùng
-- ✅ **Fixed right** để cột luôn hiển thị khi scroll
-- ✅ **Popconfirm** cho actions nguy hiểm (delete, status change)
-- ✅ **Loading state** riêng cho async actions
-
-## 8.3) Table Columns Memoization
-
-**Luôn wrap `columns` trong `useMemo`** để tránh Ant Design CSS-in-JS warning "cleanup function after unmount".
-
-```typescript
-const columns = React.useMemo<ColumnsType<DataType>>(
+const columns = React.useMemo<ColumnsType<CustomerResponse>>(
   () => [
+    { title: "Họ tên", dataIndex: "fullName" },
     {
-      title: "Name",
-      filters: dynamicFilters.map((item) => ({ text: item, value: item })),
-      sorter: (a, b) => a.name.localeCompare(b.name),
-      // ...
+      title: "Thao tác",
+      key: "actions",
+      width: 250,
+      fixed: "right",
+      render: (_, record) => (
+        <Space split={<Divider type="vertical" />}>
+          {/* Quick Actions */}
+          <Space size="small">
+            <Button type="primary" size="small" icon={<Icon />}>
+              Action
+            </Button>
+          </Space>
+          {/* Edit & Delete */}
+          <Space size="small">
+            <Tooltip title="Sửa">
+              <Button icon={<EditOutlined />} onClick={...} />
+            </Tooltip>
+            <Popconfirm title="Xác nhận xóa?" onConfirm={...}>
+              <Tooltip title="Xóa">
+                <Button danger icon={<DeleteOutlined />} />
+              </Tooltip>
+            </Popconfirm>
+          </Space>
+        </Space>
+      ),
     },
-    // ...
   ],
-  [dynamicFilters, onEdit, onDelete, actionLoading]
+  [onEdit, onDelete]
 );
 ```
 
-**Rules:**
-
-- ✅ Dependencies: dynamic filters/sorters, handlers, loading states
-- ❌ KHÔNG include `data` prop (chỉ dùng trong render functions)
-
-## 8.4) Select Search Pattern (Debounce + Loading)
-
-**Remote search Select** với debounce và loading states.
+**Select Search Pattern (Debounce):**
 
 ```typescript
 const [query, setQuery] = useState("");
@@ -416,393 +528,170 @@ const { data = [], isFetching } = useSearch({ q: debounced });
   showSearch
   filterOption={false}
   onSearch={setQuery}
-  notFoundContent={
-    isFetching ? (
-      <Spin size="small" />
-    ) : debounced.length >= 2 ? (
-      "Không tìm thấy"
-    ) : debounced.length > 0 ? (
-      "Nhập ít nhất 2 ký tự"
-    ) : (
-      "Nhập để tìm kiếm"
-    )
-  }
-  options={data.map((i) => ({ label: i.name, value: i.id }))}
+  notFoundContent={isFetching ? <Spin /> : "Không tìm thấy"}
 />;
+```
+
+### 4.4. Views (`src/features/<features>/views/`)
+
+**Daily View Pattern:**
+
+```typescript
+export default function CustomerDailyView() {
+  const { user } = useCurrentUser();
+  const { selectedDate, goToPreviousDay, goToToday, goToNextDay } = useDateNavigation();
+  const [selectedClinicId, setSelectedClinicId] = useState(user?.clinicId);
+
+  const { data, isLoading } = useCustomersDaily({
+    clinicId: selectedClinicId,
+    date: selectedDate,
+  });
+
+  return (
+    <div>
+      <PageHeaderWithDateNav {...dateNavProps} />
+      <ClinicTabs value={selectedClinicId} onChange={setSelectedClinicId} />
+      <CustomerStatistics data={data} loading={isLoading} />
+      <CustomerFilters onCreate={...} dailyCount={data?.count} />
+      <CustomerTable data={data?.items} loading={isLoading} />
+      <CreateCustomerModal ... />
+    </div>
+  );
+}
+```
+
+**Structure:**
+
+1. `PageHeaderWithDateNav` - Date navigation
+2. `ClinicTabs` - Clinic switcher (admin only)
+3. Statistics - Metrics cards
+4. Filters - Search + actions
+5. Table - Data grid
+
+### 4.5. Barrel Exports (`src/features/<features>/index.ts`)
+
+**Pattern:** 1 file `index.ts` ở root feature - export public API
+
+```typescript
+// src/features/customers/index.ts
+export { default as CustomerDailyView } from "./views/CustomerDailyView";
+export { default as CustomerTable } from "./components/CustomerTable";
+export * from "./hooks/useCustomers";
+export * from "./constants";
+// NOTE: KHÔNG export api.ts (internal)
 ```
 
 **Rules:**
 
-- ✅ Debounce 500ms, 4 states (loading/no-results/partial/empty), `filterOption={false}`
+- ✅ Export: views, components, hooks, constants
+- ❌ KHÔNG export: `api.ts` (internal)
 
-## 9) Validation & Error UX
-
-- Client: Form AntD có rule + (tuỳ chọn) Zod field‑level; trước khi gọi API nên parse Zod form‑level.
-- Server: mọi request parse bằng Zod; map lỗi Supabase/DB → thông điệp tiếng Việt thân thiện.
-
-## 10) Thông Báo & Lỗi (Client)
-
-- Luôn dùng `useNotify()` (không gọi trực tiếp `App.useApp().message`).
-- `useNotify` chuẩn hoá:
-  - Ngôn ngữ: tiếng Việt end‑user; thời lượng mặc định 2.5s; dedupe ~2.5s.
-  - API: `notify.success/info/warning(text)`, `notify.error(errOrText, { fallback?, duration? })`.
-  - `notify.error` tự trích message từ `Error`, `{ error, code }`, `ZodError`, …
-- Mẫu dùng với React Query:
-  - `onSuccess: () => notify.success(MESSAGES.XYZ_SUCCESS)`
-  - `onError: (e) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR })`
-
-## 11) Thông Báo & Lỗi (Server)
-
-- Ném `ServiceError(code, message, httpStatus)` cho lỗi nghiệp vụ.
-- API Routes:
-  - Nếu `ServiceError` → `{ error, code }` + `status = httpStatus`.
-  - Lỗi không xác định → `{ error: COMMON_MESSAGES.SERVER_ERROR }`, `status = 500`.
-  - Lỗi validation (Zod) → `COMMON_MESSAGES.VALIDATION_INVALID` hoặc `issues[0].message`.
-
-## 12) Quy Ước Khi Implement Mới
-
-- Không hardcode thông báo ở view/component; dùng constants theo domain hoặc truyền `fallback` cho `notify.error`.
-- Dùng `COMMON_MESSAGES` cho thông điệp chung (`src/shared/constants/messages.ts`).
-- Employees/Clinics: ưu tiên hooks đã chuẩn hoá; mutation mới follow pattern hiện có.
-
-## 13) Repository Patterns (Chuẩn Hoá)
-
-Repo types dựa trên Zod schemas (single source of truth) với 3 patterns:
-
-### Simple Pattern (Master Data)
-
-- **Use case**: Clinic, Settings (no server metadata needed)
-- **Pattern**: `API Schema = Repo Type` (direct pass-through)
+**Usage:**
 
 ```typescript
-async create(data: CreateClinicRequest) // Zod type trực tiếp
+// ✅ External: import { CustomerDailyView } from "@/features/customers"
+// ✅ Internal: import { useCustomers } from "../hooks/useCustomers"
+// ❌ Deep path: import from "@/features/customers/hooks/..."
 ```
-
-### Complex Pattern (Business Data)
-
-- **Use case**: Customer, Dental Service (cần audit trail)
-- **Pattern**: `API Schema + Server Fields = Repo Type`
-
-```typescript
-export type CustomerCreateInput = CreateCustomerRequest & {
-  createdById: string; // Server-controlled metadata
-  updatedById: string;
-};
-```
-
-### Complex Pattern (Relations)
-
-- **Use case**: Employee (có FK relations trong Prisma)
-- **Pattern**: `API Schema + Prisma Relations = Repo Type`
-
-```typescript
-export type EmployeeCreateInput = Omit<CreateEmployeeRequest, "clinicId"> & {
-  clinic: { connect: { id: string } }; // Prisma relation
-  createdBy: { connect: { id: string } }; // FK validation
-};
-```
-
-**Nguyên tắc**:
-
-- Không duplicate type definitions → dùng Zod schemas làm base
-- Server metadata (audit trail) không expose qua API schemas
-- Relations dùng Prisma `{ connect }` cho FK validation
-
-### Repository Method Naming
-
-- **`list()`**: Paginated list với filters/search/sort
-- **`listDaily()`**: Daily view (date range filter), return `{ items, count }`
-- **`create()`, `update()`, `delete()`**: CRUD operations
-- **`getById()`, `findById()`**: Single record by ID
-
-**Daily View Pattern**:
-
-```typescript
-// ✅ Repo: Nhận dateStart/dateEnd (no business logic)
-async listDaily(params: { clinicId: string; dateStart: Date; dateEnd: Date }) {
-  return prisma.model.findMany({
-    where: { clinicId, createdAt: { gte: dateStart, lt: dateEnd } },
-  });
-  return { items, count: items.length };
-}
-
-// ✅ Service: Tính toán time range
-const dateStart = new Date(date); dateStart.setHours(0,0,0,0);
-const dateEnd = new Date(date); dateEnd.setHours(23,59,59,999);
-await repo.listDaily({ clinicId, dateStart, dateEnd });
-```
-
-**Rules**:
-
-- Repo chỉ query, không tính toán logic (separation of concerns)
-- Daily view return `{ items, count }` (consistent API shape)
-- Filter dùng `gte/lt` (không `lte` để tránh overlap)
-
-## 14) Validation Strategy
-
-**Validate ONLY at boundaries** - 3 layers:
-
-1. **Frontend form** - User input (Zod + AntD rules)
-2. **API boundary** - Request/response (Zod parse)
-3. **Service layer** - Business rules (uniqueness, FK, state transitions)
-
-**Rules**:
-
-- ✅ Validate external input: API routes, form submissions
-- ✅ Validate business logic: Service layer only
-- ❌ NO validation in: Mappers, repos, type conversions (trust internal data)
-
-**Mapper Pattern** (Transform only):
-
-```typescript
-// ✅ NO validation - just transform
-export function mapCustomerToResponse(row: Customer): CustomerResponse {
-  return { id: row.id, dob: row.dob?.toISOString() ?? null };
-}
-```
-
-## 15) Naming & Zod Schemas
-
-### Schema Organization (3-Layer Pattern)
-
-Schemas tổ chức: **Shared Base → Frontend (nếu cần) → Backend**
-
-**Layer 1: Base** – Common fields, exclude fields có type khác nhau FE/BE (VD: date).
-
-```typescript
-const CustomerCommonFieldsSchema = z.object({ fullName, gender, ... }); // NO dob
-const validateConditionalFields = (data, ctx) => { /* reuse logic */ };
-```
-
-**Layer 2: Frontend** – Khi form có Date field (string) hoặc validation khác backend.
-
-```typescript
-// Create<Feature>FormSchema (FRONTEND)
-export const CreateCustomerFormSchema = CustomerCommonFieldsSchema.extend({
-  dob: z.string().min(1, "..."),
-}) // STRING for DatePicker
-  .superRefine(validateConditionalFields);
-```
-
-**Layer 3: Backend** – API schemas với Date, validate request/response.
-
-```typescript
-// <Feature>RequestBaseSchema, Create/Update<Feature>RequestSchema (BACKEND)
-const CustomerRequestBaseSchema = CustomerCommonFieldsSchema
-  .extend({ dob: z.coerce.date("...") }); // DATE for API
-export const CreateCustomerRequestSchema = CustomerRequestBaseSchema.superRefine(validateConditionalFields);
-export const CustomerResponseSchema = z.object({ id, fullName, dob: z.string().datetime().nullable(), ... });
-```
-
-**Naming:**
-
-- Frontend: `Create<Feature>FormSchema` (khi cần tách)
-- Backend Request: `Create<Feature>RequestSchema`, `Update<Feature>RequestSchema`
-- Backend Response: `<Feature>ResponseSchema`, `<Feature>ListResponseSchema`
-- Query: `Get<Feature>QuerySchema`
-
-**Type Exports:**
-
-```typescript
-// Frontend
-export type CreateCustomerFormData = z.infer<typeof CreateCustomerFormSchema>;
-// Backend
-export type CreateCustomerRequest = z.infer<typeof CreateCustomerRequestSchema>;
-export type CustomerResponse = z.infer<typeof CustomerResponseSchema>;
-```
-
-**DRY Principles:**
-
-- ✅ Extract base schema + validation functions để reuse
-- ❌ Không duplicate field definitions hoặc validation logic
-
-## 15) Naming Conventions (Backend to Frontend)
-
-Quy ước đặt tên nhất quán từ Backend → Frontend cho mọi feature.
-
-### Backend Layer
-
-**Repository (`src/server/repos/<feature>.repo.ts`)**
-
-- File: `<feature>.repo.ts` (singular, kebab-case)
-- Export: `export const <feature>Repo = { ... }`
-- Functions: `create`, `update`, `findById`, `list`, `delete`, `archive`, `unarchive`
-- Types: `<Feature>CreateInput`, `<Feature>UpdateInput` (PascalCase, singular)
-
-```typescript
-// customer.repo.ts
-export type CustomerCreateInput = CreateCustomerRequest & { createdById, updatedById, ... };
-export const customerRepo = {
-  async create(data: CustomerCreateInput) { ... },
-  async findById(id: string) { ... },
-};
-```
-
-**Service (`src/server/services/<feature>.service.ts`)**
-
-- File: `<feature>.service.ts` (singular, kebab-case)
-- Export: `export const <feature>Service = { ... }`
-- Functions: `create`, `update`, `getById`, `list`, `delete` (business logic names)
-
-```typescript
-// customer.service.ts
-export const customerService = {
-  async create(currentUser, body) { ... },
-  async getById(currentUser, id) { ... },
-};
-```
-
-### API Routes
-
-- Path: `/api/v1/<features>` (plural, kebab-case)
-- Files: `route.ts` (Next.js convention)
-- Endpoints: `GET /customers`, `POST /customers`, `GET /customers/[id]`, `PUT /customers/[id]`
-
-### Frontend Layer
-
-**API Client (`src/features/<features>/api/*.ts`)**
-
-- Folder: `<features>` (plural, kebab-case)
-- Files: `<action><Feature>.ts` (camelCase action + PascalCase singular)
-- Functions: `<action><Feature>Api`
-
-```typescript
-// createCustomer.ts
-export async function createCustomerApi(body: unknown) { ... }
-// getCustomers.ts
-export async function getCustomersApi(params?: GetCustomersQuery) { ... }
-```
-
-**React Query Hooks (`src/features/<features>/hooks/*.ts`)**
-
-- Files: `use<Action><Feature>.ts` (PascalCase singular)
-- Hooks: `use<Action><Feature>()` (query/mutation)
-
-```typescript
-// useCustomers.ts - Query
-export function useCustomers(params?: GetCustomersQuery) {
-  return useQuery({ queryKey: ["customers", params], ... });
-}
-// useCreateCustomer.ts - Mutation
-export function useCreateCustomer() {
-  return useMutation({ mutationFn: createCustomerApi, ... });
-}
-```
-
-**Components (`src/features/<features>/components/*.tsx`)**
-
-- Files: `<ComponentName>.tsx` (PascalCase)
-- Naming: `Create<Feature>Modal`, `<Feature>Table`, `<Feature>Filters`
-
-**Views (`src/features/<features>/views/*.tsx`)**
-
-- Files: `<Feature><Context>View.tsx` (PascalCase singular + context)
-- Export: `default function <Feature><Context>View()`
-- Examples: `CustomerDailyView`, `CustomerListView`, `EmployeeListView`
-
-**Constants (`src/features/<features>/constants.ts`)**
-
-- Exports: `<FEATURE>_ENDPOINTS`, `<FEATURE>_QUERY_KEYS`, `<FEATURE>_MESSAGES`
-- Options: `<OPTIONS_NAME>` (plural, UPPER_SNAKE_CASE): `PRIMARY_CONTACT_ROLES`
-
-### Summary
-
-| Layer           | Singular/Plural | Case                 | Example                   |
-| --------------- | --------------- | -------------------- | ------------------------- |
-| Repo file       | Singular        | kebab-case           | `customer.repo.ts`        |
-| Repo export     | Singular        | camelCase            | `customerRepo`            |
-| Service file    | Singular        | kebab-case           | `customer.service.ts`     |
-| Service export  | Singular        | camelCase            | `customerService`         |
-| API route       | Plural          | kebab-case           | `/api/v1/customers`       |
-| Feature folder  | Plural          | kebab-case           | `features/customers/`     |
-| API client file | Singular        | camelCase+PascalCase | `createCustomer.ts`       |
-| API client fn   | Singular        | camelCase            | `createCustomerApi()`     |
-| Hook file       | Singular        | PascalCase           | `useCreateCustomer.ts`    |
-| Hook function   | Singular        | camelCase            | `useCreateCustomer()`     |
-| Component file  | Singular        | PascalCase           | `CreateCustomerModal.tsx` |
-| View file       | Singular        | PascalCase           | `CustomerDailyView.tsx`   |
-| Constants file  | Singular        | lowercase            | `constants.ts`            |
 
 ---
 
-## 20. Performance Optimization
+# III. QUY ƯỚC & PATTERNS
 
-### React Query Caching
+## 1. Naming Conventions
 
-**Master Data** (rarely changes):
+| Layer        | Singular/Plural | Case       | Example                   |
+| ------------ | --------------- | ---------- | ------------------------- |
+| Repo file    | Singular        | kebab-case | `customer.repo.ts`        |
+| Service file | Singular        | kebab-case | `customer.service.ts`     |
+| API route    | Plural          | kebab-case | `/api/v1/customers`       |
+| Feature dir  | Plural          | kebab-case | `features/customers/`     |
+| Hook file    | Singular        | PascalCase | `useCreateCustomer.ts`    |
+| Component    | Singular        | PascalCase | `CreateCustomerModal.tsx` |
+| View         | Singular        | PascalCase | `CustomerDailyView.tsx`   |
 
-- staleTime: `Infinity` or `8 hours`
-- gcTime: `24 hours`
-- Examples: Clinics, Working Employees, Dental Services
+## 2. Validation Strategy
 
-**Transaction Data** (frequently changes):
+**3 boundaries only:**
 
-- staleTime: `1 minute`
-- gcTime: `5 minutes`
-- refetchOnWindowFocus: `true`
-- Examples: Customers, Appointments
+1. **Frontend form** - Zod + AntD rules
+2. **API boundary** - Zod parse request/response
+3. **Service layer** - Business rules (uniqueness, FK, state)
 
-### Optimistic Updates
+**Rules:**
 
-Use `onMutate` + `onError` rollback for all mutations:
+- ✅ Validate at boundaries
+- ❌ NO validation in: mappers, repos, type conversions (trust internal data)
 
-- Create: Insert temp item with optimistic ID (`temp-${Date.now()}`)
-- Update: Modify item in cache directly
-- Delete: Remove item from cache
-- Rollback: Restore previous cache state on error
+## 3. Error Handling
 
-### Database Indexes
+**Client:**
 
-Add composite indexes for common queries:
+```typescript
+const notify = useNotify();
 
-- Employee: `[clinicId, employeeStatus]`, `[email]`
-- Customer: `[clinicId, createdAt]`, `[phone]`
-- Appointment: `[clinicId, appointmentDateTime]`, `[customerId]`, `[primaryDentistId]`
+// Success
+notify.success("Thêm thành công");
 
-### API Response Caching (HTTP)
+// Error (auto-extract)
+notify.error(error, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR });
+```
 
-| Endpoint Type   | Cache-Control Header                                                |
-| --------------- | ------------------------------------------------------------------- |
-| Master data     | `public, s-maxage=300, stale-while-revalidate=600` (5 min + 10 min) |
-| Frequently used | `public, s-maxage=60, stale-while-revalidate=300` (1 min + 5 min)   |
-| User-specific   | `private, s-maxage=30, stale-while-revalidate=60` (30s + 1 min)     |
+**Server:**
 
-**Expected Performance:**
+```typescript
+throw new ServiceError("ERROR_CODE", "Message tiếng Việt", httpStatus);
+```
 
-- 90% reduction in API calls
-- 95% reduction in query time
-- 0ms perceived latency for mutations (optimistic)
+**Rules:**
 
----
+- ✅ ALWAYS `useNotify()` (single source of truth)
+- ❌ NEVER `App.useApp().message` hoặc `message.success()`
+- ❌ NEVER `import { App }` trong components (trừ `useNotify` hook)
 
-## 21. Shared Permissions (Frontend + Backend)
+## 4. Next.js & Supabase
 
-**Pattern:** Pure TypeScript logic dùng chung - 1 file cho cả Frontend & Backend
+- `cookies()` là async → `const supabase = await createClient()`
+- Session qua HttpOnly cookie (không lưu token ở JS)
+- Middleware bảo vệ `(private)` routes
+- `useSearchParams()` → wrap trong `<Suspense>`
+- User Context: Server fetch → `<Providers user={user}>` → `useCurrentUser()`
+
+## 5. Auth
+
+- Login: `POST /api/v1/auth/login` → `supabase.auth.signInWithPassword` → set cookie
+- Logout: `POST /api/v1/auth/logout` → `supabase.auth.signOut()`
+- Chặn open-redirect: `sanitizeNext()` (chỉ internal paths)
+
+## 6. Shared Permissions
 
 **Location:** `src/shared/permissions/<feature>.permissions.ts`
 
-**Nguyên tắc:**
+**Pattern:** Pure TypeScript, dùng chung FE + BE
 
-- Pure TypeScript (no DB, no React hooks)
-- 0ms latency (no API call)
-- Single source of truth
+```typescript
+export const appointmentPermissions = {
+  canEdit(user, appointment) {
+    return { allowed: true / false, reason: string };
+  },
+  validateUpdateFields(user, existing, fields) {
+    if (!allowed) throw new Error("...");
+  },
+};
+```
 
 **Frontend (0ms):**
 
 ```typescript
-import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
-
 const permission = appointmentPermissions.canEdit(user, appointment);
 <Button disabled={!permission.allowed} title={permission.reason}>
   Edit
 </Button>;
 ```
 
-**Backend (Validation):**
+**Backend:**
 
 ```typescript
-import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
-
 try {
   appointmentPermissions.validateUpdateFields(user, existing, fields);
 } catch (error) {
@@ -810,58 +699,108 @@ try {
 }
 ```
 
-**API:**
+## 7. Session User Caching
 
-- `canEdit(user, item)` → `{ allowed, reason?, disabledFields? }`
-- `canDelete(user, item)` → `{ allowed, reason? }`
-- `validateUpdateFields(user, item, fields)` → throws Error
-- `validateDelete(user, item)` → throws Error
+**Problem:** Multiple `getSessionUser()` calls per request = N+1 DB queries
 
-**Why NOT API endpoint?** Chậm (+50-100ms), phức tạp, vẫn cần frontend logic
-
----
-
-## 22. Session User Caching (React `cache()`)
-
-**Problem:** Multiple `getSessionUser()` calls per request = N+1 DB queries (slow)
-
-**Solution:** React `cache()` wrapper - Request-scoped memoization (50-66% faster)
-
-**Implementation:**
+**Solution:** React `cache()` - Request-scoped memoization
 
 ```typescript
 // src/server/utils/sessionCache.ts
 import { cache } from "react";
 import { getSessionUser as original } from "@/server/services/auth.service";
 
-export const getSessionUser = cache(original); // ← Request-scoped cache
+export const getSessionUser = cache(original);
 ```
 
 **Usage:**
 
 ```typescript
 // ✅ ALL Server Actions, API Routes, Server Components
-import { getSessionUser } from "@/server/utils/sessionCache"; // ← Use cached version
+import { getSessionUser } from "@/server/utils/sessionCache";
 
 export async function createCustomerAction(data) {
-  const user = await getSessionUser(); // First call: query DB (30ms)
+  const user = await getSessionUser(); // First call: 30ms (DB query)
   return customerService.create(user, data);
 }
 
 export async function updateCustomerAction(id, data) {
-  const user = await getSessionUser(); // Subsequent: from cache (0ms)
+  const user = await getSessionUser(); // Subsequent: 0ms (cached)
   return customerService.update(id, user, data);
 }
 ```
 
-**Performance:**
+**Performance Benefits:**
 
-- Before: 3 actions × 30ms = 90ms overhead
-- After: 1 query (30ms) + 2 cache hits (0ms) = 30ms (-66%)
-
-**Security:** ✅ Request-scoped (no cross-user leakage), auto cleanup
+- Before: 3 server actions × 30ms auth = 90ms overhead per request
+- After: 1 DB query (30ms) + 2 cache hits (0ms) = 30ms total
+- **66% faster** auth checks, auto cleanup per request (no cross-user leakage)
 
 **Rules:**
 
-- ❌ NEVER import from `@/server/services/auth.service` in Server Actions/Routes/Components
+- ❌ NEVER import from `@/server/services/auth.service`
 - ✅ ALWAYS import from `@/server/utils/sessionCache`
+
+## 8. React Hooks Best Practices
+
+**Memoization:**
+
+- Objects/arrays trong deps → phải memoize (tránh infinite re-render)
+
+**Form defaultValues:**
+
+```typescript
+const defaultValues = useMemo(
+  () => ({ field1: initialData?.field1 || "" }),
+  [initialData]
+);
+
+useEffect(() => {
+  if (open) reset(defaultValues);
+}, [open, reset, defaultValues]);
+```
+
+## 9. Ant Design
+
+- Ưu tiên tokens trong `ConfigProvider` (hạn chế CSS ngoài)
+- Header sticky, Sider/Content scroll độc lập
+- Menu: icon cấp 1, children không icon, `key` = path
+- Modal: `destroyOnHidden` (không dùng `destroyOnClose` - deprecated)
+
+---
+
+# IV. CHECKLIST KHI IMPLEMENT FEATURE MỚI
+
+## Backend
+
+- [ ] Prisma model + migrations
+- [ ] Zod schemas (request + response)
+- [ ] Repo với 1 trong 3 patterns
+- [ ] Service với business logic
+- [ ] Server Actions (auth gate)
+- [ ] API Routes (GET queries + cache headers)
+- [ ] Error handling (`ServiceError`)
+
+## Frontend
+
+- [ ] API client (`api.ts`)
+- [ ] Query hooks (với caching strategy)
+- [ ] Mutation hooks (simplified pattern)
+- [ ] Components (memoize columns)
+- [ ] Views (Daily View pattern nếu cần)
+- [ ] Constants (messages, endpoints)
+- [ ] Barrel export (`index.ts`)
+
+## Quality
+
+- [ ] Validation ở 3 boundaries
+- [ ] Error messages tiếng Việt
+- [ ] `useNotify()` cho tất cả notifications
+- [ ] Session cache (`getSessionUser`)
+- [ ] Permissions (nếu cần shared logic)
+- [ ] TypeScript strict mode
+- [ ] No console.log/console.error
+
+---
+
+**Last Updated:** 2025-01-06
