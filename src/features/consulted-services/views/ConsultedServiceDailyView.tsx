@@ -105,7 +105,7 @@ export default function ConsultedServiceDailyView() {
   return (
     <div>
       <PageHeaderWithDateNav
-        title="Dịch vụ tư vấn hôm nay"
+        title="Dịch vụ tư vấn"
         selectedDate={selectedDate}
         onPreviousDay={goToPreviousDay}
         onToday={goToToday}
@@ -113,14 +113,11 @@ export default function ConsultedServiceDailyView() {
         onDateChange={(date) => handleDateChange(date)}
       />
 
-      {/* Clinic tabs (admin only) */}
-      {currentUser?.role === "admin" && (
-        <div style={{ marginBottom: 24 }}>
-          <ClinicTabs value={selectedClinicId} onChange={setSelectedClinicId} />
-        </div>
-      )}
+      <ClinicTabs
+        value={selectedClinicId}
+        onChange={(id) => setSelectedClinicId(id)}
+      />
 
-      {/* Statistics */}
       <ConsultedServiceStatistics
         statistics={data?.statistics}
         loading={isLoading}
