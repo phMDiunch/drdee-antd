@@ -1,74 +1,78 @@
 // src/features/consulted-services/utils/exportToExcel.ts
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import type { ConsultedServiceResponse } from "@/shared/validation/consulted-service.schema";
 
 /**
  * Export consulted services to Excel
  * Formats data with VND currency, customer links, and Vietnamese headers
  */
-export function exportConsultedServicesToExcel(
+export async function exportConsultedServicesToExcel(
   data: ConsultedServiceResponse[],
   filename: string = "dich-vu-tu-van.xlsx"
 ) {
-  // Map data to Excel rows with Vietnamese headers
-  const excelData = data.map((item, index) => ({
-    STT: index + 1,
-    "Mã KH": item.customer?.customerCode || "",
-    "Tên khách hàng": item.customer?.fullName || "",
-    SĐT: item.customer?.phone || "",
-    "Dịch vụ": item.consultedServiceName,
-    "Đơn vị": item.consultedServiceUnit,
-    "Số lượng": item.quantity,
-    "Giá niêm yết": item.price,
-    "Giá ưu đãi": item.preferentialPrice,
-    "Thành tiền": item.finalPrice,
-    "Đã thanh toán": item.amountPaid,
-    "Công nợ": item.debt,
-    "Bác sĩ": item.consultingDoctor?.fullName || "",
-    "NV tư vấn": item.consultingSale?.fullName || "",
-    "Trạng thái DV": item.serviceStatus,
-    "Trạng thái ĐT": item.treatmentStatus,
-    "Vị trí răng": item.toothPositions?.join(", ") || "",
-    "Ngày tư vấn": item.consultationDate
-      ? new Date(item.consultationDate).toLocaleDateString("vi-VN")
-      : "",
-    "Ngày chốt": item.serviceConfirmDate
-      ? new Date(item.serviceConfirmDate).toLocaleDateString("vi-VN")
-      : "",
-    "Ghi chú": item.specificStatus || "",
-  }));
+  // Create a new workbook and worksheet
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Dịch vụ tư vấn");
 
-  // Create workbook and worksheet
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(excelData);
-
-  // Set column widths for better readability
-  ws["!cols"] = [
-    { wch: 5 }, // STT
-    { wch: 10 }, // Mã KH
-    { wch: 25 }, // Tên KH
-    { wch: 12 }, // SĐT
-    { wch: 30 }, // Dịch vụ
-    { wch: 10 }, // Đơn vị
-    { wch: 8 }, // Số lượng
-    { wch: 12 }, // Giá niêm yết
-    { wch: 12 }, // Giá ưu đãi
-    { wch: 12 }, // Thành tiền
-    { wch: 12 }, // Đã thanh toán
-    { wch: 12 }, // Công nợ
-    { wch: 20 }, // Bác sĩ
-    { wch: 20 }, // NV tư vấn
-    { wch: 12 }, // Trạng thái DV
-    { wch: 15 }, // Trạng thái ĐT
-    { wch: 15 }, // Vị trí răng
-    { wch: 12 }, // Ngày tư vấn
-    { wch: 12 }, // Ngày chốt
-    { wch: 30 }, // Ghi chú
+  // Define columns with headers and widths
+  worksheet.columns = [
+    { header: "STT", key: "stt", width: 5 },
+    { header: "Mã KH", key: "customerCode", width: 10 },
+    { header: "Tên khách hàng", key: "fullName", width: 25 },
+    { header: "SĐT", key: "phone", width: 12 },
+    { header: "Dịch vụ", key: "service", width: 30 },
+    { header: "Đơn vị", key: "unit", width: 10 },
+    { header: "Số lượng", key: "quantity", width: 8 },
+    { header: "Giá niêm yết", key: "price", width: 12 },
+    { header: "Giá ưu đãi", key: "preferentialPrice", width: 12 },
+    { header: "Thành tiền", key: "finalPrice", width: 12 },
+    { header: "Đã thanh toán", key: "amountPaid", width: 12 },
+    { header: "Công nợ", key: "debt", width: 12 },
+    { header: "Bác sĩ", key: "doctor", width: 20 },
+    { header: "NV tư vấn", key: "sale", width: 20 },
+    { header: "Trạng thái DV", key: "serviceStatus", width: 12 },
+    { header: "Trạng thái ĐT", key: "treatmentStatus", width: 15 },
+    { header: "Vị trí răng", key: "toothPositions", width: 15 },
+    { header: "Ngày tư vấn", key: "consultationDate", width: 12 },
+    { header: "Ngày chốt", key: "serviceConfirmDate", width: 12 },
+    { header: "Ghi chú", key: "note", width: 30 },
   ];
 
-  // Add worksheet to workbook
-  XLSX.utils.book_append_sheet(wb, ws, "Dịch vụ tư vấn");
+  // Add data rows
+  data.forEach((item, index) => {
+    worksheet.addRow({
+      stt: index + 1,
+      customerCode: item.customer?.customerCode || "",
+      fullName: item.customer?.fullName || "",
+      phone: item.customer?.phone || "",
+      service: item.consultedServiceName,
+      unit: item.consultedServiceUnit,
+      quantity: item.quantity,
+      price: item.price,
+      preferentialPrice: item.preferentialPrice,
+      finalPrice: item.finalPrice,
+      amountPaid: item.amountPaid,
+      debt: item.debt,
+      doctor: item.consultingDoctor?.fullName || "",
+      sale: item.consultingSale?.fullName || "",
+      serviceStatus: item.serviceStatus,
+      treatmentStatus: item.treatmentStatus,
+      toothPositions: item.toothPositions?.join(", ") || "",
+      consultationDate: item.consultationDate
+        ? new Date(item.consultationDate).toLocaleDateString("vi-VN")
+        : "",
+      serviceConfirmDate: item.serviceConfirmDate
+        ? new Date(item.serviceConfirmDate).toLocaleDateString("vi-VN")
+        : "",
+      note: item.specificStatus || "",
+    });
+  });
 
-  // Write file
-  XLSX.writeFile(wb, filename);
+  // Write to file
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  saveAs(blob, filename);
 }

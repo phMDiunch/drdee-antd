@@ -91,15 +91,22 @@ export default function ConsultedServiceDailyView() {
     setEditingService(null);
   }, []);
 
-  const handleExportExcel = useCallback(() => {
+  const handleExportExcel = useCallback(async () => {
     if (!services.length) {
       message.warning("Không có dữ liệu để xuất");
       return;
     }
 
-    const filename = `dich-vu-tu-van-${selectedDate.format("YYYY-MM-DD")}.xlsx`;
-    exportConsultedServicesToExcel(services, filename);
-    message.success(`Đã xuất ${services.length} dịch vụ tư vấn`);
+    try {
+      const filename = `dich-vu-tu-van-${selectedDate.format(
+        "YYYY-MM-DD"
+      )}.xlsx`;
+      await exportConsultedServicesToExcel(services, filename);
+      message.success(`Đã xuất ${services.length} dịch vụ tư vấn`);
+    } catch (error) {
+      message.error("Có lỗi xảy ra khi xuất file Excel");
+      console.error("Export error:", error);
+    }
   }, [services, selectedDate]);
 
   return (
