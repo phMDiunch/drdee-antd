@@ -257,7 +257,7 @@ export const customerService = {
 
     const { date, clinicId, includeAppointments } = parsed.data;
 
-    // Parse date or use today
+    // Parse date or use today - for CUSTOMER creation date
     const targetDate = date ? new Date(date) : new Date();
     const year = targetDate.getFullYear();
     const month = targetDate.getMonth();
@@ -276,13 +276,32 @@ export const customerService = {
       throw new ServiceError("MISSING_CLINIC", "Thiếu thông tin clinic", 400);
     }
 
+    // Always query TODAY appointments (for check-in), not selectedDate appointments
+    const today = new Date();
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      0,
+      0,
+      0
+    );
+    const todayEnd = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1,
+      0,
+      0,
+      0
+    );
+
     const result = await customerRepo.listDaily({
       clinicId: effectiveClinicId,
       dateStart,
       dateEnd,
       includeAppointments,
-      appointmentDateStart: includeAppointments ? dateStart : undefined,
-      appointmentDateEnd: includeAppointments ? dateEnd : undefined,
+      appointmentDateStart: includeAppointments ? todayStart : undefined,
+      appointmentDateEnd: includeAppointments ? todayEnd : undefined,
     });
 
     // When includeAppointments, items already have todayAppointment from repo

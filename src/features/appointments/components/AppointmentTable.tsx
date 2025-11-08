@@ -220,7 +220,7 @@ export default function AppointmentTable({
           }
 
           if (isToday(record.appointmentDateTime) && !checkInTime) {
-            const permission = appointmentPermissions.canPerformQuickAction(
+            const permission = appointmentPermissions.canCheckIn(
               currentUser,
               record
             );
@@ -269,7 +269,7 @@ export default function AppointmentTable({
             record.checkInTime &&
             !checkOutTime
           ) {
-            const permission = appointmentPermissions.canPerformQuickAction(
+            const permission = appointmentPermissions.canCheckOut(
               currentUser,
               record
             );
@@ -298,127 +298,118 @@ export default function AppointmentTable({
         key: "actions",
         width: 180,
         // fixed: "right",
-        render: (_, record) => (
-          <Space split={<Divider type="vertical" />}>
-            {/* Group 1: Quick Actions with text + icon */}
-            <Space size="small">
-              {/* Confirm button - conditional */}
-              {record.status === "Chờ xác nhận" &&
-                dayjs(record.appointmentDateTime).isAfter(dayjs(), "day") &&
-                (() => {
-                  const permission =
-                    appointmentPermissions.canPerformQuickAction(
-                      currentUser,
-                      record
-                    );
-                  return (
-                    <Tooltip
-                      title={
-                        !permission.allowed ? permission.reason : undefined
-                      }
-                    >
-                      <Button
-                        type="primary"
-                        size="small"
-                        icon={<CheckCircleOutlined />}
-                        onClick={() => onConfirm(record.id)}
-                        loading={actionLoading}
-                        disabled={!permission.allowed}
-                      >
-                        Xác nhận
-                      </Button>
-                    </Tooltip>
-                  );
-                })()}
+        render: (_, record) => {
+          // Calculate permissions once per render
+          const confirmPermission =
+            record.status === "Chờ xác nhận" &&
+            dayjs(record.appointmentDateTime).isAfter(dayjs(), "day")
+              ? appointmentPermissions.canConfirm(currentUser, record)
+              : null;
 
-              {/* Mark no-show button - conditional */}
-              {!record.checkInTime &&
-                record.status !== "Không đến" &&
-                dayjs(record.appointmentDateTime) <= dayjs() &&
-                (() => {
-                  const permission =
-                    appointmentPermissions.canPerformQuickAction(
-                      currentUser,
-                      record
-                    );
-                  return (
-                    <Tooltip
-                      title={
-                        !permission.allowed ? permission.reason : undefined
-                      }
-                    >
-                      <Button
-                        type="default"
-                        size="small"
-                        icon={<UserDeleteOutlined />}
-                        onClick={() => onMarkNoShow(record.id)}
-                        loading={actionLoading}
-                        disabled={!permission.allowed}
-                      >
-                        Không đến
-                      </Button>
-                    </Tooltip>
-                  );
-                })()}
-            </Space>
+          const noShowPermission =
+            !record.checkInTime &&
+            record.status !== "Không đến" &&
+            dayjs(record.appointmentDateTime) <= dayjs()
+              ? appointmentPermissions.canMarkNoShow(currentUser, record)
+              : null;
 
-            {/* Group 2: Edit & Delete - icon only */}
-            <Space size="small">
-              {(() => {
-                const editPermission = appointmentPermissions.canEdit(
-                  currentUser,
-                  record
-                );
-                return (
+          const editPermission = appointmentPermissions.canEdit(
+            currentUser,
+            record
+          );
+
+          const deletePermission = appointmentPermissions.canDelete(
+            currentUser,
+            record
+          );
+
+          return (
+            <Space split={<Divider type="vertical" />}>
+              {/* Group 1: Quick Actions with text + icon */}
+              <Space size="small">
+                {/* Confirm button - conditional */}
+                {confirmPermission && (
                   <Tooltip
                     title={
-                      editPermission.allowed ? "Sửa" : editPermission.reason
+                      !confirmPermission.allowed
+                        ? confirmPermission.reason
+                        : undefined
                     }
                   >
                     <Button
-                      icon={<EditOutlined />}
-                      onClick={() => onEdit(record)}
-                      disabled={!editPermission.allowed}
+                      type="primary"
+                      size="small"
+                      icon={<CheckCircleOutlined />}
+                      onClick={() => onConfirm(record.id)}
+                      loading={actionLoading}
+                      disabled={!confirmPermission.allowed}
+                    >
+                      Xác nhận
+                    </Button>
+                  </Tooltip>
+                )}
+
+                {/* Mark no-show button - conditional */}
+                {noShowPermission && (
+                  <Tooltip
+                    title={
+                      !noShowPermission.allowed
+                        ? noShowPermission.reason
+                        : undefined
+                    }
+                  >
+                    <Button
+                      type="default"
+                      size="small"
+                      icon={<UserDeleteOutlined />}
+                      onClick={() => onMarkNoShow(record.id)}
+                      loading={actionLoading}
+                      disabled={!noShowPermission.allowed}
+                    >
+                      Không đến
+                    </Button>
+                  </Tooltip>
+                )}
+              </Space>
+
+              {/* Group 2: Edit & Delete - icon only */}
+              <Space size="small">
+                <Tooltip
+                  title={editPermission.allowed ? "Sửa" : editPermission.reason}
+                >
+                  <Button
+                    icon={<EditOutlined />}
+                    onClick={() => onEdit(record)}
+                    disabled={!editPermission.allowed}
+                  />
+                </Tooltip>
+
+                <Popconfirm
+                  title="Xóa lịch hẹn"
+                  description={`Bạn có chắc muốn xóa lịch hẹn của ${record.customer.fullName}?`}
+                  onConfirm={() => onDelete(record.id)}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                  disabled={!deletePermission.allowed}
+                >
+                  <Tooltip
+                    title={
+                      deletePermission.allowed ? "Xóa" : deletePermission.reason
+                    }
+                  >
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={actionLoading}
+                      disabled={!deletePermission.allowed}
                     />
                   </Tooltip>
-                );
-              })()}
-
-              {(() => {
-                const deletePermission = appointmentPermissions.canDelete(
-                  currentUser,
-                  record
-                );
-                return (
-                  <Popconfirm
-                    title="Xóa lịch hẹn"
-                    description={`Bạn có chắc muốn xóa lịch hẹn của ${record.customer.fullName}?`}
-                    onConfirm={() => onDelete(record.id)}
-                    okText="Xóa"
-                    cancelText="Hủy"
-                    okButtonProps={{ danger: true }}
-                    disabled={!deletePermission.allowed}
-                  >
-                    <Tooltip
-                      title={
-                        deletePermission.allowed
-                          ? "Xóa"
-                          : deletePermission.reason
-                      }
-                    >
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        loading={actionLoading}
-                        disabled={!deletePermission.allowed}
-                      />
-                    </Tooltip>
-                  </Popconfirm>
-                );
-              })()}
+                </Popconfirm>
+              </Space>
             </Space>
-          </Space>
-        ),
+          );
+        },
       },
     ];
   }, [

@@ -484,31 +484,50 @@ const columns = React.useMemo<ColumnsType<CustomerResponse>>(
       key: "actions",
       width: 250,
       fixed: "right",
-      render: (_, record) => (
-        <Space split={<Divider type="vertical" />}>
-          {/* Quick Actions */}
-          <Space size="small">
-            <Button type="primary" size="small" icon={<Icon />}>
-              Action
-            </Button>
-          </Space>
-          {/* Edit & Delete */}
-          <Space size="small">
-            <Tooltip title="Sửa">
-              <Button icon={<EditOutlined />} onClick={...} />
+      render: (_, record) => {
+        // ✅ Calculate permissions/conditions once at function start
+        const editPermission = canEdit(currentUser, record);
+        const showQuickAction = record.status === "Active";
+
+        return (
+          <Space split={<Divider type="vertical" />}>
+            {showQuickAction && <Button icon={<Icon />}>Action</Button>}
+            <Tooltip
+              title={editPermission.allowed ? "Sửa" : editPermission.reason}
+            >
+              <Button
+                icon={<EditOutlined />}
+                disabled={!editPermission.allowed}
+              />
             </Tooltip>
-            <Popconfirm title="Xác nhận xóa?" onConfirm={...}>
-              <Tooltip title="Xóa">
-                <Button danger icon={<DeleteOutlined />} />
-              </Tooltip>
-            </Popconfirm>
           </Space>
-        </Space>
-      ),
+        );
+      },
     },
   ],
-  [onEdit, onDelete]
+  [currentUser, onEdit]
 );
+```
+
+**⚠️ TRÁNH IIFE trong render (gây CSS-in-JS warning):**
+
+```typescript
+// ❌ BAD - IIFE tạo function scope mỗi render
+render: (_, record) => (
+  <Space>
+    {condition &&
+      (() => {
+        const permission = checkPermission(user, record);
+        return <Tooltip>...</Tooltip>;
+      })()}
+  </Space>
+);
+
+// ✅ GOOD - Tính toán trước, conditional render đơn giản
+render: (_, record) => {
+  const permission = condition ? checkPermission(user, record) : null;
+  return <Space>{permission && <Tooltip>...</Tooltip>}</Space>;
+};
 ```
 
 **Select Search Pattern (Debounce):**

@@ -59,6 +59,8 @@ export type AppointmentForPermission = {
   appointmentDateTime: Date | string;
   status: string;
   clinicId?: string | null;
+  checkInTime?: Date | string | null;
+  checkOutTime?: Date | string | null;
 };
 
 // ============================================================================
@@ -107,8 +109,9 @@ export const appointmentPermissions = {
    * - Admin: Can edit everything, anytime
    * - Employee (Past): Cannot edit
    * - Employee (Today, Locked): Cannot edit
-   * - Employee (Today, Pending/Confirmed): Can edit except customer/dateTime
-   * - Employee (Future): Can edit except checkIn/checkOut times
+   * - Employee (Today, Pending/Confirmed): Can edit except customer/dateTime/status/checkIn/checkOut
+   * - Employee (Future): Can edit except checkIn/checkOut/status
+   * - Employee: Status and checkIn/checkOut changes via quick actions only
    *
    * @returns { allowed, reason, disabledFields }
    */
@@ -144,17 +147,26 @@ export const appointmentPermissions = {
         };
       }
 
-      // Pending/Confirmed: Can edit most fields
+      // Pending/Confirmed: Can edit most fields except customer/dateTime/status/checkIn/checkOut
+      // Status changes via quick actions only
+      // CheckIn/CheckOut: Only Admin can edit (Employee uses quick actions)
       return {
         allowed: true,
-        disabledFields: ["customerId", "appointmentDateTime"],
+        disabledFields: [
+          "customerId",
+          "appointmentDateTime",
+          "status",
+          "checkInTime",
+          "checkOutTime",
+        ],
       };
     }
 
-    // Employee - FUTURE: Can edit except checkIn/Out
+    // Employee - FUTURE: Can edit except checkIn/Out/status
+    // Status changes via quick actions only
     return {
       allowed: true,
-      disabledFields: ["checkInTime", "checkOutTime"],
+      disabledFields: ["checkInTime", "checkOutTime", "status"],
     };
   },
 
@@ -209,16 +221,18 @@ export const appointmentPermissions = {
   },
 
   /**
-   * Check if user can perform quick actions (check-in, confirm, cancel, no-show)
+   * Check if user can check-in an appointment
    *
    * Rules:
    * - Must be authenticated
-   * - Cannot perform on past appointments
-   * - Cannot perform on already completed/cancelled appointments
+   * - Admin: Can check-in at any clinic
+   * - Employee: Only at their own clinic (on-site requirement)
+   * - Must be today's appointment
+   * - Must not have check-in time yet
    *
    * @returns { allowed, reason }
    */
-  canPerformQuickAction(
+  canCheckIn(
     user: PermissionUser | null | undefined,
     appointment: AppointmentForPermission
   ): PermissionResult {
@@ -226,22 +240,198 @@ export const appointmentPermissions = {
       return { allowed: false, reason: "Bạn chưa đăng nhập" };
     }
 
-    const timeline = getTimeline(appointment.appointmentDateTime);
-    const status = appointment.status;
+    // Check clinic ownership (Employee only)
+    if (!isAdmin(user)) {
+      if (appointment.clinicId !== user.clinicId) {
+        return {
+          allowed: false,
+          reason: "Chỉ thực hiện được tại clinic của bạn",
+        };
+      }
+    }
 
-    // Cannot perform quick actions on past appointments
-    if (timeline === "past") {
+    // Must be today
+    const timeline = getTimeline(appointment.appointmentDateTime);
+    if (timeline !== "today") {
       return {
         allowed: false,
-        reason: "Không thể thao tác với lịch hẹn trong quá khứ",
+        reason: "Chỉ có thể check-in lịch hẹn trong ngày hôm nay",
       };
     }
 
-    // Cannot perform quick actions on locked appointments
-    if (LOCKED_STATUSES.includes(status)) {
+    // Must not have check-in time yet
+    if (appointment.checkInTime) {
       return {
         allowed: false,
-        reason: "Lịch hẹn đã hoàn tất hoặc đã hủy",
+        reason: "Lịch hẹn đã được check-in",
+      };
+    }
+
+    return { allowed: true };
+  },
+
+  /**
+   * Check if user can check-out an appointment
+   *
+   * Rules:
+   * - Must be authenticated
+   * - Admin: Can check-out at any clinic
+   * - Employee: Only at their own clinic (on-site requirement)
+   * - Must be today's appointment
+   * - Must have check-in time
+   * - Must not have check-out time yet
+   *
+   * @returns { allowed, reason }
+   */
+  canCheckOut(
+    user: PermissionUser | null | undefined,
+    appointment: AppointmentForPermission
+  ): PermissionResult {
+    if (!user) {
+      return { allowed: false, reason: "Bạn chưa đăng nhập" };
+    }
+
+    // Check clinic ownership (Employee only)
+    if (!isAdmin(user)) {
+      if (appointment.clinicId !== user.clinicId) {
+        return {
+          allowed: false,
+          reason: "Chỉ thực hiện được tại clinic của bạn",
+        };
+      }
+    }
+
+    // Must be today
+    const timeline = getTimeline(appointment.appointmentDateTime);
+    if (timeline !== "today") {
+      return {
+        allowed: false,
+        reason: "Chỉ có thể check-out lịch hẹn trong ngày hôm nay",
+      };
+    }
+
+    // Must have check-in time
+    if (!appointment.checkInTime) {
+      return {
+        allowed: false,
+        reason: "Chưa check-in, không thể check-out",
+      };
+    }
+
+    // Must not have check-out time yet
+    if (appointment.checkOutTime) {
+      return {
+        allowed: false,
+        reason: "Lịch hẹn đã được check-out",
+      };
+    }
+
+    return { allowed: true };
+  },
+
+  /**
+   * Check if user can confirm an appointment
+   *
+   * Rules:
+   * - Must be authenticated
+   * - Admin: Can confirm at any clinic
+   * - Employee: Only at their own clinic (on-site requirement)
+   * - Must be future appointment (not today, not past)
+   * - Must have status "Chờ xác nhận"
+   *
+   * @returns { allowed, reason }
+   */
+  canConfirm(
+    user: PermissionUser | null | undefined,
+    appointment: AppointmentForPermission
+  ): PermissionResult {
+    if (!user) {
+      return { allowed: false, reason: "Bạn chưa đăng nhập" };
+    }
+
+    // Check clinic ownership (Employee only)
+    if (!isAdmin(user)) {
+      if (appointment.clinicId !== user.clinicId) {
+        return {
+          allowed: false,
+          reason: "Chỉ thực hiện được tại clinic của bạn",
+        };
+      }
+    }
+
+    // Must be future
+    const timeline = getTimeline(appointment.appointmentDateTime);
+    if (timeline !== "future") {
+      return {
+        allowed: false,
+        reason: "Chỉ có thể xác nhận lịch hẹn trong tương lai",
+      };
+    }
+
+    // Must have status "Chờ xác nhận"
+    if (appointment.status !== "Chờ xác nhận") {
+      return {
+        allowed: false,
+        reason: "Chỉ có thể xác nhận lịch hẹn đang chờ xác nhận",
+      };
+    }
+
+    return { allowed: true };
+  },
+
+  /**
+   * Check if user can mark an appointment as no-show
+   *
+   * Rules:
+   * - Must be authenticated
+   * - Admin: Can mark no-show at any clinic
+   * - Employee: Only at their own clinic (on-site requirement)
+   * - Must be today or past appointment
+   * - Must not have check-in time
+   * - Must not already be marked as "Không đến"
+   *
+   * @returns { allowed, reason }
+   */
+  canMarkNoShow(
+    user: PermissionUser | null | undefined,
+    appointment: AppointmentForPermission
+  ): PermissionResult {
+    if (!user) {
+      return { allowed: false, reason: "Bạn chưa đăng nhập" };
+    }
+
+    // Check clinic ownership (Employee only)
+    if (!isAdmin(user)) {
+      if (appointment.clinicId !== user.clinicId) {
+        return {
+          allowed: false,
+          reason: "Chỉ thực hiện được tại clinic của bạn",
+        };
+      }
+    }
+
+    // Must be today or past
+    const timeline = getTimeline(appointment.appointmentDateTime);
+    if (timeline === "future") {
+      return {
+        allowed: false,
+        reason: "Không thể đánh dấu không đến cho lịch hẹn trong tương lai",
+      };
+    }
+
+    // Must not have check-in time
+    if (appointment.checkInTime) {
+      return {
+        allowed: false,
+        reason: "Không thể đánh dấu không đến khi đã check-in",
+      };
+    }
+
+    // Must not already be marked as "Không đến"
+    if (appointment.status === "Không đến") {
+      return {
+        allowed: false,
+        reason: "Lịch hẹn đã được đánh dấu không đến",
       };
     }
 
@@ -251,6 +441,8 @@ export const appointmentPermissions = {
   /**
    * Get field-level permissions for forms
    * Returns which fields can be edited based on user role and appointment state
+   *
+   * Note: Employee status field is always disabled (changes via quick actions only)
    *
    * @returns Object with canEditXXX boolean flags
    */

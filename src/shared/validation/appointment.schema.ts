@@ -53,6 +53,7 @@ const AppointmentCommonFieldsSchema = z.object({
  * - Rule 1: If checkOutTime exists → checkInTime is required (only for CREATE or explicit null)
  * - Rule 2: checkInTime < checkOutTime
  * - Rule 3: If checkInTime exists → status must be "Đã đến" or "Đến đột xuất"
+ * - Rule 4: If status is "Đã đến" or "Đến đột xuất" → checkInTime is required (bidirectional validation)
  */
 const validateAppointmentConditionalFields = (
   data: {
@@ -98,6 +99,20 @@ const validateAppointmentConditionalFields = (
       message:
         'Trạng thái phải là "Đã đến" hoặc "Đến đột xuất" khi có check-in',
       path: ["status"],
+    });
+  }
+
+  // Rule 4: If status is "Đã đến" or "Đến đột xuất" → checkInTime is required (bidirectional)
+  if (
+    data.status &&
+    (data.status === "Đã đến" || data.status === "Đến đột xuất") &&
+    data.checkInTime === null
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        'Phải có thời gian check-in khi trạng thái là "Đã đến" hoặc "Đến đột xuất"',
+      path: ["checkInTime"],
     });
   }
 };

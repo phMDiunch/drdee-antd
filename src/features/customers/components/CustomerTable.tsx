@@ -87,7 +87,7 @@ export default function CustomerTable({
       render: (_, r) => dayjs(r.createdAt).format("DD/MM/YYYY HH:mm"),
     },
     {
-      title: "Lịch hẹn hôm nay",
+      title: `Lịch hẹn hôm nay (${dayjs().format("DD/MM")})`,
       key: "todayAppointment",
       width: 200,
       render: (_, record) => {
