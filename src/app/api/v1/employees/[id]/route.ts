@@ -3,21 +3,18 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/utils/sessionCache";
 import { employeeService } from "@/server/services/employee.service";
 import { ServiceError } from "@/server/services/errors";
-
-export const runtime = "nodejs";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 type Params = { params: Promise<{ id: string }> };
 
-/**
- * @description Lấy chi tiết một nhân viên
- * @method GET
- * @path /api/v1/employees/:id
- */
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(_req: Request, props: Params) {
   try {
+    const params = await props.params;
+
     const user = await getSessionUser();
-    const { id } = await params;
-    const data = await employeeService.findById(user, id);
+
+    const data = await employeeService.findById(user, params.id);
+
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {
@@ -26,7 +23,10 @@ export async function GET(_req: Request, { params }: Params) {
         { status: e.httpStatus }
       );
     }
-    return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
+    return NextResponse.json(
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
+    );
   }
 }
 

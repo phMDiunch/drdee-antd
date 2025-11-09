@@ -9,11 +9,11 @@ export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(_req: Request, props: Params) {
   try {
+    const params = await props.params;
     const user = await getSessionUser();
-    const { id } = await params;
-    const data = await dentalServiceService.getById(user, id);
+    const data = await dentalServiceService.getById(user, params.id);
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {

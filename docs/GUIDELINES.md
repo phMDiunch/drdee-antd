@@ -333,46 +333,68 @@ export async function deleteCustomerAction(id: string) {
 - Chuẩn REST API
 - Dễ tích hợp từ bên ngoài
 
-**GET queries với caching:**
+**Standard Template:**
 
 ```typescript
+/**
+ * GET /api/v1/{feature} - Description
+ * Query params: list of params
+ * Used by: hook name
+ * Validation: Handled by service layer
+ * Cache: duration (if applicable)
+ */
 export async function GET(req: Request) {
-  const user = await getSessionUser();
-  const data = await customerService.list(user, params);
+  try {
+    const user = await getSessionUser();
+    const { searchParams } = new URL(req.url);
+    const query = Object.fromEntries(searchParams);
 
-  return NextResponse.json(data, {
-    headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-    },
-  });
-}
-```
+    const data = await service.list(user, query);
 
-**Chiến lược Caching:**
-
-| Data Type        | Cache-Control                                               |
-| ---------------- | ----------------------------------------------------------- |
-| Master data      | `public, s-maxage=300, stale-while-revalidate=600` (5m+10m) |
-| Transaction data | `public, s-maxage=60, stale-while-revalidate=300` (1m+5m)   |
-
-**Error Handling:**
-
-```typescript
-try {
-  // ...
-} catch (error) {
-  if (error instanceof ServiceError) {
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        /* cache headers if needed */
+      },
+    });
+  } catch (e: unknown) {
+    if (e instanceof ServiceError) {
+      return NextResponse.json(
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
+      );
+    }
     return NextResponse.json(
-      { error: error.message },
-      { status: error.httpStatus }
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
     );
   }
-  return NextResponse.json(
-    { error: COMMON_MESSAGES.SERVER_ERROR },
-    { status: 500 }
-  );
 }
+
+// POST removed - Use create{Feature}Action() Server Action instead
 ```
+
+**Caching Strategy:**
+
+| Data Type       | Cache    | Example                                           |
+| --------------- | -------- | ------------------------------------------------- |
+| **Master Data** | 5 min    | `dental-services`, `clinics`, `employees/working` |
+| **All Others**  | No cache | `customers`, `appointments`, `*/daily`, etc.      |
+
+**Cache Headers:**
+
+````typescript
+// Master data only (5 minutes)
+"Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
+
+// All other routes - no cache
+// (no headers needed)
+```**Key Principles:**
+
+- ✅ **Service-centric validation** - No route validation
+- ✅ **Standard JSDoc** - Document params, usage, cache
+- ✅ **Clean error handling** - ServiceError + generic fallback
+- ✅ **Consistent spacing** - Same format across all routes
 
 ## 4. Frontend Layer
 
@@ -823,3 +845,4 @@ useEffect(() => {
 ---
 
 **Last Updated:** 2025-01-06
+````

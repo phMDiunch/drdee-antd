@@ -3,25 +3,27 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/utils/sessionCache";
 import { employeeService } from "@/server/services/employee.service";
 import { ServiceError } from "@/server/services/errors";
-
-export const runtime = "nodejs";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
- * @description Lấy danh sách nhân viên đang làm việc (dạng rút gọn)
- * @method GET
- * @path /api/v1/employees/working
+ * GET /api/v1/employees/working - List working employees (simplified)
+ * Query params: none
+ * Used by: useWorkingEmployees() hook
+ * Validation: Handled by service layer
+ * Cache: 5 minute (semi-master data)
  */
 export async function GET() {
   try {
     const user = await getSessionUser();
+
     const data = await employeeService.listWorking(user);
 
-    // 🚀 Task 4: API Response Caching
-    // Cache 1 phút, serve stale up to 5 phút while revalidating
+    // 🚀 API Response Caching
+    // Cache 5 phút, serve stale up to 10 phút while revalidating
     return NextResponse.json(data, {
       status: 200,
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
     });
   } catch (e: unknown) {
@@ -31,6 +33,9 @@ export async function GET() {
         { status: e.httpStatus }
       );
     }
-    return NextResponse.json({ error: "Lỗi máy chủ." }, { status: 500 });
+    return NextResponse.json(
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
+    );
   }
 }

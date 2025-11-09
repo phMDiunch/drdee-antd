@@ -5,8 +5,12 @@ import { appointmentService } from "@/server/services/appointment.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export const runtime = "nodejs";
-
+/**
+ * GET /api/v1/appointments/daily - Daily appointments report
+ * Query params: date, clinicId
+ * Used by: useAppointmentsDaily() hook
+ * Validation: Handled by service layer
+ */
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser();

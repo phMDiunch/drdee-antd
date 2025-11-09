@@ -5,12 +5,11 @@ import { appointmentService } from "@/server/services/appointment.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export const runtime = "nodejs";
-
 /**
- * GET /api/v1/appointments - List appointments
- * Query params: page, limit, search, clinicId, status, etc.
+ * GET /api/v1/appointments - List appointments with filters
+ * Query params: customerId, clinicId, date, status, search, page, pageSize
  * Used by: useAppointments() hook
+ * Validation: Handled by service layer
  */
 export async function GET(req: Request) {
   try {

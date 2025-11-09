@@ -5,12 +5,11 @@ import { consultedServiceService } from "@/server/services/consulted-service.ser
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export const runtime = "nodejs";
-
 /**
- * GET /api/v1/consulted-services - List consulted services
- * Query params: page, pageSize, search, customerId, clinicId, serviceStatus, treatmentStatus, etc.
+ * GET /api/v1/consulted-services - List consulted services with filters
+ * Query params: customerId, clinicId, serviceStatus, treatmentStatus, search, page, pageSize
  * Used by: useConsultedServices() hook
+ * Validation: Handled by service layer
  */
 export async function GET(req: Request) {
   try {
@@ -21,13 +20,7 @@ export async function GET(req: Request) {
 
     const data = await consultedServiceService.list(user, query);
 
-    // Cache: 1 minute with 5 minute stale-while-revalidate (transaction data)
-    return NextResponse.json(data, {
-      status: 200,
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-      },
-    });
+    return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {
       return NextResponse.json(
@@ -41,3 +34,5 @@ export async function GET(req: Request) {
     );
   }
 }
+
+// POST removed - Use createConsultedServiceAction() Server Action instead

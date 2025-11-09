@@ -5,12 +5,11 @@ import { customerService } from "@/server/services/customer.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export const runtime = "nodejs";
-
 /**
- * GET /api/v1/customers - List customers
- * Query params: page, limit, search, clinicId, etc.
+ * GET /api/v1/customers - List customers with filters
+ * Query params: search, page, pageSize, clinicId, source, serviceOfInterest, sort
  * Used by: useCustomers() hook
+ * Validation: Handled by service layer
  */
 export async function GET(req: Request) {
   try {

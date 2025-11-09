@@ -5,15 +5,16 @@ import { clinicService } from "@/server/services/clinic.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export const runtime = "nodejs";
-
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(_req: Request, props: Params) {
   try {
+    const params = await props.params;
+
     const user = await getSessionUser();
-    const { id } = await params;
-    const data = await clinicService.getById(user, id);
+
+    const data = await clinicService.getById(user, params.id);
+
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     if (e instanceof ServiceError) {

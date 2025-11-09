@@ -1,31 +1,30 @@
 // src/app/api/v1/customers/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/utils/sessionCache";
 import { customerService } from "@/server/services/customer.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
+type Params = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/v1/customers/[id]
  * Get customer detail with full relations (primaryContact, sourceEmployee, sourceCustomer)
  * Permissions: Employee can view their clinic's customers, Admin can view all
  */
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(_req: Request, props: Params) {
   try {
-    const currentUser = await getSessionUser();
-    const { id } = await context.params;
+    const params = await props.params;
 
-    const customer = await customerService.getById(currentUser, id);
-    return NextResponse.json(customer);
-  } catch (error) {
-    if (error instanceof ServiceError) {
+    const currentUser = await getSessionUser();
+    const data = await customerService.getById(currentUser, params.id);
+
+    return NextResponse.json(data, { status: 200 });
+  } catch (e) {
+    if (e instanceof ServiceError) {
       return NextResponse.json(
-        { error: error.message, code: error.code },
-        { status: error.httpStatus }
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
       );
     }
 

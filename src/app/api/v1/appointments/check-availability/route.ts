@@ -5,8 +5,6 @@ import { appointmentService } from "@/server/services/appointment.service";
 import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
-export const runtime = "nodejs";
-
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser();
