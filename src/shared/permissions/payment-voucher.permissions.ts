@@ -62,6 +62,7 @@ type Timeline = "past" | "today" | "future";
 export type PaymentVoucherForPermission = {
   paymentDate: Date | string;
   clinicId?: string | null;
+  clinic?: { id: string } | null; // Support nested clinic object
   cashierId?: string | null;
   createdById?: string | null;
 };
@@ -100,8 +101,13 @@ function isSameClinic(
   user: PermissionUser | null | undefined,
   voucher: PaymentVoucherForPermission
 ): boolean {
-  if (!user || !voucher.clinicId) return false;
-  return user.clinicId === voucher.clinicId;
+  if (!user) return false;
+
+  // Support both clinicId (string) and clinic.id (nested object)
+  const voucherClinicId = voucher.clinicId || voucher.clinic?.id;
+
+  if (!voucherClinicId) return false;
+  return user.clinicId === voucherClinicId;
 }
 
 // ============================================================================

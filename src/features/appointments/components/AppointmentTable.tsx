@@ -1,7 +1,7 @@
 // src/features/appointments/components/AppointmentTable.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Button,
   Divider,
@@ -67,7 +67,7 @@ export default function AppointmentTable({
     return dayjs(dateStr).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD");
   };
 
-  const columns = React.useMemo<ColumnsType<AppointmentResponse>>(() => {
+  const columns = useMemo<ColumnsType<AppointmentResponse>>(() => {
     // Calculate unique dentists for filters
     const dentistSet = new Set<string>();
     data.forEach((apt) => {

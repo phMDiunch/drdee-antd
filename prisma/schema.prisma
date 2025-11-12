@@ -427,7 +427,7 @@ model PaymentVoucher {
 
   paymentNumber String   @unique // Số phiếu thu
   customerId    String // Khách hàng
-  paymentDate   DateTime @default(now()) @db.Date // Ngày thu tiền
+  paymentDate   DateTime @default(now()) @db.Timestamptz // Ngày và giờ thu tiền
   totalAmount   Int // Tổng tiền của cả phiếu thu
   notes         String? // Nội dung thu tiền: Đặt cọc, Thanh toán tiếp, Hoàn tất thanh toán
   cashierId     String // Nhân viên thu tiền

@@ -30,6 +30,7 @@ import { APP_LAYOUT } from "./theme";
 import type { UserCore } from "@/shared/types/user";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import GlobalSearch from "@/shared/components/GlobalSearch";
+import { useClinicById } from "@/features/clinics";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -69,6 +70,11 @@ export default function AppHeader({
 
   const roleLabel = currentUser?.role ?? "unknown";
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Fetch clinic info to display clinic code
+  const { data: clinicData } = useClinicById(
+    currentUser?.clinicId || undefined
+  );
 
   const logout = useLogout();
 
@@ -120,10 +126,20 @@ export default function AppHeader({
             />
           </Tooltip>
 
-          <Link href="/dashboard" style={{ textDecoration: "none" }}>
-            <Text strong style={{ fontSize: 16 }}>
-              {isMdUp ? "Nha khoa DR DEE" : "DR DEE"}
-            </Text>
+          <Link href="/dashboard">
+            <Space size={6} align="center">
+              <Text strong style={{ fontSize: 16 }}>
+                {isMdUp ? "Nha khoa DR DEE" : "DR DEE"}
+              </Text>
+              {clinicData?.clinicCode && (
+                <Tag
+                  color={clinicData.colorCode || "blue"}
+                  style={{ margin: 0, fontSize: 12 }}
+                >
+                  {clinicData.clinicCode}
+                </Tag>
+              )}
+            </Space>
           </Link>
         </Space>
 

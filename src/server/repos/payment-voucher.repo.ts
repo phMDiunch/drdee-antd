@@ -25,10 +25,12 @@ export type PaymentVoucherCreateInput = CreatePaymentVoucherRequest & {
 export type PaymentVoucherUpdateInput = Partial<
   Omit<
     UpdatePaymentVoucherRequest,
-    "customerId" | "paymentNumber" | "paymentDate"
+    "customerId" | "paymentNumber" | "paymentDate" | "cashierId"
   >
 > & {
   totalAmount?: number; // 🔒 Recalculated if details change
+  paymentDate?: Date; // Admin can update (converted from ISO string in service)
+  cashierId?: string; // Admin can update
   updatedById?: string; // 🔒 Server-controlled: track who made the update
 };
 
@@ -266,6 +268,8 @@ export const paymentVoucherRepo = {
         data: {
           notes: data.notes,
           totalAmount: data.totalAmount,
+          cashierId: data.cashierId,
+          paymentDate: data.paymentDate,
           updatedById: data.updatedById,
         },
       });

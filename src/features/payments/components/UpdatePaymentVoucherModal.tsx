@@ -541,9 +541,10 @@ export default function UpdatePaymentVoucherModal({
               <Col xs={24} lg={12}>
                 <Form.Item label="Ngày thu" name="paymentDate">
                   <DatePicker
-                    format="DD/MM/YYYY"
+                    showTime={{ format: "HH:mm" }}
+                    format="DD/MM/YYYY HH:mm"
                     style={{ width: "100%" }}
-                    placeholder="Chọn ngày thu"
+                    placeholder="Chọn ngày và giờ thu"
                   />
                 </Form.Item>
               </Col>

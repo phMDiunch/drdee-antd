@@ -150,7 +150,8 @@ export default function PaymentVoucherTable({
               dataIndex: "paymentDate",
               key: "paymentDate",
               width: 120,
-              render: (value: string) => dayjs(value).format("DD/MM/YYYY"),
+              render: (value: string) =>
+                dayjs(value).format("DD/MM/YYYY HH:mm"),
               sorter: (a: PaymentVoucherResponse, b: PaymentVoucherResponse) =>
                 dayjs(a.paymentDate).unix() - dayjs(b.paymentDate).unix(),
             },

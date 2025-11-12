@@ -163,7 +163,6 @@ export default function AppointmentDailyView() {
     }
 
     try {
-      notify.info("Đang xuất Excel...");
       await exportAppointmentsToExcel(filteredAppointments, selectedDate);
       notify.success("Xuất Excel thành công");
     } catch (error) {

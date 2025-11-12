@@ -255,6 +255,16 @@ export const paymentVoucherService = {
       if (parsed.notes !== undefined) {
         data.notes = parsed.notes;
       }
+
+      // Admin can update cashierId and paymentDate
+      if (parsed.cashierId !== undefined) {
+        data.cashierId = parsed.cashierId;
+      }
+
+      if (parsed.paymentDate !== undefined) {
+        // Convert ISO string to Date object
+        data.paymentDate = new Date(parsed.paymentDate);
+      }
     } else if (permission.limitedAccess) {
       // Non-admin today: Only notes and payment methods
       if (parsed.notes !== undefined) {

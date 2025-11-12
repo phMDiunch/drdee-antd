@@ -141,36 +141,27 @@ export default function CreatePaymentVoucherModal({
 
         setSelectedServices((prev) => [...prev, newService]);
 
-        // Use setTimeout to avoid circular reference warning
-        setTimeout(() => {
-          form.setFieldValue(`amount_${service.id}`, service.debt);
-        }, 0);
+        // Set initial form value for amount field
+        form.setFields([
+          {
+            name: `amount_${service.id}`,
+            value: service.debt,
+          },
+        ]);
       } else {
         // Remove service from selection
         handleRemoveUnpaidService(service.id);
 
-        // Use setTimeout to avoid circular reference warning
-        setTimeout(() => {
-          form.setFieldValue(`amount_${service.id}`, undefined);
-        }, 0);
+        // Clear form value
+        form.setFields([
+          {
+            name: `amount_${service.id}`,
+            value: undefined,
+          },
+        ]);
       }
     },
     [form, handleRemoveUnpaidService]
-  );
-
-  const handleAmountChange = useCallback(
-    (serviceId: string, amount: number) => {
-      // Update selectedServices state only
-      setSelectedServices((prev) =>
-        prev.map((service) =>
-          service.consultedServiceId === serviceId
-            ? { ...service, amount }
-            : service
-        )
-      );
-      // Don't call form.setFieldValue - Form.Item already manages the value
-    },
-    []
   );
 
   const handlePaymentMethodChange = useCallback(
@@ -186,7 +177,16 @@ export default function CreatePaymentVoucherModal({
     []
   );
 
-  const totalAmount = selectedServices.reduce((sum, s) => sum + s.amount, 0);
+  // Watch all form values for reactive totalAmount calculation
+  const formValues = Form.useWatch([], form);
+  const totalAmount = useMemo(() => {
+    return selectedServices.reduce((sum, service) => {
+      const amount = formValues?.[
+        `amount_${service.consultedServiceId}`
+      ] as number;
+      return sum + (amount || 0);
+    }, 0);
+  }, [formValues, selectedServices]);
 
   const handleFinish = (values: Record<string, unknown>) => {
     // Validate that we have selected services
@@ -203,10 +203,17 @@ export default function CreatePaymentVoucherModal({
 
       // Convert dayjs objects to ISO strings for server compatibility
       if (key === "paymentDate" && value) {
-        const dayjsValue = dayjs(value as string | Date);
-        if (dayjsValue.isValid()) {
-          value = dayjsValue.toISOString();
+        // Check if value is a Dayjs object
+        if (dayjs.isDayjs(value)) {
+          value = value.toISOString();
+        } else {
+          // If it's a string or Date, parse it with dayjs first
+          const dayjsValue = dayjs(value as string | Date);
+          if (dayjsValue.isValid()) {
+            value = dayjsValue.toISOString();
+          }
         }
+        console.log("[CreatePaymentVoucher] paymentDate converted:", value);
       }
 
       obj[key] = value;
@@ -216,6 +223,7 @@ export default function CreatePaymentVoucherModal({
     const payload: CreatePaymentVoucherRequest = {
       customerId: cleanValues.customerId as string,
       notes: (cleanValues.notes as string) || null,
+      paymentDate: cleanValues.paymentDate as string | undefined,
       details: selectedServices.map((service) => ({
         consultedServiceId: service.consultedServiceId,
         amount: service.amount,
@@ -435,9 +443,6 @@ export default function CreatePaymentVoucherModal({
                           }
                           parser={(value) =>
                             Number(value!.replace(/\$\s?|(,*)/g, ""))
-                          }
-                          onChange={(value) =>
-                            handleAmountChange(service.id, value || 0)
                           }
                         />
                       </Form.Item>

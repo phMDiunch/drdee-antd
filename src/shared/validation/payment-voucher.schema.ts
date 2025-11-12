@@ -102,6 +102,9 @@ export const UpdatePaymentVoucherRequestSchema =
   PaymentVoucherCommonFieldsSchema.partial().extend({
     notes: z.string().trim().optional().nullable(),
     details: z.array(PaymentVoucherDetailSchema).optional(),
+    // Admin can update these fields
+    cashierId: z.string().uuid().optional(),
+    paymentDate: z.string().datetime().optional(), // ISO string from DatePicker
   });
 
 export type UpdatePaymentVoucherRequest = z.infer<

@@ -1,7 +1,6 @@
 // src/server/services/payment-voucher/_mappers.ts
 import type { PaymentVoucher, PaymentVoucherDetail } from "@prisma/client";
 import type { PaymentVoucherResponse } from "@/shared/validation/payment-voucher.schema";
-import dayjs from "dayjs";
 
 /**
  * Type for payment voucher with relations
@@ -52,7 +51,7 @@ export function mapPaymentVoucherToResponse(
       fullName: voucher.customer.fullName,
       code: voucher.customer.customerCode || "",
     },
-    paymentDate: dayjs(voucher.paymentDate).format("YYYY-MM-DD"),
+    paymentDate: voucher.paymentDate.toISOString(),
     totalAmount: voucher.totalAmount,
     notes: voucher.notes,
     cashier: {

@@ -3,7 +3,7 @@
 "use client";
 import { forwardRef } from "react";
 import { Table, Typography, Divider } from "antd";
-import { formatCurrency, formatDateVN } from "../../../shared/utils/date";
+import { formatCurrency, formatDateTimeVN } from "../../../shared/utils/date";
 import type { PaymentVoucherResponse } from "@/shared/validation/payment-voucher.schema";
 import { getPaymentMethodConfig } from "../constants";
 import ClinicLogo from "../../../shared/components/ClinicLogo";
@@ -88,7 +88,7 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
             PHIẾU THU
           </Title>
           <Text type="secondary" style={{ fontStyle: "italic", fontSize: 14 }}>
-            Ngày lập phiếu: {formatDateVN(voucher.paymentDate)}
+            Ngày lập phiếu: {formatDateTimeVN(voucher.paymentDate)}
           </Text>
         </div>
 
