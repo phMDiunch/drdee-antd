@@ -10,7 +10,6 @@ import {
   Tag,
   Tooltip,
   Typography,
-  Divider,
 } from "antd";
 import {
   DeleteOutlined,
@@ -117,7 +116,7 @@ export default function PaymentVoucherTable({
               title: "Khách hàng",
               dataIndex: "customer",
               key: "customer",
-              width: 180,
+              width: 160,
               fixed: "left" as const,
               render: (_: unknown, record: PaymentVoucherResponse) => (
                 <div>
@@ -139,7 +138,7 @@ export default function PaymentVoucherTable({
         title: "Số phiếu",
         dataIndex: "paymentNumber",
         key: "paymentNumber",
-        width: 140,
+        width: 130,
         fixed: isCustomerDetailView ? ("left" as const) : undefined,
         sorter: (a, b) => a.paymentNumber.localeCompare(b.paymentNumber),
       },
@@ -149,7 +148,7 @@ export default function PaymentVoucherTable({
               title: "Ngày thu",
               dataIndex: "paymentDate",
               key: "paymentDate",
-              width: 120,
+              width: 140,
               render: (value: string) =>
                 dayjs(value).format("DD/MM/YYYY HH:mm"),
               sorter: (a: PaymentVoucherResponse, b: PaymentVoucherResponse) =>
@@ -161,7 +160,7 @@ export default function PaymentVoucherTable({
         title: "Tổng tiền",
         dataIndex: "totalAmount",
         key: "totalAmount",
-        width: 120,
+        width: 110,
         align: "right",
         render: (value: number) => (
           <Text strong type="success">
@@ -174,12 +173,12 @@ export default function PaymentVoucherTable({
         title: "Thu ngân",
         dataIndex: ["cashier", "fullName"],
         key: "cashierName",
-        width: 140,
+        width: 120,
       },
       {
         title: "Số DV",
         key: "detailsCount",
-        width: 70,
+        width: 60,
         align: "center",
         render: (_: unknown, record: PaymentVoucherResponse) => (
           <Tag>{record.details.length}</Tag>
@@ -188,7 +187,7 @@ export default function PaymentVoucherTable({
       {
         title: "Thao tác",
         key: "actions",
-        width: 100,
+        width: 110,
         fixed: "right" as const,
         render: (_: unknown, record: PaymentVoucherResponse) => {
           // Calculate permissions outside JSX
@@ -208,11 +207,9 @@ export default function PaymentVoucherTable({
           const deleteTooltip = canDelete.allowed ? "Xóa" : canDelete.reason;
 
           return (
-            <Space split={<Divider type="vertical" />} size={0}>
+            <Space size="small">
               <Tooltip title={printTooltip}>
                 <Button
-                  type="link"
-                  size="small"
                   icon={<PrinterOutlined />}
                   onClick={() => onPrint(record)}
                   disabled={!canPrint.allowed}
@@ -221,8 +218,6 @@ export default function PaymentVoucherTable({
 
               <Tooltip title={editTooltip}>
                 <Button
-                  type="link"
-                  size="small"
                   icon={<EditOutlined />}
                   onClick={() => onEdit(record)}
                   disabled={!canEdit.allowed}
@@ -239,8 +234,6 @@ export default function PaymentVoucherTable({
               >
                 <Tooltip title={deleteTooltip}>
                   <Button
-                    type="link"
-                    size="small"
                     danger
                     icon={<DeleteOutlined />}
                     disabled={!canDelete.allowed}
@@ -262,16 +255,13 @@ export default function PaymentVoucherTable({
       dataSource={data}
       loading={loading}
       rowKey="id"
+      size="small"
       expandable={{
         expandedRowRender,
         rowExpandable: (record) => record.details.length > 0,
       }}
-      scroll={{ x: 1200 }}
-      pagination={{
-        showSizeChanger: true,
-        showTotal: (total) => `Tổng ${total} phiếu thu`,
-        pageSizeOptions: ["10", "20", "50", "100"],
-      }}
+      scroll={{ x: 900 }}
+      pagination={false}
     />
   );
 }

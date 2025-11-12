@@ -91,7 +91,7 @@ export default function ConsultedServiceTable({
               title: "Khách hàng",
               dataIndex: "customer",
               key: "customer",
-              width: 180,
+              width: 160,
               fixed: "left" as const,
               render: (customer: {
                 id: string;
@@ -136,7 +136,7 @@ export default function ConsultedServiceTable({
               title: "Ngày tư vấn",
               dataIndex: "consultationDate",
               key: "consultationDate",
-              width: 140,
+              width: 110,
               sorter: (
                 a: ConsultedServiceResponse,
                 b: ConsultedServiceResponse
@@ -154,7 +154,7 @@ export default function ConsultedServiceTable({
         title: "Dịch vụ",
         dataIndex: "consultedServiceName",
         key: "service",
-        width: 200,
+        width: 180,
         filters: serviceNames.map((name) => ({ text: name, value: name })),
         onFilter: (value, record) => record.consultedServiceName === value,
         ellipsis: true,
@@ -163,14 +163,14 @@ export default function ConsultedServiceTable({
         title: "SL",
         dataIndex: "quantity",
         key: "quantity",
-        width: 60,
+        width: 50,
         align: "center",
       },
       {
         title: "Giá ưu đãi",
         dataIndex: "preferentialPrice",
         key: "preferentialPrice",
-        width: 120,
+        width: 105,
         align: "right",
         render: (price) => <Text>{formatVND(price)}</Text>,
       },
@@ -178,7 +178,7 @@ export default function ConsultedServiceTable({
         title: "Thành tiền",
         dataIndex: "finalPrice",
         key: "finalPrice",
-        width: 140,
+        width: 115,
         align: "right",
         sorter: (a, b) => a.finalPrice - b.finalPrice,
         render: (price) => <Text strong>{formatVND(price)}</Text>,
@@ -190,7 +190,7 @@ export default function ConsultedServiceTable({
               title: "Công nợ",
               dataIndex: "debt",
               key: "debt",
-              width: 120,
+              width: 105,
               align: "right" as const,
               sorter: (
                 a: ConsultedServiceResponse,
@@ -211,7 +211,7 @@ export default function ConsultedServiceTable({
         title: "Bác sĩ tư vấn",
         dataIndex: ["consultingDoctor", "fullName"],
         key: "consultingDoctor",
-        width: 140,
+        width: 120,
         filters: [
           { text: "Chưa chọn", value: "NONE" },
           ...consultingDoctors.map((name) => ({ text: name, value: name })),
@@ -226,7 +226,7 @@ export default function ConsultedServiceTable({
         title: "Bác sĩ điều trị",
         dataIndex: ["treatingDoctor", "fullName"],
         key: "treatingDoctor",
-        width: 140,
+        width: 120,
         filters: [
           { text: "Chưa chọn", value: "NONE" },
           ...treatingDoctors.map((name) => ({ text: name, value: name })),
@@ -241,7 +241,7 @@ export default function ConsultedServiceTable({
         title: "Sale",
         dataIndex: ["consultingSale", "fullName"],
         key: "consultingSale",
-        width: 120,
+        width: 100,
         filters: [
           { text: "Chưa chọn", value: "NONE" },
           ...sales.map((name) => ({ text: name, value: name })),
@@ -256,7 +256,7 @@ export default function ConsultedServiceTable({
         title: "Trạng thái dịch vụ",
         dataIndex: "serviceStatus",
         key: "serviceStatus",
-        width: 120,
+        width: 110,
         filters: [
           { text: "Chưa chốt", value: "Chưa chốt" },
           { text: "Đã chốt", value: "Đã chốt" },
@@ -275,7 +275,7 @@ export default function ConsultedServiceTable({
               title: "Trạng thái điều trị",
               dataIndex: "treatmentStatus",
               key: "treatmentStatus",
-              width: 120,
+              width: 110,
               filters: [
                 { text: "Chưa điều trị", value: "Chưa điều trị" },
                 { text: "Đang điều trị", value: "Đang điều trị" },
@@ -296,7 +296,7 @@ export default function ConsultedServiceTable({
         title: "Ngày chốt",
         dataIndex: "serviceConfirmDate",
         key: "serviceConfirmDate",
-        width: 140,
+        width: 130,
         sorter: (a, b) => {
           if (!a.serviceConfirmDate) return 1;
           if (!b.serviceConfirmDate) return -1;
@@ -336,7 +336,7 @@ export default function ConsultedServiceTable({
       {
         title: "Thao tác",
         key: "actions",
-        width: 120,
+        width: 110,
         fixed: "right",
         render: (_, record) => {
           const editPermission = consultedServicePermissions.canEdit(
@@ -407,7 +407,7 @@ export default function ConsultedServiceTable({
       dataSource={data}
       loading={loading}
       rowKey="id"
-      scroll={{ x: 1400 }}
+      scroll={{ x: 1300 }}
       pagination={false}
     />
   );

@@ -8,7 +8,7 @@
 
 - Prisma Model: `prisma/schema.prisma` → PaymentVoucher, PaymentVoucherDetail
 - Old Spec: `docs/Dự án cũ/10. payments/payment-spec.md`, `payment-refactor-requirements.md`
-- Related: `009 Consulted-Service.md`, `007 Customer.md`
+- Related: `009 Consulted-Service.md`, `007 Customer.md`, `008 Appointment.md` (datetime pattern reference)
 - Guidelines: `docs/GUIDELINES.md` → Response Schema Nested Structure
 
 ## 🎯 Mục Tiêu
@@ -36,6 +36,10 @@
   - Sửa phiếu: Rollback cũ → Apply mới
   - Xóa phiếu: Rollback tất cả detail amounts
 - ✅ **Payment Methods**: "Tiền mặt", "Quẹt thẻ thường", "Quẹt thẻ Visa", "Chuyển khoản"
+- ✅ **DateTime Storage**: `paymentDate` sử dụng `@db.Timestamptz` để lưu cả giờ phút và timezone
+  - Format hiển thị: `DD/MM/YYYY HH:mm`
+  - DatePicker có `showTime={{ format: "HH:mm" }}`
+  - Backend convert ISO string → Date object: `new Date(parsed.paymentDate)`
 
 ### Repository Pattern
 
@@ -82,11 +86,13 @@ export const PaymentVoucherResponseSchema = z.object({
 
 #### UPDATE
 
-| User Type | Condition | Allowed Fields                                              |
-| --------- | --------- | ----------------------------------------------------------- |
-| Admin     | Always    | ✅ Sửa tất cả (customer, services, amounts, methods, notes) |
-| Non-admin | Today     | ⚠️ Chỉ sửa notes + paymentMethod của details                |
-| Non-admin | Past      | ❌ Không sửa                                                |
+| User Type | Condition | Allowed Fields                                                                     |
+| --------- | --------- | ---------------------------------------------------------------------------------- |
+| Admin     | Always    | ✅ Sửa tất cả (customer, services, amounts, methods, notes, **cashier, datetime**) |
+| Non-admin | Today     | ⚠️ Chỉ sửa notes + paymentMethod của details                                       |
+| Non-admin | Past      | ❌ Không sửa                                                                       |
+
+**Admin Advanced Edit**: Admin có thể sửa Thu ngân (`cashierId`) và Ngày giờ thu (`paymentDate`) qua section "Chỉnh sửa nâng cao (Admin)" trong UpdateModal. Use case: sửa lại thông tin khi nhập nhầm hoặc điều chỉnh lịch sử.
 
 #### DELETE
 
@@ -165,7 +171,7 @@ Hàng 4: [                                                 ] [Tổng tiền (rea
 **Auto/Hidden**:
 
 - `paymentNumber`: Auto-generated (backend)
-- `paymentDate`: now()
+- `paymentDate`: now() - **DateTime @db.Timestamptz** (có giờ phút)
 - `totalAmount`: Sum of details amounts
 - `cashierId`: Current employee ID
 - `clinicId`: Current employee clinic hoặc admin selected clinic
@@ -192,23 +198,36 @@ Hàng 4: [                                                 ] [Tổng tiền (rea
 
 ### UI/UX
 
-**Component**: `PaymentVoucherModal` (70% viewport width, scrollable)
+**Component**: `UpdatePaymentVoucherModal` (70% viewport width, scrollable)
 
 **Permission-based Form**:
 
 ```
-Hàng 1: [Khách hàng (disabled nếu non-admin past)]       [Thu ngân (readonly)                ]
+Hàng 1: [Khách hàng (disabled nếi non-admin past)]       [Thu ngân (readonly)                ]
 Hàng 2: [Services Table (conditional disable)                                              ]
 Hàng 3: [Ghi chú (enabled theo permission)                                                 ]
 Hàng 4: [                                               ] [Tổng tiền (readonly)           ]
 ```
 
-**Admin Section** (sau Divider "Thông tin chi tiết"):
+**Metadata Section** (Descriptions, 2 columns):
 
 ```
-Hàng 5: [Số phiếu (readonly)              ] [Ngày tạo (readonly)                         ]
-Hàng 6: [Metadata: createdBy, updatedBy, timestamps (readonly, 2 cols)                   ]
+Hàng 5: [Số phiếu (readonly)              ] [Ngày tạo (readonly, DD/MM/YYYY HH:mm)       ]
+Hàng 6: [Người tạo (readonly)             ] [Người sửa (readonly)                        ]
+Hàng 7: [                                 ] [Ngày sửa (readonly, DD/MM/YYYY HH:mm)       ]
 ```
+
+**Admin Advanced Edit Section** (Divider "Chỉnh sửa nâng cao (Admin)", chỉ hiển thị cho `role === "admin"`):
+
+```
+Hàng 8: [Thu ngân (Select from working employees)] [Ngày giờ thu (DatePicker, showTime, HH:mm)]
+```
+
+**DatePicker Configuration**:
+
+- `showTime={{ format: "HH:mm" }}` - cho phép chọn giờ phút
+- `format="DD/MM/YYYY HH:mm"` - hiển thị đầy đủ ngày giờ
+- Value: ISO string (frontend) → Date object (backend via `new Date()`)
 
 **Field Enable/Disable**: Theo permission matrix
 
@@ -216,15 +235,18 @@ Hàng 6: [Metadata: createdBy, updatedBy, timestamps (readonly, 2 cols)         
 
 - Past date (Employee): Alert warning "Chỉ sửa ghi chú và phương thức thanh toán"
 - Non-admin restrictions: Disable amount inputs và service selection
-- Admin: Full access (no warnings)
+- Admin: Full access (no warnings), có thể sửa tất cả fields kể cả cashier và datetime
 
 ### Validation
 
 **Áp dụng validation rules từ Section 1 (Create)**, với điểm khác biệt:
 
 - **Field enable/disable** theo permission matrix
-- **Admin fields** chỉ hiển thị cho Admin
-- **Backend validation**: Non-admin past date chỉ cho phép sửa `notes` và `paymentMethod`
+- **Admin fields** (`cashierId`, `paymentDate`) chỉ hiển thị và validate cho Admin
+- **Backend validation**:
+  - Non-admin past date chỉ cho phép sửa `notes` và `paymentMethod`
+  - Admin có thể update `cashierId` và `paymentDate` (convert ISO string → Date object)
+- **DateTime format**: DatePicker với `showTime={{ format: "HH:mm" }}`, format `DD/MM/YYYY HH:mm`
 
 ---
 
@@ -279,15 +301,27 @@ Hàng 6: [Metadata: createdBy, updatedBy, timestamps (readonly, 2 cols)         
 
 ### Table Columns
 
-| Column     | Width | Sort/Filter | Description                                   |
-| ---------- | ----- | ----------- | --------------------------------------------- |
-| Số phiếu   | 140px | ✅ Sort     | `paymentNumber` (link to detail)              |
-| Khách hàng | 180px | ✅ Filter   | Line 1: Tên (link)<br>Line 2: Mã (text-muted) |
-| Ngày thu   | 120px | ✅ Sort     | `paymentDate` (VN format)                     |
-| Tổng tiền  | 120px | ✅ Sort     | `totalAmount` (VND format)                    |
-| Thu ngân   | 140px | ✅ Filter   | `cashier.fullName`                            |
-| Số DV      | 70px  | -           | Count details                                 |
-| Actions    | 100px | -           | In / Sửa / Xóa (theo permission)              |
+| Column     | Width | Sort/Filter | Description                                        |
+| ---------- | ----- | ----------- | -------------------------------------------------- |
+| Khách hàng | 160px | ✅ Filter   | Line 1: Tên (link)<br>Line 2: Mã (text-muted)      |
+| Số phiếu   | 130px | ✅ Sort     | `paymentNumber` (MK-2511-0001)                     |
+| Ngày thu   | 140px | ✅ Sort     | `paymentDate` (**DD/MM/YYYY HH:mm** - có giờ phút) |
+| Tổng tiền  | 110px | ✅ Sort     | `totalAmount` (VND format)                         |
+| Thu ngân   | 120px | ✅ Filter   | `cashier.fullName`                                 |
+| Số DV      | 60px  | -           | Count details (Tag)                                |
+| Actions    | 110px | -           | In / Sửa / Xóa (3 buttons)                         |
+
+**Width Optimization**:
+
+- **Customer Detail View**: 130+140+110+120+60+110 = **670px** (no scroll needed!)
+- **Daily View**: 160+130+110+120+60+110 = **690px** (minimal scroll)
+
+**Table Configuration**:
+
+- `size="small"` - Compact display cho expandable details
+- `scroll={{ x: 900 }}` - Tối ưu để hạn chế scroll
+- `pagination={false}` - No pagination trong Customer Detail view
+- Action buttons: Default style (không dùng `type="link"`) với `Space size="small"`
 
 **Expandable Rows**: Click row để expand hiển thị details table
 
@@ -331,7 +365,7 @@ PHÒNG KHÁM NHA KHOA [CLINIC_NAME]
 Khách hàng: [CUSTOMER_NAME]
 Mã KH: [CUSTOMER_CODE]
 Thu ngân: [CASHIER_NAME]
-Ngày thu: [PAYMENT_DATE]
+Ngày lập phiếu: [PAYMENT_DATE - DD/MM/YYYY HH:mm]
 ------------------------------------------
 STT | Dịch vụ        | Tiền thu   | PT
 ------------------------------------------
@@ -565,29 +599,31 @@ async function generatePaymentNumber(
 
 ### Backend
 
-- [ ] **Zod Schemas**: CreatePaymentVoucherRequestSchema, UpdatePaymentVoucherRequestSchema, PaymentVoucherResponseSchema
-- [ ] **Repository Layer**: generatePaymentNumber, createVoucher, updateVoucher, deleteVoucher, listVouchers
-- [ ] **Service Layer**: Business logic + permission checks + debt synchronization
-- [ ] **Server Actions**: createPaymentVoucherAction, updatePaymentVoucherAction, deletePaymentVoucherAction
-- [ ] **API Routes**: GET /api/payment-vouchers, GET /api/payment-vouchers/[id], GET /api/customers/[id]/outstanding-services
-- [ ] **Transaction Logic**: Đảm bảo atomicity cho debt sync
+- [x] **Zod Schemas**: CreatePaymentVoucherRequestSchema, UpdatePaymentVoucherRequestSchema (có `cashierId`, `paymentDate` optional), PaymentVoucherResponseSchema
+- [x] **Repository Layer**: generatePaymentNumber, createVoucher, updateVoucher (hỗ trợ `cashierId` và `paymentDate`), deleteVoucher, listVouchers
+- [x] **Service Layer**: Business logic + permission checks + debt synchronization + **timezone handling** (ISO string → Date)
+- [x] **Server Actions**: createPaymentVoucherAction, updatePaymentVoucherAction, deletePaymentVoucherAction
+- [x] **API Routes**: GET /api/payment-vouchers, GET /api/payment-vouchers/[id], GET /api/customers/[id]/outstanding-services
+- [x] **Transaction Logic**: Đảm bảo atomicity cho debt sync
 
 ### Frontend
 
-- [ ] **Types**: PaymentVoucherResponse, PaymentVoucherDetail, OutstandingService, PaymentMethodStats
-- [ ] **API Client**: fetchPaymentVouchers, fetchOutstandingServices (API Routes)
-- [ ] **Hooks**: usePaymentVouchers, useOutstandingServices, usePaymentVoucherMutations
-- [ ] **Components**: PaymentVoucherModal, PaymentVoucherTable, PaymentStatistics, PrintableReceipt
-- [ ] **Pages**: PaymentDailyView
-- [ ] **Customer Integration**: Payment tab trong Customer Detail
+- [x] **Types**: PaymentVoucherResponse, PaymentVoucherDetail, OutstandingService, PaymentMethodStats
+- [x] **API Client**: fetchPaymentVouchers, fetchOutstandingServices (API Routes)
+- [x] **Hooks**: usePaymentVouchers, useOutstandingServices, usePaymentVoucherMutations
+- [x] **Components**: CreatePaymentVoucherModal, **UpdatePaymentVoucherModal** (có metadata + admin advanced edit), PaymentVoucherTable, PaymentStatistics, PrintableReceipt
+- [x] **Pages**: PaymentDailyView
+- [x] **Customer Integration**: PaymentsTab trong Customer Detail
 
 ### Testing
 
-- [ ] **Payment Number Generation**: Concurrent requests + uniqueness
-- [ ] **Debt Synchronization**: Create/Update/Delete scenarios
-- [ ] **Permission Logic**: Admin vs Employee, today vs past
-- [ ] **Outstanding Services**: Correct filtering + calculation
-- [ ] **Transaction Rollback**: Error scenarios
+- [x] **Payment Number Generation**: Concurrent requests + uniqueness
+- [x] **Debt Synchronization**: Create/Update/Delete scenarios
+- [x] **Permission Logic**: Admin vs Employee, today vs past
+- [x] **Outstanding Services**: Correct filtering + calculation
+- [x] **Transaction Rollback**: Error scenarios
+- [x] **Timezone Handling**: ISO string → Date conversion, Timestamptz storage
+- [x] **Admin Advanced Edit**: cashierId và paymentDate update với permission check
 
 ---
 
@@ -598,6 +634,7 @@ async function generatePaymentNumber(
 ```prisma
 model PaymentVoucher {
   // ... fields ...
+  paymentDate DateTime @default(now()) @db.Timestamptz // Ngày và giờ thu tiền (có timezone)
 
   @@index([clinicId, paymentDate]) // Daily view
   @@index([paymentNumber])         // Search by number

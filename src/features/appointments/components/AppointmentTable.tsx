@@ -90,7 +90,7 @@ export default function AppointmentTable({
         title: "Khách hàng",
         dataIndex: "customer",
         key: "customer",
-        width: 200,
+        width: 170,
         render: (customer) => (
           <div>
             <Space size={4}>
@@ -124,7 +124,7 @@ export default function AppointmentTable({
         title: "Chi nhánh",
         dataIndex: "clinic",
         key: "clinic",
-        width: 90,
+        width: 80,
         render: (clinic) => (
           <Tag color={clinic.colorCode} style={{ fontSize: 11 }}>
             {clinic.clinicCode}
@@ -135,7 +135,7 @@ export default function AppointmentTable({
         title: "Thời gian hẹn",
         dataIndex: "appointmentDateTime",
         key: "time",
-        width: isCustomerDetailView ? 150 : 100,
+        width: isCustomerDetailView ? 135 : 90,
         sorter: (a, b) =>
           dayjs(a.appointmentDateTime).valueOf() -
           dayjs(b.appointmentDateTime).valueOf(),
@@ -152,7 +152,7 @@ export default function AppointmentTable({
         title: "Bác sĩ chính",
         dataIndex: ["primaryDentist", "fullName"],
         key: "primaryDentist",
-        width: 140,
+        width: 120,
         sorter: (a, b) =>
           a.primaryDentist.fullName.localeCompare(b.primaryDentist.fullName),
         filters: uniqueDentists.map((name) => ({ text: name, value: name })),
@@ -162,7 +162,7 @@ export default function AppointmentTable({
         title: "Bác sĩ phụ",
         dataIndex: ["secondaryDentist", "fullName"],
         key: "secondaryDentist",
-        width: 140,
+        width: 120,
         sorter: (a, b) => {
           const nameA = a.secondaryDentist?.fullName || "";
           const nameB = b.secondaryDentist?.fullName || "";
@@ -182,7 +182,7 @@ export default function AppointmentTable({
         title: "Ghi chú",
         dataIndex: "notes",
         key: "notes",
-        width: 160,
+        width: 140,
         ellipsis: true,
         render: (notes) => notes || "—",
       },
@@ -190,7 +190,7 @@ export default function AppointmentTable({
         title: "Trạng thái",
         dataIndex: "status",
         key: "status",
-        width: 120,
+        width: 110,
         filters: uniqueStatuses.map((status) => ({
           text: status,
           value: status,
@@ -204,7 +204,7 @@ export default function AppointmentTable({
         title: "Check-in",
         dataIndex: "checkInTime",
         key: "checkIn",
-        width: 120,
+        width: 110,
         sorter: (a, b) => {
           const timeA = a.checkInTime
             ? dayjs(a.checkInTime).valueOf()
@@ -249,7 +249,7 @@ export default function AppointmentTable({
         title: "Check-out",
         dataIndex: "checkOutTime",
         key: "checkOut",
-        width: 120,
+        width: 110,
         sorter: (a, b) => {
           const timeA = a.checkOutTime
             ? dayjs(a.checkOutTime).valueOf()
@@ -296,7 +296,7 @@ export default function AppointmentTable({
       {
         title: "Thao tác",
         key: "actions",
-        width: 180,
+        width: 160,
         // fixed: "right",
         render: (_, record) => {
           // Calculate permissions once per render
@@ -443,7 +443,7 @@ export default function AppointmentTable({
       rowKey="id"
       loading={loading}
       pagination={false}
-      scroll={{ x: 1400 }}
+      scroll={{ x: 1250 }}
       locale={{
         emptyText: "Không có lịch hẹn nào",
       }}
