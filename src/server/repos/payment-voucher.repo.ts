@@ -1,0 +1,522 @@
+// src/server/repos/payment-voucher.repo.ts
+import { prisma } from "@/services/prisma/prisma";
+import type { Prisma, PrismaClient } from "@prisma/client";
+import type {
+  CreatePaymentVoucherRequest,
+  UpdatePaymentVoucherRequest,
+} from "@/shared/validation/payment-voucher.schema";
+import { clinicRepo } from "@/server/repos/clinic.repo";
+import dayjs from "dayjs";
+
+/**
+ * Complex Pattern: API Schema + Server Fields
+ * Following appointment.repo.ts and consulted-service.repo.ts gold standards
+ */
+export type PaymentVoucherCreateInput = CreatePaymentVoucherRequest & {
+  paymentNumber: string; // 🔒 Auto-generated: {PREFIX}-{YYMM}-{XXXX}
+  paymentDate: Date; // 🔒 Server-controlled: now()
+  totalAmount: number; // 🔒 Calculated: sum of details amounts
+  cashierId: string; // 🔒 Server-controlled: currentUser.employeeId
+  clinicId: string; // 🔒 Server-controlled: from currentUser or admin selection
+  createdById: string; // 🔒 Server-controlled: currentUser.employeeId
+  updatedById: string; // 🔒 Server-controlled: currentUser.employeeId
+};
+
+export type PaymentVoucherUpdateInput = Partial<
+  Omit<
+    UpdatePaymentVoucherRequest,
+    "customerId" | "paymentNumber" | "paymentDate"
+  >
+> & {
+  totalAmount?: number; // 🔒 Recalculated if details change
+  updatedById?: string; // 🔒 Server-controlled: track who made the update
+};
+
+/**
+ * Prisma include for full relations
+ */
+const paymentVoucherInclude = {
+  customer: {
+    select: {
+      id: true,
+      fullName: true,
+      customerCode: true,
+      phone: true,
+    },
+  },
+  cashier: {
+    select: {
+      id: true,
+      fullName: true,
+    },
+  },
+  details: {
+    include: {
+      consultedService: {
+        select: {
+          id: true,
+          consultedServiceName: true,
+          finalPrice: true,
+        },
+      },
+      createdBy: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
+    },
+  },
+  createdBy: {
+    select: {
+      id: true,
+      fullName: true,
+    },
+  },
+  updatedBy: {
+    select: {
+      id: true,
+      fullName: true,
+    },
+  },
+} satisfies Prisma.PaymentVoucherInclude;
+
+/**
+ * Derive clinic prefix from clinicCode (same logic as customer.service.ts)
+ * This ensures consistency between customer codes and payment numbers
+ */
+function deriveClinicPrefix(clinicCode: string): string {
+  const rawCode = clinicCode.trim();
+  const upperCode = rawCode.toUpperCase();
+
+  if (upperCode.includes("450")) {
+    return "MK";
+  } else if (upperCode.includes("143")) {
+    return "TDT";
+  } else if (upperCode.includes("153")) {
+    return "DN";
+  } else {
+    // Fallback: derive prefix from letters only
+    const lettersOnly = upperCode.replace(/[^A-Z]/g, "");
+    return lettersOnly || upperCode.substring(0, 3);
+  }
+}
+
+/**
+ * Payment Voucher Repository
+ * Implements Complex + Server Fields pattern for business data
+ */
+export const paymentVoucherRepo = {
+  /**
+   * Generate unique payment number with retry logic
+   * Format: {PREFIX}-{YYMM}-{XXXX}
+   * Fetches clinic from DB and derives prefix (same as customer code generation)
+   */
+  async generatePaymentNumber(
+    clinicId: string,
+    tx?: Omit<
+      PrismaClient,
+      "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+    >
+  ): Promise<string> {
+    const db = tx || prisma;
+
+    // Fetch clinic to get clinicCode
+    const clinic = await clinicRepo.getById(clinicId);
+    if (!clinic?.clinicCode) {
+      throw new Error("Chi nhánh không hợp lệ");
+    }
+
+    const prefix = deriveClinicPrefix(clinic.clinicCode);
+    const yymm = dayjs().format("YYMM");
+
+    let retryCount = 0;
+    while (retryCount < 10) {
+      try {
+        // Count existing vouchers with same prefix-month
+        const count = await db.paymentVoucher.count({
+          where: {
+            paymentNumber: {
+              startsWith: `${prefix}-${yymm}-`,
+            },
+          },
+        });
+
+        const sequence = (count + 1).toString().padStart(4, "0");
+        const paymentNumber = `${prefix}-${yymm}-${sequence}`;
+
+        // Test uniqueness
+        const existing = await db.paymentVoucher.findUnique({
+          where: { paymentNumber },
+        });
+
+        if (!existing) {
+          return paymentNumber;
+        }
+
+        retryCount++;
+      } catch {
+        retryCount++;
+        if (retryCount >= 10) {
+          throw new Error(
+            "Không thể tạo số phiếu thu sau 10 lần thử. Vui lòng thử lại."
+          );
+        }
+      }
+    }
+
+    throw new Error(
+      "Không thể tạo số phiếu thu sau 10 lần thử. Vui lòng thử lại."
+    );
+  },
+
+  /**
+   * Create new payment voucher with details
+   * Uses transaction to ensure atomicity with debt synchronization
+   */
+  async create(data: PaymentVoucherCreateInput) {
+    return prisma.$transaction(async (tx) => {
+      // Generate unique payment number
+      const paymentNumber = await this.generatePaymentNumber(data.clinicId, tx);
+
+      // Create voucher
+      const voucher = await tx.paymentVoucher.create({
+        data: {
+          paymentNumber,
+          customerId: data.customerId,
+          paymentDate: data.paymentDate,
+          totalAmount: data.totalAmount,
+          notes: data.notes,
+          cashierId: data.cashierId,
+          clinicId: data.clinicId,
+          createdById: data.createdById,
+          updatedById: data.updatedById,
+        },
+      });
+
+      // Create details and update consulted services
+      for (const detail of data.details) {
+        await tx.paymentVoucherDetail.create({
+          data: {
+            paymentVoucherId: voucher.id,
+            consultedServiceId: detail.consultedServiceId,
+            amount: detail.amount,
+            paymentMethod: detail.paymentMethod,
+            createdById: data.createdById,
+          },
+        });
+
+        // Update consulted service debt
+        await tx.consultedService.update({
+          where: { id: detail.consultedServiceId },
+          data: {
+            amountPaid: { increment: detail.amount },
+            debt: { decrement: detail.amount },
+          },
+        });
+      }
+
+      // Fetch full voucher with relations
+      return tx.paymentVoucher.findUnique({
+        where: { id: voucher.id },
+        include: paymentVoucherInclude,
+      });
+    });
+  },
+
+  /**
+   * Update payment voucher
+   * Handles rollback of old amounts and application of new amounts
+   */
+  async update(id: string, data: PaymentVoucherUpdateInput) {
+    return prisma.$transaction(async (tx) => {
+      // Fetch existing voucher with details
+      const existing = await tx.paymentVoucher.findUnique({
+        where: { id },
+        include: {
+          details: true,
+        },
+      });
+
+      if (!existing) {
+        throw new Error("Phiếu thu không tồn tại");
+      }
+
+      // Rollback old amounts if details are being updated
+      if (data.details) {
+        for (const detail of existing.details) {
+          await tx.consultedService.update({
+            where: { id: detail.consultedServiceId },
+            data: {
+              amountPaid: { decrement: detail.amount },
+              debt: { increment: detail.amount },
+            },
+          });
+        }
+
+        // Delete old details
+        await tx.paymentVoucherDetail.deleteMany({
+          where: { paymentVoucherId: id },
+        });
+      }
+
+      // Update voucher
+      const updated = await tx.paymentVoucher.update({
+        where: { id },
+        data: {
+          notes: data.notes,
+          totalAmount: data.totalAmount,
+          updatedById: data.updatedById,
+        },
+      });
+
+      // Create new details if provided
+      if (data.details) {
+        for (const detail of data.details) {
+          await tx.paymentVoucherDetail.create({
+            data: {
+              paymentVoucherId: updated.id,
+              consultedServiceId: detail.consultedServiceId,
+              amount: detail.amount,
+              paymentMethod: detail.paymentMethod,
+              createdById: data.updatedById!,
+            },
+          });
+
+          // Update consulted service debt
+          await tx.consultedService.update({
+            where: { id: detail.consultedServiceId },
+            data: {
+              amountPaid: { increment: detail.amount },
+              debt: { decrement: detail.amount },
+            },
+          });
+        }
+      }
+
+      // Fetch full voucher with relations
+      return tx.paymentVoucher.findUnique({
+        where: { id: updated.id },
+        include: paymentVoucherInclude,
+      });
+    });
+  },
+
+  /**
+   * Delete payment voucher
+   * Rolls back all amounts to consulted services
+   */
+  async delete(id: string) {
+    return prisma.$transaction(async (tx) => {
+      // Fetch existing voucher with details
+      const existing = await tx.paymentVoucher.findUnique({
+        where: { id },
+        include: {
+          details: true,
+        },
+      });
+
+      if (!existing) {
+        throw new Error("Phiếu thu không tồn tại");
+      }
+
+      // Rollback all amounts
+      for (const detail of existing.details) {
+        await tx.consultedService.update({
+          where: { id: detail.consultedServiceId },
+          data: {
+            amountPaid: { decrement: detail.amount },
+            debt: { increment: detail.amount },
+          },
+        });
+      }
+
+      // Delete details
+      await tx.paymentVoucherDetail.deleteMany({
+        where: { paymentVoucherId: id },
+      });
+
+      // Delete voucher
+      await tx.paymentVoucher.delete({
+        where: { id },
+      });
+
+      return { success: true };
+    });
+  },
+
+  /**
+   * Find payment voucher by ID
+   */
+  async findById(id: string) {
+    return prisma.paymentVoucher.findUnique({
+      where: { id },
+      include: paymentVoucherInclude,
+    });
+  },
+
+  /**
+   * List payment vouchers with pagination and filters
+   */
+  async list(params: {
+    search?: string;
+    page: number;
+    pageSize: number;
+    customerId?: string;
+    clinicId?: string;
+    sortField: string;
+    sortDirection: "asc" | "desc";
+  }) {
+    const {
+      search,
+      page,
+      pageSize,
+      customerId,
+      clinicId,
+      sortField,
+      sortDirection,
+    } = params;
+    const skip = (page - 1) * pageSize;
+
+    // Build where conditions
+    const where: Prisma.PaymentVoucherWhereInput = {};
+
+    if (customerId) {
+      where.customerId = customerId;
+    }
+
+    if (clinicId) {
+      where.clinicId = clinicId;
+    }
+
+    if (search) {
+      where.OR = [
+        { paymentNumber: { contains: search, mode: "insensitive" } },
+        { customer: { fullName: { contains: search, mode: "insensitive" } } },
+        {
+          customer: { customerCode: { contains: search, mode: "insensitive" } },
+        },
+        { customer: { phone: { contains: search, mode: "insensitive" } } },
+        { cashier: { fullName: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    // Build orderBy
+    const orderBy: Prisma.PaymentVoucherOrderByWithRelationInput = {};
+    if (sortField === "paymentNumber") {
+      orderBy.paymentNumber = sortDirection;
+    } else if (sortField === "customerName") {
+      orderBy.customer = { fullName: sortDirection };
+    } else if (sortField === "paymentDate") {
+      orderBy.paymentDate = sortDirection;
+    } else if (sortField === "totalAmount") {
+      orderBy.totalAmount = sortDirection;
+    } else if (sortField === "cashierName") {
+      orderBy.cashier = { fullName: sortDirection };
+    } else {
+      orderBy.createdAt = sortDirection;
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.paymentVoucher.findMany({
+        where,
+        include: paymentVoucherInclude,
+        orderBy,
+        skip,
+        take: pageSize,
+      }),
+      prisma.paymentVoucher.count({ where }),
+    ]);
+
+    return { items, total };
+  },
+
+  /**
+   * List payment vouchers for daily view
+   */
+  async listDaily(params: {
+    clinicId: string;
+    dateStart: Date;
+    dateEnd: Date;
+  }) {
+    const { clinicId, dateStart, dateEnd } = params;
+
+    const where: Prisma.PaymentVoucherWhereInput = {
+      clinicId,
+      paymentDate: {
+        gte: dateStart,
+        lte: dateEnd,
+      },
+    };
+
+    const items = await prisma.paymentVoucher.findMany({
+      where,
+      include: paymentVoucherInclude,
+      orderBy: {
+        paymentDate: "desc",
+      },
+    });
+
+    // Calculate statistics
+    let totalAmount = 0;
+    const byMethod: Record<string, { amount: number; count: number }> = {
+      "Tiền mặt": { amount: 0, count: 0 },
+      "Quẹt thẻ thường": { amount: 0, count: 0 },
+      "Quẹt thẻ Visa": { amount: 0, count: 0 },
+      "Chuyển khoản": { amount: 0, count: 0 },
+    };
+
+    for (const voucher of items) {
+      totalAmount += voucher.totalAmount;
+      for (const detail of voucher.details) {
+        if (byMethod[detail.paymentMethod]) {
+          byMethod[detail.paymentMethod].amount += detail.amount;
+          byMethod[detail.paymentMethod].count += 1;
+        }
+      }
+    }
+
+    return {
+      items,
+      count: items.length,
+      statistics: {
+        totalAmount,
+        totalCount: items.length,
+        byMethod,
+      },
+    };
+  },
+
+  /**
+   * Get unpaid services for a customer
+   */
+  async getUnpaidServices(customerId: string) {
+    const services = await prisma.consultedService.findMany({
+      where: {
+        customerId,
+        serviceStatus: "Đã chốt",
+        debt: {
+          gt: 0,
+        },
+      },
+      select: {
+        id: true,
+        consultedServiceName: true,
+        finalPrice: true,
+        amountPaid: true,
+        debt: true,
+        serviceStatus: true,
+      },
+      orderBy: {
+        serviceConfirmDate: "desc",
+      },
+    });
+
+    const totalDebt = services.reduce((sum, service) => sum + service.debt, 0);
+
+    return {
+      items: services,
+      totalDebt,
+    };
+  },
+};

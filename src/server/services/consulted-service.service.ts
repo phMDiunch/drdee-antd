@@ -248,7 +248,7 @@ export const consultedServiceService = {
 
     // 5. Calculate financial fields
     const finalPrice = preferentialPrice * data.quantity;
-    const debt = finalPrice; // Initially, no payment made
+    const debt = 0; // Debt is 0 until service is confirmed ("Đã chốt")
 
     // 6. Prepare create input
     const createInput = {
@@ -359,7 +359,13 @@ export const consultedServiceService = {
     if (data.quantity !== undefined || data.preferentialPrice !== undefined) {
       const calculatedFinalPrice = newPreferentialPrice * newQuantity;
       updateInput.finalPrice = calculatedFinalPrice;
-      updateInput.debt = calculatedFinalPrice - existing.amountPaid;
+
+      // Debt only calculated for confirmed services
+      if (existing.serviceStatus === "Đã chốt") {
+        updateInput.debt = calculatedFinalPrice - existing.amountPaid;
+      } else {
+        updateInput.debt = 0; // Unconfirmed services have no debt
+      }
     }
 
     // 7. Admin-only validation: serviceStatus change
@@ -370,6 +376,10 @@ export const consultedServiceService = {
       if (!data.serviceConfirmDate) {
         updateInput.serviceConfirmDate = new Date();
       }
+      // Calculate debt when confirming service
+      const currentFinalPrice =
+        (updateInput.finalPrice as number) ?? existing.finalPrice;
+      updateInput.debt = currentFinalPrice - existing.amountPaid;
     }
 
     // 8. Track updater

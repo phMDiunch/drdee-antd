@@ -13,9 +13,11 @@ import {
   useUpdateAppointment,
   useDeleteAppointment,
   useCreateAppointment,
+  exportAppointmentsToExcel,
 } from "@/features/appointments";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
+import { useNotify } from "@/shared/hooks/useNotify";
 import type {
   AppointmentResponse,
   CreateAppointmentRequest,
@@ -24,6 +26,7 @@ import type {
 
 export default function AppointmentDailyView() {
   const { user: currentUser } = useCurrentUser();
+  const notify = useNotify();
 
   const {
     selectedDate,
@@ -153,6 +156,22 @@ export default function AppointmentDailyView() {
     [deleteMutation]
   );
 
+  const handleExportExcel = useCallback(async () => {
+    if (!filteredAppointments.length) {
+      notify.warning("Không có dữ liệu để xuất");
+      return;
+    }
+
+    try {
+      notify.info("Đang xuất Excel...");
+      await exportAppointmentsToExcel(filteredAppointments, selectedDate);
+      notify.success("Xuất Excel thành công");
+    } catch (error) {
+      console.error("Excel export error:", error);
+      notify.error(error, { fallback: "Xuất Excel thất bại" });
+    }
+  }, [filteredAppointments, selectedDate, notify]);
+
   const totalCount = appointments.length;
 
   return (
@@ -177,6 +196,7 @@ export default function AppointmentDailyView() {
       <AppointmentFilters
         loading={isLoading}
         onCreate={() => setOpenCreate(true)}
+        onExportExcel={handleExportExcel}
         dailyCount={totalCount}
         searchValue={searchValue}
         onSearchChange={handleSearchChange}

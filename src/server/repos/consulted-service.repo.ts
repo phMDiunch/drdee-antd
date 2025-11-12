@@ -18,7 +18,7 @@ export type ConsultedServiceCreateInput = CreateConsultedServiceRequest & {
   consultedServiceUnit: string; // 🔒 Denormalized: từ DentalService
   price: number; // 🔒 Denormalized: từ DentalService
   finalPrice: number; // 🔒 Calculated: preferentialPrice * quantity
-  debt: number; // 🔒 Calculated: finalPrice - amountPaid
+  debt: number; // 🔒 Calculated: finalPrice - amountPaid (only when serviceStatus = "Đã chốt")
   createdById: string; // 🔒 Server-controlled: từ currentUser.employeeId
   updatedById: string; // 🔒 Server-controlled: từ currentUser.employeeId
 };
@@ -30,7 +30,7 @@ export type ConsultedServiceUpdateInput = Partial<
   >
 > & {
   finalPrice?: number; // 🔒 Recalculated if quantity or preferentialPrice changes
-  debt?: number; // 🔒 Recalculated if finalPrice or amountPaid changes
+  debt?: number; // 🔒 Recalculated if finalPrice or amountPaid changes (only for confirmed services)
   updatedById?: string; // 🔒 Server-controlled: track who made the update
 };
 
@@ -309,13 +309,27 @@ export const consultedServiceRepo = {
 
   /**
    * Confirm consulted service (set status to "Đã chốt")
+   * Calculate debt when confirming the service
    */
   async confirm(id: string, updatedById: string) {
+    // First get the current service to calculate debt
+    const existing = await prisma.consultedService.findUnique({
+      where: { id },
+      select: { finalPrice: true, amountPaid: true },
+    });
+
+    if (!existing) {
+      throw new Error("Consulted service not found");
+    }
+
+    const debt = existing.finalPrice - existing.amountPaid;
+
     return prisma.consultedService.update({
       where: { id },
       data: {
         serviceStatus: "Đã chốt",
         serviceConfirmDate: new Date(),
+        debt, // Calculate debt when confirming
         updatedById,
       },
       include: consultedServiceInclude,

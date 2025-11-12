@@ -143,6 +143,32 @@ export type CustomerResponse = z.infer<typeof CustomerResponseSchema>;
 - Backend Response: `<Feature>ResponseSchema`, `<Feature>ListResponseSchema`
 - Query: `Get<Feature>QuerySchema`
 
+**Response Schema - Nested Structure:**
+
+✅ **Giữ nguyên cấu trúc nested objects** (không flatten):
+
+```typescript
+export const PaymentVoucherResponseSchema = z.object({
+  customer: z.object({
+    id: z.string(),
+    fullName: z.string(),
+  }),
+  cashier: z.object({
+    id: z.string(),
+    fullName: z.string(),
+  }),
+  // ... nested objects
+});
+```
+
+❌ **Không flatten thành flat fields**:
+
+```typescript
+// ❌ AVOID
+customerName: z.string(),     // Flat
+cashierName: z.string(),      // Flat
+```
+
 ## 3. Backend Layer
 
 **Hybrid Architecture Overview:**

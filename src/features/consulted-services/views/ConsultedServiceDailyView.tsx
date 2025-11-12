@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { message } from "antd";
 import PageHeaderWithDateNav from "@/shared/components/PageHeaderWithDateNav";
 import ClinicTabs from "@/shared/components/ClinicTabs";
 import {
@@ -18,6 +17,7 @@ import {
 } from "@/features/consulted-services";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
+import { useNotify } from "@/shared/hooks/useNotify";
 import type {
   ConsultedServiceResponse,
   UpdateConsultedServiceRequest,
@@ -25,6 +25,7 @@ import type {
 
 export default function ConsultedServiceDailyView() {
   const { user: currentUser } = useCurrentUser();
+  const notify = useNotify();
 
   const {
     selectedDate,
@@ -93,7 +94,7 @@ export default function ConsultedServiceDailyView() {
 
   const handleExportExcel = useCallback(async () => {
     if (!services.length) {
-      message.warning("Không có dữ liệu để xuất");
+      notify.warning("Không có dữ liệu để xuất");
       return;
     }
 
@@ -102,12 +103,12 @@ export default function ConsultedServiceDailyView() {
         "YYYY-MM-DD"
       )}.xlsx`;
       await exportConsultedServicesToExcel(services, filename);
-      message.success(`Đã xuất ${services.length} dịch vụ tư vấn`);
+      notify.success(`Đã xuất ${services.length} dịch vụ tư vấn`);
     } catch (error) {
-      message.error("Có lỗi xảy ra khi xuất file Excel");
       console.error("Export error:", error);
+      notify.error(error, { fallback: "Có lỗi xảy ra khi xuất file Excel" });
     }
-  }, [services, selectedDate]);
+  }, [services, selectedDate, notify]);
 
   return (
     <div>

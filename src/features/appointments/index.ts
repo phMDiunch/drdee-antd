@@ -23,4 +23,7 @@ export * from "./hooks/useDentistAvailability";
 // ===== CONSTANTS =====
 export * from "./constants";
 
+// ===== UTILS =====
+export { exportAppointmentsToExcel } from "./utils/exportToExcel";
+
 // NOTE: API layer không export (internal use only - hooks wrap them)

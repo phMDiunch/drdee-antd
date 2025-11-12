@@ -3,13 +3,18 @@
 
 import React from "react";
 import { Button, Input, Space, Typography } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  DownloadOutlined,
+} from "@ant-design/icons";
 
 const { Text } = Typography;
 
 type Props = {
   loading?: boolean;
   onCreate: () => void;
+  onExportExcel?: () => void;
   dailyCount: number;
   searchValue: string;
   onSearchChange: (value: string) => void;
@@ -18,6 +23,7 @@ type Props = {
 export default function AppointmentFilters({
   loading,
   onCreate,
+  onExportExcel,
   dailyCount,
   searchValue,
   onSearchChange,
@@ -34,7 +40,7 @@ export default function AppointmentFilters({
       {/* Left side: Count display */}
       <Text strong>{dailyCount} lịch hẹn hôm nay</Text>
 
-      {/* Right side: Search + Create button */}
+      {/* Right side: Search + Export + Create button */}
       <Space>
         <Input
           placeholder="Tìm theo tên hoặc mã khách hàng..."
@@ -44,6 +50,15 @@ export default function AppointmentFilters({
           style={{ width: 280 }}
           allowClear
         />
+        {onExportExcel && (
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={onExportExcel}
+            loading={loading}
+          >
+            Xuất Excel
+          </Button>
+        )}
         <Button
           type="primary"
           icon={<PlusOutlined />}

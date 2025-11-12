@@ -12,12 +12,14 @@ import {
 } from "@ant-design/icons";
 import { useCustomerDetail } from "@/features/customers";
 import { useConsultedServicesByCustomer } from "@/features/consulted-services";
+import { usePaymentVouchers } from "@/features/payments";
 import CustomerInfoTab from "../components/detail-tabs/CustomerInfoTab";
 import AppointmentsTab from "../components/detail-tabs/AppointmentsTab";
 import ConsultedServicesTab from "../components/detail-tabs/ConsultedServicesTab";
 import TreatmentLogsTab from "../components/detail-tabs/TreatmentLogsTab";
 import TreatmentCareTab from "../components/detail-tabs/TreatmentCareTab";
 import PaymentsTab from "../components/detail-tabs/PaymentsTab";
+import FinancialSummaryCard from "../components/FinancialSummaryCard";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -43,10 +45,20 @@ export default function CustomerDetailView({
     refetch,
   } = useCustomerDetail(customerId);
 
-  // Fetch consulted services for count
-  const { data: consultedServicesData } =
+  // Fetch consulted services for count and financial summary
+  const { data: consultedServicesData, isLoading: isLoadingConsultedServices } =
     useConsultedServicesByCustomer(customerId);
   const consultedServicesCount = consultedServicesData?.items?.length || 0;
+
+  // Fetch payment vouchers for count
+  const { data: paymentVouchersData } = usePaymentVouchers({
+    customerId,
+    page: 1,
+    pageSize: 100, // Load all for count
+    sortField: "paymentDate",
+    sortDirection: "desc",
+  });
+  const paymentVouchersCount = paymentVouchersData?.items?.length || 0;
 
   // Calculate age from dob
   const getAge = (dob: string | null) => {
@@ -184,20 +196,12 @@ export default function CustomerDetailView({
           </Card>
         </Col>
 
-        {/* Card 2: Financial Summary - Placeholder Phase 1 */}
+        {/* Card 2: Financial Summary */}
         <Col xs={24} md={12}>
-          <Card>
-            <Space
-              direction="vertical"
-              size="small"
-              style={{ width: "100%", textAlign: "center" }}
-            >
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="📋 Chưa có dịch vụ nào được chốt"
-              />
-            </Space>
-          </Card>
+          <FinancialSummaryCard
+            consultedServices={consultedServicesData?.items}
+            loading={isLoadingConsultedServices}
+          />
         </Col>
       </Row>
 
@@ -247,8 +251,16 @@ export default function CustomerDetailView({
             },
             {
               key: "payments",
-              label: "Phiếu thu",
-              children: <PaymentsTab />,
+              label: `Phiếu thu (${paymentVouchersCount})`,
+              children: (
+                <PaymentsTab
+                  customerId={customerId}
+                  customerCode={customer.customerCode || ""}
+                  customerName={customer.fullName}
+                  clinicId={customer.clinicId || ""}
+                  onDataChange={() => refetch()}
+                />
+              ),
             },
             {
               key: "treatmentLogs",

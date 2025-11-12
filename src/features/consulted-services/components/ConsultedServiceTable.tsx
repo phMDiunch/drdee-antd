@@ -4,7 +4,6 @@
 import React from "react";
 import {
   Button,
-  Divider,
   Popconfirm,
   Space,
   Table,
@@ -168,14 +167,6 @@ export default function ConsultedServiceTable({
         align: "center",
       },
       {
-        title: "Đơn giá",
-        dataIndex: "price",
-        key: "price",
-        width: 120,
-        align: "right",
-        render: (price) => <Text>{formatVND(price)}</Text>,
-      },
-      {
         title: "Giá ưu đãi",
         dataIndex: "preferentialPrice",
         key: "preferentialPrice",
@@ -330,7 +321,7 @@ export default function ConsultedServiceTable({
               disabled={!canConfirm.allowed}
             >
               <Button
-                type="dashed"
+                type="primary"
                 size="small"
                 icon={<CheckOutlined />}
                 disabled={!canConfirm.allowed}
@@ -363,7 +354,7 @@ export default function ConsultedServiceTable({
               : CONSULTED_SERVICE_MESSAGES.DELETE_CONFIRM_UNCONFIRMED;
 
           return (
-            <Space split={<Divider type="vertical" />} size="small">
+            <Space size="small">
               <Tooltip
                 title={editPermission.allowed ? "Sửa" : editPermission.reason}
               >
@@ -416,12 +407,8 @@ export default function ConsultedServiceTable({
       dataSource={data}
       loading={loading}
       rowKey="id"
-      scroll={{ x: 1800 }}
-      pagination={{
-        pageSize: 20,
-        showSizeChanger: true,
-        showTotal: (total) => `Tổng ${total} dịch vụ`,
-      }}
+      scroll={{ x: 1400 }}
+      pagination={false}
     />
   );
 }

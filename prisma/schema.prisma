@@ -449,6 +449,11 @@ model PaymentVoucher {
 
   createdBy Employee @relation("CreatedVouchers", fields: [createdById], references: [id])
   updatedBy Employee @relation("UpdatedVouchers", fields: [updatedById], references: [id])
+
+  // Indexes
+  @@index([clinicId, paymentDate])
+  @@index([customerId])
+  @@index([paymentNumber])
 }
 
 model PaymentVoucherDetail {
@@ -471,6 +476,10 @@ model PaymentVoucherDetail {
 
   // 
   createdBy Employee @relation("CreatedVoucherDetails", fields: [createdById], references: [id])
+
+  // Indexes
+  @@index([consultedServiceId])
+  @@index([paymentVoucherId])
 }
 
 //---------------------------

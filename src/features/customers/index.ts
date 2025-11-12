@@ -13,6 +13,7 @@ export { default as CustomerStatistics } from "./components/CustomerStatistics";
 export { default as CustomerFilters } from "./components/CustomerFilters";
 export { default as QuickCheckInButton } from "./components/QuickCheckInButton";
 export { default as WalkInModal } from "./components/WalkInModal";
+export { default as FinancialSummaryCard } from "./components/FinancialSummaryCard";
 
 // Detail tabs
 export { default as CustomerInfoTab } from "./components/detail-tabs/CustomerInfoTab";
@@ -36,5 +37,8 @@ export * from "./hooks/form-hooks/useCustomerFormOptions";
 
 // ===== CONSTANTS =====
 export * from "./constants";
+
+// ===== UTILS =====
+export * from "./utils/financialSummary";
 
 // NOTE: API layer không export (internal use only - hooks wrap them)

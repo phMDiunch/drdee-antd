@@ -33,7 +33,9 @@
       - Hợp lệ: `preferentialPrice === 0` HOẶC `minPrice <= preferentialPrice <= price`
       - Không hợp lệ: `0 < preferentialPrice < minPrice` (VD: nhập 1, 10, 499 khi minPrice=500)
   - `finalPrice = preferentialPrice * quantity` (realtime)
-  - `debt = finalPrice - amountPaid`
+  - **`debt` Logic (QUAN TRỌNG)**:
+    - **Chưa chốt**: `debt = 0` (chưa phát sinh nghiệp vụ tài chính)
+    - **Đã chốt**: `debt = finalPrice - amountPaid` (phát sinh công nợ thực tế)
 - ✅ **Status Fields**:
   - `serviceStatus`: "Chưa chốt" | "Đã chốt" (workflow driven)
   - `treatmentStatus`: "Chưa điều trị" | "Đang điều trị" | "Hoàn thành" (từ TreatmentLog)
@@ -281,6 +283,7 @@ Hàng 8: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt (2 c
 
 - Set `serviceStatus = "Đã chốt"`
 - Set `serviceConfirmDate = now()`
+- **Calculate debt**: `debt = finalPrice - amountPaid` (chỉ khi chốt mới phát sinh công nợ)
 - Validate: Đã chốt rồi → 400
 
 ### Implementation
@@ -290,7 +293,74 @@ Hàng 8: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt (2 c
 - Input: `id` (consulted service UUID)
 - Process: Update status + set confirm date
 - Return: Updated ConsultedService object
-- Error: 400 nếu đã chốt, 404 nếu không tìm thấy, 403 nếu không có quyền
+- Error: 400 nếu đã chốt, 404 nếu không tìm thấy, 403 nếi không có quyền
+
+---
+
+## 4.1. 💰 Debt (Công nợ) Logic
+
+### Business Rules
+
+**Debt chỉ được tính khi dịch vụ đã chốt** - đây là quy tắc cốt lõi:
+
+| Trạng thái dịch vụ | Debt Logic                       | Lý do                                                   |
+| ------------------ | -------------------------------- | ------------------------------------------------------- |
+| **Chưa chốt**      | `debt = 0`                       | Giá có thể thay đổi, chưa phát sinh nghiệp vụ tài chính |
+| **Đã chốt**        | `debt = finalPrice - amountPaid` | Giá đã cố định, phát sinh công nợ thực tế               |
+
+### Implementation Flow
+
+```typescript
+// 1. CREATE service (chưa chốt)
+const createInput = {
+  finalPrice: preferentialPrice * quantity,
+  debt: 0, // Always 0 for unconfirmed services
+  amountPaid: 0,
+  serviceStatus: "Chưa chốt",
+};
+
+// 2. UPDATE service (chưa chốt)
+if (existing.serviceStatus === "Chưa chốt") {
+  updateInput.debt = 0; // Keep debt = 0
+}
+
+// 3. CONFIRM service (chưa chốt → đã chốt)
+if (newStatus === "Đã chốt") {
+  updateInput.debt = finalPrice - amountPaid; // Calculate debt
+  updateInput.serviceConfirmDate = now();
+}
+
+// 4. UPDATE confirmed service (admin only)
+if (existing.serviceStatus === "Đã chốt" && priceChanged) {
+  updateInput.debt = newFinalPrice - existing.amountPaid; // Recalculate
+}
+```
+
+### UI Display Rules
+
+- **Daily View**: Không hiển thị cột Debt (focus tổng quan)
+- **Customer Detail**: Hiển thị cột "Công nợ"
+  - Màu đỏ khi: `serviceStatus === "Đã chốt" && debt > 0`
+  - Màu thường khi: `serviceStatus === "Chưa chốt"` hoặc `debt === 0`
+
+### Integration với Payment
+
+```typescript
+// Payment system sẽ:
+// 1. Query services với debt > 0 và đã chốt
+const outstandingServices = await findMany({
+  where: {
+    serviceStatus: "Đã chốt",
+    debt: { gt: 0 },
+  },
+});
+
+// 2. Update debt sau thanh toán
+await update(serviceId, {
+  amountPaid: existing.amountPaid + paymentAmount,
+  debt: existing.debt - paymentAmount,
+});
+```
 
 ---
 
@@ -375,7 +445,7 @@ Hàng 8: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt (2 c
 | SL                  | 60px  | -           | `quantity`                                                     |
 | Giá ưu đãi          | 120px | -           | `preferentialPrice` (VND format)                               |
 | Thành tiền          | 140px | ✅ Sort     | `finalPrice` (VND format)                                      |
-| Công nợ             | 120px | ✅ Sort     | `debt` (VND format, red nếu > 0)                               |
+| Công nợ             | 120px | ✅ Sort     | `debt` (VND format, **chỉ red khi đã chốt và > 0**)            |
 | Bác sĩ tư vấn       | 140px | ✅ Filter   | `consultingDoctor.fullName`                                    |
 | Sale tư vấn         | 120px | ✅ Filter   | `consultingSale.fullName`                                      |
 | Bác sĩ điều trị     | 140px | ✅ Filter   | `treatingDoctor.fullName`                                      |
@@ -438,6 +508,10 @@ Hàng 8: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt (2 c
 - `preferentialPrice`: min(0), validate với minPrice/price ở service layer
 - `quantity`: min(1), default(1)
 - `toothPositions`: array string[], default([])
+- **`debt`**: Business rule validation
+  - CREATE: Always 0 (chưa chốt)
+  - UPDATE: 0 nếu chưa chốt, calculated nếu đã chốt
+  - CONFIRM: Calculate từ finalPrice - amountPaid
 - Relations: customer, dentalService, consultingDoctor, treatingDoctor, consultingSale (optional)
 
 ### Constants
