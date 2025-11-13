@@ -265,7 +265,7 @@ export default function CustomerDetailView({
             {
               key: "treatmentLogs",
               label: "Lịch sử điều trị",
-              children: <TreatmentLogsTab />,
+              children: <TreatmentLogsTab customerId={customer.id} />,
             },
             {
               key: "treatmentCare",

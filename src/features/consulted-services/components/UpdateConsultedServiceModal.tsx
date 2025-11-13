@@ -26,7 +26,6 @@ import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmploy
 import { useCurrentUser } from "@/shared/providers";
 import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
 import ToothSelectorModal from "./ToothSelectorModal";
-import { TREATMENT_STATUS_OPTIONS } from "../constants";
 import type {
   ConsultedServiceResponse,
   UpdateConsultedServiceRequest,
@@ -44,9 +43,7 @@ const UpdateConsultedServiceFormSchema = z.object({
   specificStatus: z.string().optional().nullable(),
   // Admin fields
   serviceStatus: z.enum(["Chưa chốt", "Đã chốt"]).optional(),
-  treatmentStatus: z
-    .enum(["Chưa điều trị", "Đang điều trị", "Hoàn thành"])
-    .optional(),
+  // treatmentStatus: Read-only, auto-computed from TreatmentLogs (not in form)
   serviceConfirmDate: z.string().optional().nullable(),
   consultationDate: z.string().optional().nullable(),
 });
@@ -87,7 +84,7 @@ export default function UpdateConsultedServiceModal({
       treatingDoctorId: service.treatingDoctorId || null,
       specificStatus: service.specificStatus || "",
       serviceStatus: service.serviceStatus,
-      treatmentStatus: service.treatmentStatus,
+      // treatmentStatus: Not in form, read-only display
       serviceConfirmDate: service.serviceConfirmDate || null,
       consultationDate: service.consultationDate || null,
     }),
@@ -250,13 +247,7 @@ export default function UpdateConsultedServiceModal({
       payload.serviceStatus = formData.serviceStatus;
     }
 
-    if (
-      isAdmin &&
-      formData.treatmentStatus &&
-      formData.treatmentStatus !== service.treatmentStatus
-    ) {
-      payload.treatmentStatus = formData.treatmentStatus;
-    }
+    // treatmentStatus: Auto-computed from TreatmentLogs, not editable
 
     if (isAdmin && formData.serviceConfirmDate !== service.serviceConfirmDate) {
       payload.serviceConfirmDate = formData.serviceConfirmDate
@@ -598,23 +589,24 @@ export default function UpdateConsultedServiceModal({
                 </Col>
 
                 <Col xs={24} lg={12}>
-                  <Controller
-                    name="treatmentStatus"
-                    control={control}
-                    render={({ field }) => (
-                      <Form.Item label="Trạng thái điều trị">
-                        <Select
-                          {...field}
-                          options={
-                            TREATMENT_STATUS_OPTIONS as unknown as {
-                              label: string;
-                              value: string;
-                            }[]
-                          }
-                        />
-                      </Form.Item>
-                    )}
-                  />
+                  <Form.Item label="Trạng thái điều trị">
+                    <Tag
+                      color={
+                        service.treatmentStatus === "Hoàn thành"
+                          ? "success"
+                          : service.treatmentStatus === "Đang điều trị"
+                          ? "processing"
+                          : "default"
+                      }
+                    >
+                      {service.treatmentStatus}
+                    </Tag>
+                    <div
+                      style={{ fontSize: 12, color: "#8c8c8c", marginTop: 4 }}
+                    >
+                      Tự động tính từ Lịch sử điều trị
+                    </div>
+                  </Form.Item>
                 </Col>
               </Row>
 

@@ -1,5 +1,9 @@
 // src/shared/validation/consulted-service.schema.ts
 import { z } from "zod";
+import {
+  TREATMENT_STATUSES,
+  type TreatmentStatus,
+} from "./treatment-log.schema";
 
 /**
  * ============================================================================
@@ -13,15 +17,8 @@ import { z } from "zod";
 export const SERVICE_STATUSES = ["Chưa chốt", "Đã chốt"] as const;
 export type ServiceStatus = (typeof SERVICE_STATUSES)[number];
 
-/**
- * Treatment Statuses
- */
-export const TREATMENT_STATUSES = [
-  "Chưa điều trị",
-  "Đang điều trị",
-  "Hoàn thành",
-] as const;
-export type TreatmentStatus = (typeof TREATMENT_STATUSES)[number];
+// Re-export TREATMENT_STATUSES from single source of truth
+export { TREATMENT_STATUSES, type TreatmentStatus };
 
 /**
  * Consulted Service Common Fields Schema

@@ -203,17 +203,10 @@ export default function CreatePaymentVoucherModal({
 
       // Convert dayjs objects to ISO strings for server compatibility
       if (key === "paymentDate" && value) {
-        // Check if value is a Dayjs object
-        if (dayjs.isDayjs(value)) {
-          value = value.toISOString();
-        } else {
-          // If it's a string or Date, parse it with dayjs first
-          const dayjsValue = dayjs(value as string | Date);
-          if (dayjsValue.isValid()) {
-            value = dayjsValue.toISOString();
-          }
+        const dayjsValue = dayjs(value as string | Date);
+        if (dayjsValue.isValid()) {
+          value = dayjsValue.toISOString();
         }
-        console.log("[CreatePaymentVoucher] paymentDate converted:", value);
       }
 
       obj[key] = value;
@@ -223,7 +216,6 @@ export default function CreatePaymentVoucherModal({
     const payload: CreatePaymentVoucherRequest = {
       customerId: cleanValues.customerId as string,
       notes: (cleanValues.notes as string) || null,
-      paymentDate: cleanValues.paymentDate as string | undefined,
       details: selectedServices.map((service) => ({
         consultedServiceId: service.consultedServiceId,
         amount: service.amount,

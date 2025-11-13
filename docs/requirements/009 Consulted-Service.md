@@ -37,8 +37,15 @@
     - **Chưa chốt**: `debt = 0` (chưa phát sinh nghiệp vụ tài chính)
     - **Đã chốt**: `debt = finalPrice - amountPaid` (phát sinh công nợ thực tế)
 - ✅ **Status Fields**:
-  - `serviceStatus`: "Chưa chốt" | "Đã chốt" (workflow driven)
-  - `treatmentStatus`: "Chưa điều trị" | "Đang điều trị" | "Hoàn thành" (từ TreatmentLog)
+  - `serviceStatus`: "Chưa chốt" | "Đã chốt" (workflow driven, user-editable by Admin)
+  - `treatmentStatus`: "Chưa điều trị" | "Đang điều trị" | "Hoàn thành" ⭐ **AUTO-COMPUTED**
+    - **READ-ONLY**: Không thể edit thủ công (removed from forms)
+    - **Logic**: Status = Treatment log MỚI NHẤT (by treatmentDate DESC)
+    - **No logs** → "Chưa điều trị"
+    - **Has logs** → Lấy status từ log có `treatmentDate` lớn nhất
+    - **Auto-sync**: Backend tự động update sau create/update/delete TreatmentLog
+    - **UI**: Hiển thị dạng Tag color-coded (green/blue/gray) + helper text
+    - See: `011 Treatment Log.md` → AUTO-SYNC section
 
 ### Repository Pattern
 
@@ -230,10 +237,20 @@ Hàng 5: [specificStatus (Textarea, disabled nếu đã chốt)                 
 **Admin Section** (sau Divider "Chỉnh sửa nâng cao (Admin)"):
 
 ```
-Hàng 6: [serviceStatus              ] [treatmentStatus                            ]
+Hàng 6: [serviceStatus              ] [treatmentStatus (READ-ONLY Tag)            ]
 Hàng 7: [serviceConfirmDate         ] [consultationDate                           ]
 Hàng 8: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt (2 cols)]
 ```
+
+**treatmentStatus Display** ⭐ NEW:
+
+- **NOT editable** (removed Select input)
+- Display as **Tag** color-coded:
+  - "Hoàn thành" → Green (success)
+  - "Đang điều trị" → Blue (processing)
+  - "Chưa điều trị" → Gray (default)
+- Helper text: "Tự động tính từ Lịch sử điều trị" (gray, size 12px)
+- Value auto-updates when TreatmentLog create/update/delete
 
 **Field Enable/Disable**: Theo permission matrix (mục Decision Log)
 
@@ -250,7 +267,8 @@ Hàng 8: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt (2 c
 **Áp dụng validation rules từ Section 1 (Create)**, với điểm khác biệt:
 
 - **Field enable/disable** theo permission matrix
-- **Admin fields** (serviceStatus, treatmentStatus, dates) chỉ Admin mới edit được
+- **Admin fields** (serviceStatus, dates) chỉ Admin mới edit được
+- **treatmentStatus**: KHÔNG CÓ TRONG FORM (auto-computed, read-only display)
 - **Backend validation**: Nếu admin set `serviceStatus = "Đã chốt"` → `serviceConfirmDate` required
 
 ---
