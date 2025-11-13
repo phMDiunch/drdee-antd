@@ -10,6 +10,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   MedicineBoxOutlined,
+  ExperimentOutlined,
 } from "@ant-design/icons";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -45,6 +46,12 @@ export const menuItems: MenuItem[] = [
     icon: <MedicineBoxOutlined />,
     label: "Dịch vụ tư vấn",
     children: [{ key: "/consulted-services/daily", label: "Theo ngày" }],
+  },
+  {
+    key: "treatment-logs",
+    icon: <ExperimentOutlined />,
+    label: "Lịch sử điều trị",
+    children: [{ key: "/treatment-logs", label: "Theo ngày" }],
   },
   {
     key: "payments",

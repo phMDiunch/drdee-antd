@@ -25,6 +25,10 @@ export function useDeleteTreatmentLog(customerId?: string) {
           queryKey: ["consulted-services"],
         });
       }
+      // Invalidate daily view queries
+      qc.invalidateQueries({
+        queryKey: ["treatment-logs", "daily"],
+      });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

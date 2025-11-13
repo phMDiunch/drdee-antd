@@ -38,6 +38,7 @@ const treatmentLogInclude = {
       id: true,
       fullName: true,
       customerCode: true,
+      dob: true,
     },
   },
   consultedService: {
@@ -71,6 +72,12 @@ const treatmentLogInclude = {
     select: {
       id: true,
       fullName: true,
+    },
+  },
+  clinic: {
+    select: {
+      id: true,
+      name: true,
     },
   },
   createdBy: {
@@ -209,6 +216,7 @@ export const treatmentLogRepo = {
             id: true,
             fullName: true,
             customerCode: true,
+            dob: true,
             consultedServices: {
               where: {
                 serviceStatus: "Đã chốt",
@@ -240,5 +248,137 @@ export const treatmentLogRepo = {
         appointmentDateTime: "desc",
       },
     });
+  },
+
+  /**
+   * List treatment logs for daily view with statistics
+   * Used for Daily View page
+   * Returns: { items, totalCheckedInCustomers, totalTreatedCustomers }
+   */
+  async listDaily(params: { date: string; clinicId: string }) {
+    const { date, clinicId } = params;
+
+    // Parse date string (YYYY-MM-DD) to Date range
+    const dateStart = new Date(date);
+    dateStart.setHours(0, 0, 0, 0);
+
+    const dateEnd = new Date(date);
+    dateEnd.setHours(23, 59, 59, 999);
+
+    // Fetch treatment logs for the day
+    const items = await prisma.treatmentLog.findMany({
+      where: {
+        treatmentDate: {
+          gte: dateStart,
+          lte: dateEnd,
+        },
+        clinicId,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            fullName: true,
+            customerCode: true,
+            dob: true, // Need for age calculation
+          },
+        },
+        consultedService: {
+          select: {
+            id: true,
+            consultedServiceName: true,
+            toothPositions: true,
+            serviceConfirmDate: true,
+          },
+        },
+        appointment: {
+          select: {
+            id: true,
+            appointmentDateTime: true,
+            status: true,
+          },
+        },
+        dentist: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        assistant1: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        assistant2: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        clinic: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        updatedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+      orderBy: {
+        customer: {
+          customerCode: "asc", // Sort by customer code A-Z (nullable last)
+        },
+      },
+    });
+
+    // Count distinct customers who checked in today
+    const checkedInCustomers = await prisma.appointment.findMany({
+      where: {
+        checkInTime: {
+          gte: dateStart,
+          lte: dateEnd,
+        },
+        clinicId,
+        status: {
+          in: ["Đã đến", "Đến đột xuất"],
+        },
+      },
+      select: {
+        customerId: true,
+      },
+      distinct: ["customerId"],
+    });
+
+    // Count distinct customers who were treated today (from treatment logs)
+    const treatedCustomers = await prisma.treatmentLog.findMany({
+      where: {
+        treatmentDate: {
+          gte: dateStart,
+          lte: dateEnd,
+        },
+        clinicId,
+      },
+      select: {
+        customerId: true,
+      },
+      distinct: ["customerId"],
+    });
+
+    return {
+      items,
+      totalCheckedInCustomers: checkedInCustomers.length,
+      totalTreatedCustomers: treatedCustomers.length,
+    };
   },
 };

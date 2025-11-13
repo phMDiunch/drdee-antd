@@ -152,6 +152,7 @@ export const PaymentVoucherResponseSchema = z.object({
   }),
   clinic: z.object({
     id: z.string(),
+    name: z.string(),
   }),
   details: z.array(PaymentVoucherDetailResponseSchema),
   createdBy: z.object({

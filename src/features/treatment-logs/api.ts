@@ -1,5 +1,7 @@
 // src/features/treatment-logs/api.ts
 
+import { DailyTreatmentLogsResponseSchema } from "@/shared/validation/treatment-log.schema";
+
 /**
  * Get checked-in appointments with consulted services and treatment logs for Customer Detail
  */
@@ -30,4 +32,19 @@ export async function getTreatmentLogDetailApi(id: string) {
   const res = await fetch(`/api/v1/treatment-logs/${id}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+/**
+ * Get daily treatment logs with statistics
+ * Used for Daily View page
+ */
+export async function getDailyTreatmentLogsApi(params: {
+  date: string; // YYYY-MM-DD format
+  clinicId: string;
+}) {
+  const query = new URLSearchParams(params);
+  const res = await fetch(`/api/v1/treatment-logs/daily?${query}`);
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return DailyTreatmentLogsResponseSchema.parse(data);
 }

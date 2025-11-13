@@ -14,6 +14,7 @@ type TreatmentLogWithRelations = TreatmentLog & {
     id: string;
     fullName: string;
     customerCode: string | null;
+    dob: Date | null;
   };
   consultedService: {
     id: string;
@@ -38,6 +39,10 @@ type TreatmentLogWithRelations = TreatmentLog & {
     id: string;
     fullName: string;
   } | null;
+  clinic: {
+    id: string;
+    name: string;
+  };
   createdBy: {
     id: string;
     fullName: string;
@@ -68,6 +73,7 @@ type AppointmentWithRelationsForTreatment = {
     id: string;
     fullName: string;
     customerCode: string | null;
+    dob: Date | null;
     consultedServices: {
       id: string;
       consultedServiceName: string;
@@ -85,27 +91,17 @@ type AppointmentWithRelationsForTreatment = {
 
 /**
  * Map treatment log from Prisma to API response
- * Fetches clinic separately since it's not a relation
  */
-export async function mapTreatmentLogToResponse(
+export function mapTreatmentLogToResponse(
   log: TreatmentLogWithRelations
-): Promise<TreatmentLogResponse> {
-  // Fetch clinic data separately (clinicId is a field, not a relation)
-  const clinic = await prisma.clinic.findUnique({
-    where: { id: log.clinicId },
-    select: { id: true, name: true },
-  });
-
-  if (!clinic) {
-    throw new Error(`Clinic not found for treatmentLog ${log.id}`);
-  }
-
+): TreatmentLogResponse {
   return {
     id: log.id,
     customer: {
       id: log.customer.id,
       fullName: log.customer.fullName,
       customerCode: log.customer.customerCode || null,
+      dateOfBirth: log.customer.dob?.toISOString() || null,
     },
     consultedService: {
       id: log.consultedService.id,
@@ -143,8 +139,8 @@ export async function mapTreatmentLogToResponse(
         }
       : null,
     clinic: {
-      id: clinic.id,
-      name: clinic.name,
+      id: log.clinic.id,
+      name: log.clinic.name,
     },
     imageUrls: log.imageUrls,
     xrayUrls: log.xrayUrls,
@@ -185,6 +181,7 @@ export function mapAppointmentForTreatmentToResponse(
       id: appointment.customer.id,
       fullName: appointment.customer.fullName,
       customerCode: appointment.customer.customerCode || null,
+      dateOfBirth: appointment.customer.dob?.toISOString() || null,
       consultedServices: appointment.customer.consultedServices.map(
         (service) => ({
           id: service.id,

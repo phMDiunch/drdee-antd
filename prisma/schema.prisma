@@ -45,6 +45,15 @@ model Clinic {
 
   // Liên kết đến lịch hẹn
   appointments Appointment[]
+
+  // Liên kết đến dịch vụ tư vấn
+  consultedServices ConsultedService[]
+
+  // Liên kết đến nhật ký điều trị
+  treatmentLogs TreatmentLog[]
+
+  // Liên kết đến phiếu thu
+  paymentVouchers PaymentVoucher[]
 }
 
 model Employee {
@@ -357,6 +366,12 @@ model ConsultedService {
   // Liên kết đến dịch vụ nha khoa
   dentalService DentalService @relation(fields: [dentalServiceId], references: [id])
 
+  // Liên kết đến lịch hẹn
+  Appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  // Liên kết đến chi nhánh
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+
   // Liên kết đến nhân viên
   consultingDoctor Employee? @relation("ConsultingDoctorServices", fields: [consultingDoctorId], references: [id])
   consultingSale   Employee? @relation("ConsultingSaleServices", fields: [consultingSaleId], references: [id])
@@ -364,9 +379,6 @@ model ConsultedService {
 
   createdBy Employee @relation("CreatedConsultedServices", fields: [createdById], references: [id])
   updatedBy Employee @relation("UpdatedConsultedServices", fields: [updatedById], references: [id])
-
-  // Liên kết đến lịch hẹn
-  Appointment Appointment? @relation(fields: [appointmentId], references: [id])
 
   // Liên kết đến nhật ký điều trị
   treatmentLogs TreatmentLog[]
@@ -398,6 +410,8 @@ model PaymentVoucher {
 
   // Liên kết đến khách hàng
   customer Customer @relation(fields: [customerId], references: [id])
+  // Liên kết đến chi nhánh
+  clinic   Clinic   @relation(fields: [clinicId], references: [id])
   // Liên kết đến nhân viên
   cashier  Employee @relation("CashierVouchers", fields: [cashierId], references: [id])
 
@@ -527,9 +541,12 @@ model TreatmentLog {
 
   // Liên kết đến lịch hẹn
   appointment Appointment? @relation(fields: [appointmentId], references: [id])
-  dentist     Employee     @relation("DentistLogs", fields: [dentistId], references: [id])
 
-  // 
+  // Liên kết đến chi nhánh
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+
+  // Liên kết đến nhân viên
+  dentist    Employee  @relation("DentistLogs", fields: [dentistId], references: [id])
   assistant1 Employee? @relation("Assistant1Logs", fields: [assistant1Id], references: [id])
   assistant2 Employee? @relation("Assistant2Logs", fields: [assistant2Id], references: [id])
   createdBy  Employee  @relation("CreatedLogs", fields: [createdById], references: [id])

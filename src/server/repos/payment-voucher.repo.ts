@@ -81,6 +81,12 @@ const paymentVoucherInclude = {
       fullName: true,
     },
   },
+  clinic: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
 } satisfies Prisma.PaymentVoucherInclude;
 
 /**

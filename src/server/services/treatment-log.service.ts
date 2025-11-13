@@ -159,7 +159,7 @@ export const treatmentLogService = {
     await updateConsultedServiceTreatmentStatus(parsed.consultedServiceId);
 
     // 7. Map and validate response
-    const mapped = await mapTreatmentLogToResponse(created);
+    const mapped = mapTreatmentLogToResponse(created);
     return TreatmentLogResponseSchema.parse(mapped);
   },
 
@@ -179,7 +179,7 @@ export const treatmentLogService = {
       );
     }
 
-    const mapped = await mapTreatmentLogToResponse(log);
+    const mapped = mapTreatmentLogToResponse(log);
     return TreatmentLogResponseSchema.parse(mapped);
   },
 
@@ -196,9 +196,7 @@ export const treatmentLogService = {
       appointmentId: parsed.appointmentId,
     });
 
-    const mappedLogs = await Promise.all(
-      logs.map((log) => mapTreatmentLogToResponse(log))
-    );
+    const mappedLogs = logs.map((log) => mapTreatmentLogToResponse(log));
 
     return {
       items: mappedLogs,
@@ -248,7 +246,7 @@ export const treatmentLogService = {
     await updateConsultedServiceTreatmentStatus(existing.consultedServiceId);
 
     // 6. Map and validate response
-    const mapped = await mapTreatmentLogToResponse(updated);
+    const mapped = mapTreatmentLogToResponse(updated);
     return TreatmentLogResponseSchema.parse(mapped);
   },
 
@@ -307,21 +305,80 @@ export const treatmentLogService = {
       );
 
     // Map all appointments with their treatment logs
-    const mapped = await Promise.all(
-      appointments.map(async (appointment) => {
-        // Map treatment logs for this appointment
-        const mappedLogs = await Promise.all(
-          appointment.treatmentLogs.map((log) => mapTreatmentLogToResponse(log))
-        );
+    const mapped = appointments.map((appointment) => {
+      // Map treatment logs for this appointment
+      const mappedLogs = appointment.treatmentLogs.map((log) =>
+        mapTreatmentLogToResponse(log)
+      );
 
-        return mapAppointmentForTreatmentToResponse(appointment, mappedLogs);
-      })
-    );
+      return mapAppointmentForTreatmentToResponse(appointment, mappedLogs);
+    });
 
     const response = {
       items: mapped,
     };
 
     return CheckedInAppointmentsListResponseSchema.parse(response);
+  },
+
+  /**
+   * List treatment logs for daily view with statistics
+   * Used for Daily View page
+   * Returns: { items, statistics: { totalCheckedInCustomers, totalTreatedCustomers, totalTreatmentLogs, treatmentRate } }
+   */
+  async listDaily(currentUser: UserCore | null, query: unknown) {
+    requireAuth(currentUser);
+
+    // Import schema at method level to avoid circular dependency
+    const {
+      GetDailyTreatmentLogsQuerySchema,
+      DailyTreatmentLogsResponseSchema,
+    } = await import("@/shared/validation/treatment-log.schema");
+
+    const parsed = GetDailyTreatmentLogsQuerySchema.parse(query);
+
+    // Permission check: Employee auto-filter by clinicId
+    let clinicId = parsed.clinicId;
+    if (currentUser!.role === "EMPLOYEE") {
+      if (!currentUser!.clinicId) {
+        throw new ServiceError(
+          "MISSING_CLINIC",
+          "Nhân viên chưa được gắn chi nhánh",
+          403
+        );
+      }
+      clinicId = currentUser!.clinicId; // Override with employee's clinic
+    }
+
+    // Fetch data from repository
+    const { items, totalCheckedInCustomers, totalTreatedCustomers } =
+      await treatmentLogRepo.listDaily({
+        date: parsed.date,
+        clinicId,
+      });
+
+    // Calculate statistics
+    const totalTreatmentLogs = items.length;
+    const treatmentRate =
+      totalCheckedInCustomers > 0
+        ? Math.round(
+            (totalTreatedCustomers / totalCheckedInCustomers) * 100 * 100
+          ) / 100 // Round to 2 decimal places
+        : 0;
+
+    // Map treatment logs to response format
+    const mappedItems = items.map((log) => mapTreatmentLogToResponse(log));
+
+    const response = {
+      items: mappedItems,
+      statistics: {
+        totalCheckedInCustomers,
+        totalTreatedCustomers,
+        totalTreatmentLogs,
+        treatmentRate,
+      },
+    };
+
+    return DailyTreatmentLogsResponseSchema.parse(response);
   },
 };

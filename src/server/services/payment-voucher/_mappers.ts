@@ -16,6 +16,10 @@ type PaymentVoucherWithRelations = PaymentVoucher & {
     id: string;
     fullName: string;
   };
+  clinic: {
+    id: string;
+    name: string;
+  };
   details: (PaymentVoucherDetail & {
     consultedService: {
       id: string;
@@ -59,7 +63,8 @@ export function mapPaymentVoucherToResponse(
       fullName: voucher.cashier.fullName,
     },
     clinic: {
-      id: voucher.clinicId,
+      id: voucher.clinic.id,
+      name: voucher.clinic.name,
     },
     details: voucher.details.map((detail) => ({
       id: detail.id,

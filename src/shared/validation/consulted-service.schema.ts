@@ -334,6 +334,12 @@ export const ConsultedServiceResponseSchema = z.object({
       fullName: z.string(),
     })
     .optional(),
+  clinic: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+    })
+    .optional(),
 });
 
 export type ConsultedServiceResponse = z.infer<

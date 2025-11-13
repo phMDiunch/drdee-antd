@@ -21,6 +21,10 @@ type ConsultedServiceWithRelations = ConsultedService & {
   treatingDoctor: Pick<Employee, "id" | "fullName"> | null;
   createdBy: Pick<Employee, "id" | "fullName">;
   updatedBy: Pick<Employee, "id" | "fullName">;
+  clinic: {
+    id: string;
+    name: string;
+  };
 };
 
 /**
@@ -116,6 +120,11 @@ export function mapConsultedServiceToResponse(
     updatedBy: {
       id: row.updatedBy.id,
       fullName: row.updatedBy.fullName,
+    },
+
+    clinic: {
+      id: row.clinic.id,
+      name: row.clinic.name,
     },
   };
 }

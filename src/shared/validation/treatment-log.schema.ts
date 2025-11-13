@@ -164,6 +164,7 @@ export const TreatmentLogResponseSchema = z.object({
     id: z.string(),
     fullName: z.string(),
     customerCode: z.string().nullable(),
+    dateOfBirth: z.string().datetime().nullable(),
   }),
   consultedService: z.object({
     id: z.string(),
@@ -237,6 +238,7 @@ export const AppointmentForTreatmentResponseSchema = z.object({
     id: z.string(),
     fullName: z.string(),
     customerCode: z.string().nullable(),
+    dateOfBirth: z.string().datetime().nullable(),
     consultedServices: z.array(
       z.object({
         id: z.string(),
@@ -269,4 +271,55 @@ export const CheckedInAppointmentsListResponseSchema = z.object({
 
 export type CheckedInAppointmentsListResponse = z.infer<
   typeof CheckedInAppointmentsListResponseSchema
+>;
+
+/**
+ * ============================================================================
+ * DAILY VIEW SCHEMAS (Backend-calculated statistics pattern)
+ * ============================================================================
+ */
+
+/**
+ * Get Daily Treatment Logs Query Schema
+ * Dùng ở: API Route GET /api/v1/treatment-logs/daily
+ */
+export const GetDailyTreatmentLogsQuerySchema = z.object({
+  date: z
+    .string({ message: "Vui lòng cung cấp ngày" })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày phải có định dạng YYYY-MM-DD"),
+  clinicId: z
+    .string({ message: "Vui lòng chọn chi nhánh" })
+    .uuid("ID chi nhánh không hợp lệ"),
+});
+
+export type GetDailyTreatmentLogsQuery = z.infer<
+  typeof GetDailyTreatmentLogsQuerySchema
+>;
+
+/**
+ * Daily Treatment Logs Statistics Schema
+ * Backend-calculated statistics (giống ConsultedService và Payment patterns)
+ */
+export const DailyTreatmentLogsStatisticsSchema = z.object({
+  totalCheckedInCustomers: z.number().int().nonnegative(),
+  totalTreatedCustomers: z.number().int().nonnegative(),
+  totalTreatmentLogs: z.number().int().nonnegative(),
+  treatmentRate: z.number().nonnegative().max(100), // percentage (0-100)
+});
+
+export type DailyTreatmentLogsStatistics = z.infer<
+  typeof DailyTreatmentLogsStatisticsSchema
+>;
+
+/**
+ * Daily Treatment Logs Response Schema
+ * Backend returns items + statistics (backend-calculated pattern)
+ */
+export const DailyTreatmentLogsResponseSchema = z.object({
+  items: z.array(TreatmentLogResponseSchema),
+  statistics: DailyTreatmentLogsStatisticsSchema,
+});
+
+export type DailyTreatmentLogsResponse = z.infer<
+  typeof DailyTreatmentLogsResponseSchema
 >;

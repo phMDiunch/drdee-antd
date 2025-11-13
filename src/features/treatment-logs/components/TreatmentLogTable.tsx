@@ -13,12 +13,21 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import dayjs from "dayjs";
 import type { TreatmentLogResponse } from "@/shared/validation/treatment-log.schema";
 import { useCurrentUser } from "@/shared/providers";
 import { treatmentLogPermissions } from "@/shared/permissions/treatment-log.permissions";
 
 const { Text } = Typography;
+
+const calculateAge = (dateOfBirth: string | null): string => {
+  if (!dateOfBirth) return "-";
+  const birthYear = dayjs(dateOfBirth).year();
+  const currentYear = dayjs().year();
+  const age = currentYear - birthYear;
+  return `${age} tuổi`;
+};
 
 type TreatmentLogTableProps = {
   data: TreatmentLogResponse[];
@@ -27,6 +36,7 @@ type TreatmentLogTableProps = {
   onDelete: (record: TreatmentLogResponse) => void;
   hideServiceColumn?: boolean; // Ẩn cột "Dịch vụ điều trị" (cho by-service view)
   hideDateColumn?: boolean; // Ẩn cột "Ngày điều trị" (cho by-appointment view)
+  showCustomerColumn?: boolean; // Hiện cột "Khách hàng" (cho daily view)
 };
 
 const getStatusColor = (status: string) => {
@@ -49,6 +59,7 @@ export default function TreatmentLogTable({
   onDelete,
   hideServiceColumn = false,
   hideDateColumn = false,
+  showCustomerColumn = false,
 }: TreatmentLogTableProps) {
   const { user } = useCurrentUser();
 
@@ -62,8 +73,33 @@ export default function TreatmentLogTable({
   };
 
   const columns: ColumnsType<TreatmentLogResponse> = [
-    // Ngày điều trị - ĐẦU TIÊN (ẩn trong by-appointment)
-    ...(!hideDateColumn
+    // Khách hàng - ĐẦU TIÊN (hiện trong daily view)
+    ...(showCustomerColumn
+      ? [
+          {
+            title: "Khách hàng",
+            key: "customer" as const,
+            width: 180,
+            render: (_: unknown, record: TreatmentLogResponse) => (
+              <div>
+                <Link
+                  href={`/customers/${record.customer.id}?tab=treatment-logs`}
+                  style={{ fontWeight: 600 }}
+                >
+                  {record.customer.fullName}
+                </Link>
+                <br />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {record.customer.customerCode || "-"} •{" "}
+                  {calculateAge(record.customer.dateOfBirth)}
+                </Text>
+              </div>
+            ),
+          },
+        ]
+      : []),
+    // Ngày điều trị (ẩn trong by-appointment, daily view)
+    ...(!hideDateColumn && !showCustomerColumn
       ? [
           {
             title: "Ngày điều trị",
@@ -107,10 +143,11 @@ export default function TreatmentLogTable({
       title: "Nội dung điều trị",
       dataIndex: "treatmentNotes",
       key: "treatmentNotes",
+      width: 300,
       ellipsis: true,
       render: (notes: string, record) => (
         <Tooltip
-          styles={{ root: { maxWidth: 600 } }}
+          styles={{ root: { maxWidth: 400 } }}
           title={
             <div style={{ whiteSpace: "pre-wrap" }}>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>
@@ -141,20 +178,20 @@ export default function TreatmentLogTable({
     {
       title: "Điều dưỡng 1",
       key: "assistant1",
-      width: 140,
+      width: 120,
       render: (_, record) => record.assistant1?.fullName || "-",
     },
     {
       title: "Điều dưỡng 2",
       key: "assistant2",
-      width: 140,
+      width: 120,
       render: (_, record) => record.assistant2?.fullName || "-",
     },
     {
       title: "Trạng thái",
       dataIndex: "treatmentStatus",
       key: "treatmentStatus",
-      width: 130,
+      width: 120,
       render: (status: string) => (
         <Tag color={getStatusColor(status)}>{status}</Tag>
       ),

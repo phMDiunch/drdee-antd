@@ -364,7 +364,106 @@ Hàng 6: [Metadata Descriptions: treatmentDate, appointment (link), createdBy, u
 
 ---
 
-## 4. 📊 Customer Detail View
+## 4. 📊 Daily View (Theo dõi điều trị hàng ngày)
+
+### Structure
+
+```
+<PageHeaderWithDateNav />           // Shared component with date navigation
+<ClinicTabs />                      // Admin chọn clinic
+<TreatmentLogStatistics />          // 4 KPI cards
+<TreatmentLogFilters />             // Search + Refresh
+<TreatmentLogTable />               // Data table
+```
+
+### Statistics (4 Cards)
+
+| Metric               | Logic                                           | Display Format  |
+| -------------------- | ----------------------------------------------- | --------------- |
+| Số khách đến         | Count unique customers checked-in hôm nay       | "45 khách"      |
+| Số khách đã điều trị | Count unique customers có treatment log hôm nay | "38 khách"      |
+| Số dịch vụ thực hiện | Count all treatment logs created hôm nay        | "67 dịch vụ"    |
+| Tỷ lệ điều trị / Đến | (Số khách đã điều trị / Số khách đến) × 100     | "38/45 (84.4%)" |
+
+**Query Logic**:
+
+- **Số khách đến**: `SELECT COUNT(DISTINCT customerId) FROM Appointment WHERE DATE(checkInTime) = TODAY AND checkInTime IS NOT NULL`
+- **Số khách đã điều trị**: `SELECT COUNT(DISTINCT customerId) FROM TreatmentLog WHERE DATE(treatmentDate) = TODAY`
+- **Số dịch vụ thực hiện**: `SELECT COUNT(*) FROM TreatmentLog WHERE DATE(treatmentDate) = TODAY`
+- **Tỷ lệ**: Frontend calculation từ 2 metrics trên
+
+### Filters
+
+- **Display**: "X dịch vụ điều trị hôm nay" (X = số treatment logs)
+- **Actions**:
+  - Button "Xuất Excel" (export daily data)
+- **No Search, No Create, No Refresh button** (tạo từ Customer Detail; React Query auto-refetch)
+
+### Table Columns
+
+**Component**: Reuse `TreatmentLogTable` từ Customer Detail (same component, different props)
+
+| Column            | Width | Sort/Filter | Description                                                                                 |
+| ----------------- | ----- | ----------- | ------------------------------------------------------------------------------------------- |
+| Khách hàng        | 180px | ✅ Sort     | Line 1: Tên (link)<br>Line 2: Mã + Tuổi (text-muted)<br>Sort by: customerCode A-Z (default) |
+| Dịch vụ điều trị  | 200px | ✅ Filter   | `consultedService.consultedServiceName`                                                     |
+| Vị trí răng       | 100px | -           | `consultedService.toothPositions` (join ", ")                                               |
+| Nội dung điều trị | 300px | -           | `treatmentNotes` (truncate, tooltip on hover)                                               |
+| Bác sĩ điều trị   | 140px | ✅ Filter   | `dentist.fullName`                                                                          |
+| Điều dưỡng 1      | 120px | ✅ Filter   | `assistant1.fullName` (nullable)                                                            |
+| Điều dưỡng 2      | 120px | ✅ Filter   | `assistant2.fullName` (nullable)                                                            |
+| Trạng thái        | 120px | ✅ Filter   | Tag: Chưa (gray) / Đang (blue) / Hoàn thành (green)                                         |
+| Thao tác          | 120px | -           | Edit \| Delete (fixed="right", conditional by permission)                                   |
+
+**Notes**:
+
+- **Reuse existing component**: `TreatmentLogTable` đã implement ở Customer Detail
+  - Pass props: `showCustomerColumn={true}` + `hideServiceColumn={false}` + `hideDateColumn={true}`
+  - Cột "Khách hàng" CHỈ hiện ở Daily View (cần biết ai là khách)
+  - Cột "Ngày điều trị" ẨN ở Daily View (vì đã filter theo 1 ngày, redundant)
+  - Cột "Dịch vụ điều trị" HIỆN ở Daily View (cần biết dịch vụ gì được thực hiện)
+- **Khách hàng**:
+  - Tên: Link → navigate to `/customers/{customerId}?tab=treatment-logs` (Customer Detail - Treatment Log Tab)
+  - Tuổi: Calculate từ `customer.dateOfBirth` → `{currentYear - birthYear} tuổi`
+- **Nội dung điều trị**:
+  - Width tăng từ 250px → 300px (vì bỏ cột Giờ điều trị)
+  - Truncate at 60 chars với "..." (tăng từ 50 chars)
+  - Tooltip hiển thị full content on hover (maxWidth: 400px)
+- **Sort/Filter**: Client-side (dữ liệu daily < 500 records)
+- **Default sort**: Customer Code A-Z (ascending) - `defaultSortOrder: "ascend"` on Customer column
+- **Total width**: ~1400px (compact, focus vào content)
+
+### Permissions
+
+- **View Access**:
+  - Employee: Xem treatment logs của clinic mình
+  - Admin: Chọn clinic và xem
+- **Actions**:
+  - Edit: Conditional display (show nếu Admin hoặc Employee + createdById match)
+  - Delete: Conditional display (same as Edit)
+
+### Navigation
+
+**Sidebar Menu**: Thêm menu item mới
+
+```
+📋 Quản lý (Section)
+  ├── 📅 Lịch hẹn
+  ├── 🦷 Dịch vụ tư vấn
+  ├── 💊 Lịch sử điều trị  ← NEW
+  └── ...
+```
+
+**Menu Config**:
+
+- Label: "Lịch sử điều trị"
+- Icon: MedicineBoxOutlined (hoặc ExperimentOutlined)
+- Path: `/treatment-logs`
+- Permission: Accessible by all authenticated users (Employee + Admin)
+
+---
+
+## 5. 👤 Customer Detail View
 
 ### Structure
 
@@ -378,7 +477,7 @@ Hàng 6: [Metadata Descriptions: treatmentDate, appointment (link), createdBy, u
       └── by-service: TreatmentLogServiceCard (grouped by service)
 ```
 
-### View Mode: By Date (Theo ngày hẹn)
+### Customer Detail - View Mode: By Date (Theo ngày hẹn)
 
 **Grouping Logic**:
 
@@ -417,7 +516,7 @@ Hàng 6: [Metadata Descriptions: treatmentDate, appointment (link), createdBy, u
   - Edit button: Always show (modal sẽ disable fields nếu không có quyền sửa)
   - Delete button: Show nếu (Admin) hoặc (Employee và createdById === currentUser.id)
 
-### View Mode: By Service (Theo dịch vụ)
+### Customer Detail - View Mode: By Service (Theo dịch vụ)
 
 **Grouping Logic**:
 
@@ -459,9 +558,54 @@ Hàng 6: [Metadata Descriptions: treatmentDate, appointment (link), createdBy, u
 
 ---
 
-## 5. API Routes & Server Actions
+## 6. API Routes & Server Actions
 
 ### API Routes (Queries - GET)
+
+#### GET `/api/v1/treatment-logs/daily`
+
+**Query Params**:
+
+```typescript
+{
+  date: string; // YYYY-MM-DD format (required)
+  clinicId: string; // UUID (required for Employee, optional for Admin)
+}
+```
+
+**Purpose**: Lấy treatment logs của 1 ngày cụ thể cho Daily View
+
+**Response**:
+
+```typescript
+{
+  items: TreatmentLogResponse[];
+  statistics: {
+    totalCheckedInCustomers: number;    // Số khách đến
+    totalTreatedCustomers: number;      // Số khách đã điều trị
+    totalTreatmentLogs: number;         // Số dịch vụ thực hiện
+    treatmentRate: number;              // Tỷ lệ (%) điều trị/đến
+  };
+}
+```
+
+**Business Logic**:
+
+- Filter: `DATE(treatmentDate) = params.date AND clinicId = params.clinicId`
+- Include: customer (fullName, dateOfBirth, customerCode), consultedService (consultedServiceName, toothPositions), appointment (appointmentDateTime), dentist, assistant1, assistant2, createdBy
+- Sort: `customer.customerCode ASC` (A-Z, nullable last) - align với frontend table default sort
+- **Statistics Calculation**:
+  - `totalCheckedInCustomers`: Count distinct customers from Appointment WHERE DATE(checkInTime) = params.date AND clinicId = params.clinicId
+  - `totalTreatedCustomers`: Count distinct customerId from filtered treatment logs
+  - `totalTreatmentLogs`: Count filtered treatment logs
+  - `treatmentRate`: (totalTreatedCustomers / totalCheckedInCustomers) × 100 (nếu totalCheckedInCustomers > 0, else 0)
+
+**Permission Check**:
+
+- Employee: Auto-filter by user's clinicId (ignore params.clinicId)
+- Admin: Use params.clinicId (required)
+
+**Caching**: No cache (treatment data changes frequently during the day)
 
 #### GET `/api/v1/appointments/checked-in`
 
@@ -635,11 +779,47 @@ TreatmentLogResponse;
 
 ---
 
-## 6. Frontend Architecture
+## 7. Frontend Architecture
 
 ### Hooks
 
-#### `useCheckedInAppointments(customerId: string)`
+#### Daily View Hooks
+
+##### `useDailyTreatmentLogs(date: string, clinicId: string)`
+
+**Purpose**: Fetch daily treatment logs với statistics
+
+**Query Key**: `["treatment-logs", "daily", date, clinicId]`
+
+**API Call**: `GET /api/v1/treatment-logs/daily?date=&clinicId=`
+
+**Return**:
+
+```typescript
+{
+  data: {
+    items: TreatmentLogResponse[];
+    statistics: {
+      totalCheckedInCustomers: number;
+      totalTreatedCustomers: number;
+      totalTreatmentLogs: number;
+      treatmentRate: number;
+    };
+  } | undefined;
+  isLoading: boolean;
+  error: Error | null;
+}
+```
+
+**Caching**:
+
+- staleTime: 60s (refetch nếu data > 1 phút)
+- gcTime: 5min
+- refetchOnWindowFocus: true
+
+#### Customer Detail Hooks
+
+##### `useCheckedInAppointments(customerId: string)`
 
 **Purpose**: Fetch checked-in appointments với consultedServices và treatmentLogs
 
@@ -657,7 +837,9 @@ TreatmentLogResponse;
 }
 ```
 
-#### `useCreateTreatmentLog()`
+#### Mutation Hooks
+
+##### `useCreateTreatmentLog()`
 
 **Purpose**: Create treatment log mutation
 
@@ -665,7 +847,8 @@ TreatmentLogResponse;
 
 **On Success**:
 
-- Invalidate: `["appointments", "checked-in", customerId]`
+- Invalidate: `["appointments", "checked-in", customerId]` (Customer Detail)
+- Invalidate: `["treatment-logs", "daily", date, clinicId]` (Daily View)
 - Toast: "Tạo lịch sử điều trị thành công"
 - Close modal
 
@@ -673,7 +856,7 @@ TreatmentLogResponse;
 
 - Toast: Error message (tiếng Việt)
 
-#### `useUpdateTreatmentLog()`
+##### `useUpdateTreatmentLog()`
 
 **Purpose**: Update treatment log mutation
 
@@ -681,7 +864,8 @@ TreatmentLogResponse;
 
 **On Success**:
 
-- Invalidate: `["appointments", "checked-in", customerId]`
+- Invalidate: `["appointments", "checked-in", customerId]` (Customer Detail)
+- Invalidate: `["treatment-logs", "daily", date, clinicId]` (Daily View)
 - Toast: "Cập nhật lịch sử điều trị thành công"
 - Close modal
 
@@ -689,7 +873,7 @@ TreatmentLogResponse;
 
 - Toast: Error message
 
-#### `useDeleteTreatmentLog()`
+##### `useDeleteTreatmentLog()`
 
 **Purpose**: Delete treatment log mutation
 
@@ -697,7 +881,8 @@ TreatmentLogResponse;
 
 **On Success**:
 
-- Invalidate: `["appointments", "checked-in", customerId]`
+- Invalidate: `["appointments", "checked-in", customerId]` (Customer Detail)
+- Invalidate: `["treatment-logs", "daily", date, clinicId]` (Daily View)
 - Toast: "Xóa lịch sử điều trị thành công"
 
 **On Error**:
@@ -706,7 +891,158 @@ TreatmentLogResponse;
 
 ### Components
 
-#### `TreatmentLogTab`
+#### Daily View Components
+
+##### `TreatmentLogDailyView`
+
+**Location**: `src/features/treatment-logs/views/TreatmentLogDailyView.tsx`
+
+**Props**: None (uses context/hooks internally)
+
+**State**:
+
+```typescript
+const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+const [selectedClinic, setSelectedClinic] = useState<string | null>(null);
+```
+
+**Structure**:
+
+```tsx
+<>
+  <PageHeaderWithDateNav
+    title="Lịch sử điều trị"
+    date={selectedDate}
+    onDateChange={setSelectedDate}
+  />
+
+  {isAdmin && (
+    <ClinicTabs value={selectedClinic} onChange={setSelectedClinic} />
+  )}
+
+  <TreatmentLogStatistics statistics={data?.statistics} />
+
+  <TreatmentLogFilters count={data?.items.length} onExport={handleExport} />
+
+  <TreatmentLogTable
+    data={data?.items}
+    loading={isLoading}
+    onEdit={handleEdit}
+    onDelete={handleDelete}
+  />
+</>
+```
+
+**Logic**:
+
+1. Fetch daily data on mount và khi date/clinic thay đổi (auto-refetch by React Query)
+2. Handle modal open/close for edit
+3. Handle delete with permission check + popconfirm
+4. Export to Excel (future)
+
+**Note**: Không cần manual refetch button - React Query handles cache invalidation
+
+##### `TreatmentLogStatistics`
+
+**Props**:
+
+```typescript
+{
+  statistics: {
+    totalCheckedInCustomers: number;
+    totalTreatedCustomers: number;
+    totalTreatmentLogs: number;
+    treatmentRate: number;
+  } | undefined;
+  loading?: boolean;
+}
+```
+
+**Features**:
+
+- **Pattern**: Backend-calculated statistics (giống ConsultedService và Payment patterns)
+- **Component responsibility**: Chỉ hiển thị statistics đã tính sẵn từ backend API
+- 4 Statistic cards in Row (gutter 16)
+- Card 1: Số khách đến (UserOutlined icon, blue)
+  - Value: `statistics.totalCheckedInCustomers`
+- Card 2: Số khách đã điều trị (MedicineBoxOutlined icon, green)
+  - Value: `statistics.totalTreatedCustomers`
+- Card 3: Số dịch vụ thực hiện (ExperimentOutlined icon, orange)
+  - Value: `statistics.totalTreatmentLogs`
+- Card 4: Tỷ lệ điều trị/đến (RiseOutlined icon, purple)
+  - Display format: "38/45 (84.4%)"
+  - Color logic: Green if >= 80%, Orange if >= 60%, Red if < 60%
+  - Calculation: Frontend format only (backend sends treatmentRate as percentage)
+
+##### `TreatmentLogFilters`
+
+**Props**:
+
+```typescript
+{
+  count: number;
+  onExport: () => void;
+}
+```
+
+**Layout**:
+
+```tsx
+<Row justify="space-between" align="middle">
+  <Col>
+    <Typography.Text>{count} dịch vụ điều trị hôm nay</Typography.Text>
+  </Col>
+  <Col>
+    <Button icon={<DownloadOutlined />} onClick={onExport}>
+      Xuất Excel
+    </Button>
+  </Col>
+</Row>
+```
+
+**Note**: Không cần button "Làm mới" vì React Query tự động refetch khi:
+
+- Window focus (refetchOnWindowFocus: true)
+- Data stale > 60s (staleTime: 60s)
+- Date/clinic thay đổi (query key change)
+- Mutation success (query invalidation)
+
+##### `TreatmentLogTable` (Reusable Component)
+
+**Props**:
+
+```typescript
+{
+  data: TreatmentLogResponse[];
+  loading: boolean;
+  onEdit: (log: TreatmentLogResponse) => void;
+  onDelete: (log: TreatmentLogResponse) => void;
+  hideServiceColumn?: boolean;    // true for by-service view, false for by-appointment & Daily View
+  hideDateColumn?: boolean;       // true for by-appointment view & Daily View (single day), false for by-service view
+  showCustomerColumn?: boolean;   // true for Daily View only, false for Customer Detail
+}
+```
+
+**Features**:
+
+- **Reusable component**: Same `TreatmentLogTable` cho cả Customer Detail (2 modes) và Daily View
+- **Conditional columns**:
+  - `hideServiceColumn`: Ẩn "Dịch vụ điều trị" (by-service view - vì service đã ở Card header)
+  - `hideDateColumn`: Ẩn "Ngày điều trị" (by-appointment view hoặc Daily View - vì date context rõ ràng)
+  - `showCustomerColumn`: Hiện "Khách hàng" (Daily View only - cần biết khách là ai)
+- **Usage Scenarios**:
+  - Customer Detail by-appointment: `hideServiceColumn={false}` + `hideDateColumn={true}` + `showCustomerColumn={false}`
+  - Customer Detail by-service: `hideServiceColumn={true}` + `hideDateColumn={false}` + `showCustomerColumn={false}`
+  - Daily View: `hideServiceColumn={false}` + `hideDateColumn={true}` + `showCustomerColumn={true}`
+- Filters: Client-side filterDropdown cho service, dentist, assistants, status
+- Sort: Client-side sorter cho treatmentDate (when visible)
+- Actions: Conditional render based on permission (canEditTreatmentLog, canDeleteTreatmentLog)
+- Scroll: x: 1400 (Daily with customer), x: 1200 (Customer Detail), y: calc(100vh - 450px)
+- Pagination: pageSize 50, showSizeChanger, showTotal
+
+#### Customer Detail Components
+
+##### `TreatmentLogTab`
 
 **Props**: `customerId: string`
 
@@ -851,7 +1187,27 @@ type ServiceGroup = {
 
 ---
 
-## 7. Types & Schemas
+## 8. Types & Schemas
+
+### Zod Schemas
+
+#### Additional Response Schema for Daily View
+
+```typescript
+export const DailyTreatmentLogsResponseSchema = z.object({
+  items: z.array(TreatmentLogResponseSchema),
+  statistics: z.object({
+    totalCheckedInCustomers: z.number().int(),
+    totalTreatedCustomers: z.number().int(),
+    totalTreatmentLogs: z.number().int(),
+    treatmentRate: z.number(), // percentage (0-100)
+  }),
+});
+
+export type DailyTreatmentLogsResponse = z.infer<
+  typeof DailyTreatmentLogsResponseSchema
+>;
+```
 
 ### Zod Schemas
 
@@ -1012,9 +1368,47 @@ export type AppointmentForTreatmentResponse = z.infer<
 
 ---
 
-## 8. Implementation Checklist
+## 9. Routes & Navigation
 
-### Phase 1 - Core Features ✅ HOÀN THÀNH
+### Route Definition
+
+**Path**: `/treatment-logs`
+
+**Layout**: `(private)` layout (authenticated users only)
+
+**Page Component**: `src/app/(private)/treatment-logs/page.tsx`
+
+```tsx
+import { TreatmentLogDailyView } from "@/features/treatment-logs";
+
+export default function TreatmentLogPage() {
+  return <TreatmentLogDailyView />;
+}
+```
+
+### Sidebar Menu Integration
+
+**Location**: `src/layouts/AppLayout/Sidebar.tsx` (hoặc menu config file)
+
+**Menu Structure**:
+
+```typescript
+{
+  key: 'treatment-logs',
+  icon: <MedicineBoxOutlined />,
+  label: 'Lịch sử điều trị',
+  path: '/treatment-logs',
+  // Permission: All authenticated users (Employee + Admin)
+}
+```
+
+**Position**: Sau "Dịch vụ tư vấn", trước "Thanh toán" (nếu có)
+
+---
+
+## 10. Implementation Checklist
+
+### Phase 1 - Core Features ✅ HOÀN THÀNH (Customer Detail View)
 
 - [x] **Zod Schemas** (`src/shared/validation/treatment-log.schema.ts`)
 
@@ -1096,13 +1490,79 @@ export type AppointmentForTreatmentResponse = z.infer<
   - [x] Date format: DD/MM/YYYY HH:mm (with time)
   - [x] Table scroll: x: 1200 (for all columns)
 
-### Phase 2 - Advanced Features (CHƯA IMPLEMENT)
+### Phase 2 - Daily View 🔄 TODO
 
-- [ ] **Media Upload**
+- [ ] **Backend - API Route** (`src/app/api/v1/treatment-logs/daily/route.ts`)
 
-  - [ ] Image upload (imageUrls)
-  - [ ] X-ray upload (xrayUrls)
+  - [ ] GET handler với date + clinicId params validation
+  - [ ] Statistics calculation:
+    - [ ] totalCheckedInCustomers (count distinct from Appointment)
+    - [ ] totalTreatedCustomers (count distinct from TreatmentLog)
+    - [ ] totalTreatmentLogs (count all)
+    - [ ] treatmentRate (percentage calculation)
+  - [ ] Permission check (Employee auto-filter by clinicId)
+  - [ ] Response schema: DailyTreatmentLogsResponseSchema
+  - [ ] Include: customer, consultedService, appointment, dentist, assistants
+
+- [ ] **Zod Schema** (`src/shared/validation/treatment-log.schema.ts`)
+
+  - [ ] DailyTreatmentLogsResponseSchema (items + statistics)
+  - [ ] GetDailyTreatmentLogsQuerySchema (date + clinicId validation)
+
+- [ ] **Frontend - API Client** (`src/features/treatment-logs/api.ts`)
+
+  - [ ] getDailyTreatmentLogsApi(date: string, clinicId: string)
+
+- [ ] **Frontend - Hook** (`src/features/treatment-logs/hooks/`)
+
+  - [ ] useDailyTreatmentLogs(date, clinicId)
+  - [ ] Query key: ["treatment-logs", "daily", date, clinicId]
+  - [ ] Caching: staleTime 60s, gcTime 5min, refetchOnWindowFocus true
+
+- [ ] **Frontend - Views** (`src/features/treatment-logs/views/`)
+
+  - [ ] TreatmentLogDailyView - Main container with date/clinic state
+
+- [ ] **Frontend - Components** (`src/features/treatment-logs/components/`)
+
+  - [ ] TreatmentLogStatistics - 4 KPI cards (checked-in, treated, services, rate)
+  - [ ] TreatmentLogFilters - Display count + Export button (no refresh needed)
+  - [ ] **Reuse TreatmentLogTable** - Pass `showCustomerColumn={true}`, `showAppointmentColumn={false}`
+    - [ ] Update existing component với conditional columns props
+    - [ ] Customer column (link to customer detail) - show nếu prop = true
+    - [ ] NO appointment column for Daily View (redundant)
+
+- [ ] **Frontend - Page** (`src/app/(private)/treatment-logs/page.tsx`)
+
+  - [ ] Create route file với TreatmentLogDailyView component
+
+- [ ] **Navigation - Sidebar Menu**
+
+  - [ ] Add menu item "Lịch sử điều trị"
+  - [ ] Icon: MedicineBoxOutlined
+  - [ ] Path: /treatment-logs
+  - [ ] Position: Sau "Dịch vụ tư vấn" trong section "Quản lý"
+
+- [ ] **Mutations - Query Invalidation Updates**
+
+  - [ ] useCreateTreatmentLog: Add invalidation for ["treatment-logs", "daily"]
+  - [ ] useUpdateTreatmentLog: Add invalidation for ["treatment-logs", "daily"]
+  - [ ] useDeleteTreatmentLog: Add invalidation for ["treatment-logs", "daily"]
+
+- [ ] **Export to Excel** (Optional Phase 2.1)
+  - [ ] handleExport function trong TreatmentLogDailyView
+  - [ ] Export columns: Customer, Service, Content, Dentist, Assistants, Status, Time
+  - [ ] Filename: `lich-su-dieu-tri-{date}.xlsx`
+
+### Phase 3 - Media Upload (FUTURE)
+
+- [ ] **Image & X-ray Upload**
+
+  - [ ] Image upload UI (imageUrls field)
+  - [ ] X-ray upload UI (xrayUrls field)
   - [ ] Supabase Storage integration
+  - [ ] Image preview/gallery component
+  - [ ] File validation (size, type)
 
 - [x] **Enhanced Permissions** ✅
 
@@ -1133,327 +1593,3 @@ export type AppointmentForTreatmentResponse = z.infer<
   - [x] Aggregate status calculation (implemented)
 
 ---
-
-## 9. Những Thay Đổi Quan Trọng So Với Dự Án Cũ
-
-### ✅ Improvements & Changes
-
-**1. Component Naming** (Renamed for clarity):
-
-- ❌ Old: `TreatmentLogCard`, `TreatmentLogServiceCard`
-- ✅ New: `TreatmentLogsByAppointment`, `TreatmentLogsByService`
-- **Lý do**: Tên mới rõ ràng hơn về chức năng grouping
-
-**2. UI Components** (Table thay Timeline):
-
-- ❌ Old: Ant Design Timeline component
-- ✅ New: Custom TreatmentLogTable component
-- **Lý do**: Table structure phù hợp hơn cho data tabular, dễ scan, sortable
-
-**3. Card Format** (Consistent sizing):
-
-- ❌ Old: Mixed card sizes
-- ✅ New: `size="small"` for all Cards (TreatmentLogsByAppointment & TreatmentLogsByService)
-- **Lý do**: Consistent UI, compact display
-
-**4. Tooltip Props** (Ant Design 5 API):
-
-- ❌ Old: `overlayStyle` (deprecated)
-- ✅ New: `styles={{ root: { maxWidth: 600 } }}`
-- **Lý do**: Follow Ant Design 5 API, avoid deprecation warnings
-
-**5. Required Field Asterisks** (Form.Item API):
-
-- ❌ Old: Manual asterisks in label strings
-- ✅ New: `requiredMark` prop on Form + `required` prop on Form.Item
-- **Lý do**: Automatic red color, consistent styling
-
-**6. Modal Title** (More context):
-
-- ❌ Old: "Thêm lịch sử điều trị" / "Cập nhật lịch sử điều trị"
-- ✅ New: Title + subtitle with appointmentDate
-- **Lý do**: User knows which appointment they're working on
-
-**7. Permission System** (Centralized):
-
-- ❌ Old: Inline permission checks scattered in components and services
-- ✅ New: `src/shared/permissions/treatment-log.permissions.ts` (pure TypeScript module)
-- **Lý do**:
-  - Single source of truth
-  - Reusable in both frontend (UI) and backend (validation)
-  - Consistent permission logic
-  - Easy to test and maintain
-
-**8. Sorting Logic** (Backend + Frontend):
-
-- ❌ Old: Frontend-only sorting
-- ✅ New:
-  - Backend: Appointments sorted by appointmentDateTime DESC
-  - Frontend: ServiceGroups sorted by serviceConfirmDate DESC
-  - Treatment logs: Always sorted by treatmentDate ASC (oldest first)
-- **Lý do**: Proper data ordering from source, reduce client-side computation
-
-**9. Date Display Format** (With time):
-
-- ❌ Old: "DD/MM/YYYY" (date only)
-- ✅ New: "DD/MM/YYYY HH:mm" (date + time)
-- **Lý do**: Treatment logs need time precision
-
-**10. Table Scrolling** (Responsive):
-
-- ❌ Old: Fixed width, potential overflow issues
-- ✅ New: `scroll={{ x: 1200 }}` (calculated from total column widths)
-- **Lý do**: Smooth horizontal scroll on smaller screens
-
-**11. Performance Optimization** (React patterns):
-
-- ❌ Old: No memoization
-- ✅ New:
-  - `useMemo` for `serviceGroups` computation
-  - `useCallback` for all handlers
-  - Prevents unnecessary re-renders on view mode switch
-- **Lý do**: Follow Payment feature pattern, reduce render cycles
-
-**12. View Mode Switch** (Conditional Rendering):
-
-- ⚠️ Current: Conditional rendering causes unmount/mount on switch
-- 🔄 Trade-off: Simpler code vs slight "jank" when switching views
-- 💡 Future: CSS display toggle if performance becomes critical
-- **Decision**: Keep current implementation (conditional) because:
-  - Code simpler to maintain
-  - Switch không thường xuyên (user chỉ toggle 1-2 lần)
-  - Performance impact acceptable (< 100ms)
-
-### 📋 Component Comparison
-
-| Component       | Old Project             | New Project                | Status     |
-| --------------- | ----------------------- | -------------------------- | ---------- |
-| Container       | TreatmentLogTab         | TreatmentLogTab            | Same ✅    |
-| By-date view    | TreatmentLogCard        | TreatmentLogsByAppointment | Renamed ✅ |
-| By-service view | TreatmentLogServiceCard | TreatmentLogsByService     | Renamed ✅ |
-| Modal           | TreatmentLogModal       | TreatmentLogModal          | Same ✅    |
-| Display         | Timeline                | **Table**                  | Changed ✅ |
-| Table component | N/A                     | TreatmentLogTable          | **New** ✅ |
-
-### 🔧 Technical Debt & Known Issues
-
-**1. View Mode Switch "Jank"**:
-
-- **Issue**: Slight visual "jump" when switching between by-date and by-service views
-- **Root Cause**: Conditional rendering causes complete unmount/mount of component trees
-- **Current Status**: Acceptable (not critical)
-- **Future Fix**: CSS display toggle (if becomes UX issue)
-
-**2. No Pagination**:
-
-- **Current**: Load all treatment logs for customer
-- **Assumption**: Treatment log count per customer remains manageable (< 100)
-- **Future**: Add pagination if data grows
-
-**3. No Image/X-ray Upload**:
-
-- **Current**: Schema fields exist (`imageUrls`, `xrayUrls`) but UI not implemented
-- **Planned**: Phase 2 feature
-
----
-
-## 10. Files Đã Tạo Mới (Implementation Reference)
-
-### Backend Files ✅
-
-```
-src/shared/
-├── validation/
-│   └── treatment-log.schema.ts          # Zod schemas (3-layer: Base, Frontend, Backend)
-└── permissions/
-    └── treatment-log.permissions.ts     # Centralized permission logic (FE + BE)
-
-src/server/
-├── repos/
-│   └── treatment-log.repo.ts            # Repository pattern (CRUD + findCheckedInAppointments)
-├── services/
-│   ├── treatment-log.service.ts         # Business logic, validation, mappers
-│   └── treatment-log/
-│       └── _mappers.ts                  # Response mappers
-└── actions/
-    └── treatment-log.actions.ts         # Server Actions (auth gate + delegation)
-
-src/app/api/v1/
-└── appointments/
-    └── checked-in/
-        └── route.ts                     # GET /api/v1/appointments/checked-in
-```
-
-### Frontend Files ✅
-
-```
-src/features/treatment-logs/
-├── api.ts                               # API client functions
-├── constants.ts                         # Messages, query keys, endpoints
-├── index.ts                             # Barrel exports
-├── hooks/
-│   ├── useCheckedInAppointments.ts      # Query hook
-│   ├── useCreateTreatmentLog.ts         # Mutation hook
-│   ├── useUpdateTreatmentLog.ts         # Mutation hook
-│   └── useDeleteTreatmentLog.ts         # Mutation hook
-└── components/
-    ├── TreatmentLogTab.tsx              # Container (viewMode, handlers, memoization)
-    ├── TreatmentLogsByAppointment.tsx   # By-date view Card
-    ├── TreatmentLogsByService.tsx       # By-service view Card
-    ├── TreatmentLogTable.tsx            # Reusable Table component
-    └── TreatmentLogModal.tsx            # Create/Edit modal (React Hook Form)
-```
-
-### Modified Files ✅
-
-```
-src/features/customers/
-└── views/
-    └── CustomerDetailView.tsx           # Added TreatmentLogTab to tabs array
-
-prisma/
-└── schema.prisma                        # TreatmentLog model already existed (no changes needed)
-```
-
-### Key Metrics
-
-- **Backend Files Created**: 8 files
-- **Frontend Files Created**: 11 files
-- **Total Lines of Code**: ~2,500 lines
-- **Components**: 5 React components
-- **Hooks**: 4 React Query hooks
-- **API Endpoints**: 1 new route
-- **Server Actions**: 3 actions
-- **Permission Functions**: 3 functions
-
----
-
-## 11. Tái Sử Dụng (Reuse) vs Tạo Mới (New)
-
-### ✅ Components/Hooks Đã Có (Reuse)
-
-| Component/Hook           | Location                        | Usage                                 |
-| ------------------------ | ------------------------------- | ------------------------------------- |
-| `useWorkingEmployees()`  | `features/employees/hooks`      | Dropdown bác sĩ/điều dưỡng            |
-| `getWorkingEmployeesApi` | `features/employees/api.ts`     | API call cho working employees        |
-| Status Badge patterns    | `features/consulted-services`   | Reference cho treatment status badges |
-| Modal patterns           | `features/consulted-services`   | Create/Update modal structure         |
-| Customer Detail Tab      | `features/customers/components` | Container pattern cho TreatmentLogTab |
-| AppointmentsTab          | `features/customers/components` | Reference cho tab structure           |
-| Timeline component       | Ant Design `<Timeline>`         | UI component cho history view         |
-| Card component           | Ant Design `<Card>`             | Collapsible cards                     |
-| Descriptions component   | Ant Design `<Descriptions>`     | Metadata display                      |
-| Switch component         | Ant Design `<Switch>`           | View mode toggle (by-date/by-service) |
-| `sessionCache`           | `server/utils/sessionCache.ts`  | Auth gate trong Server Actions        |
-| `COMMON_MESSAGES`        | `shared/constants/messages.ts`  | Error messages                        |
-| Date formatting          | `dayjs`                         | DD/MM/YYYY HH:mm format               |
-| Repository patterns      | `server/repos/*.repo.ts`        | CRUD pattern với Prisma               |
-| Service patterns         | `server/services/*.service.ts`  | Business logic layer                  |
-| Server Action patterns   | `server/actions/*.actions.ts`   | Auth + delegation pattern             |
-| API Route patterns       | `app/api/v1/*/route.ts`         | Standard GET route template           |
-| Zod validation patterns  | `shared/validation/*.schema.ts` | 3-layer schema pattern                |
-| React Query hooks        | `features/*/hooks/*.ts`         | Query/Mutation hook patterns          |
-
-### 🆕 Components Cần Tạo Mới (New)
-
-#### Backend (New)
-
-1. **API Routes** (chưa có):
-
-   - `app/api/v1/appointments/checked-in/route.ts` - GET checked-in appointments
-   - `app/api/v1/treatment-logs/route.ts` - GET treatment logs list
-   - `app/api/v1/treatment-logs/[id]/route.ts` - GET single treatment log
-
-2. **Repository** (chưa có):
-
-   - `server/repos/treatment-log.repo.ts` - Complete CRUD
-   - Hoặc extend `server/repos/appointment.repo.ts` với method `findCheckedInForTreatment()`
-
-3. **Service** (chưa có):
-
-   - `server/services/treatment-log.service.ts` - Business logic, validation, derivation
-
-4. **Server Actions** (chưa có):
-
-   - `server/actions/treatment-log.actions.ts` - Create/Update/Delete actions
-
-5. **Schemas** (chưa có):
-   - `shared/validation/treatment-log.schema.ts` - Complete schemas package
-
-#### Frontend (New)
-
-1. **Feature Folder** (chưa có):
-
-   - `features/treatment-logs/` - Complete feature structure
-
-2. **API Client** (chưa có):
-
-   - `features/treatment-logs/api.ts` - Query functions
-
-3. **Hooks** (chưa có):
-
-   - `features/treatment-logs/hooks/useCheckedInAppointments.ts`
-   - `features/treatment-logs/hooks/useCreateTreatmentLog.ts`
-   - `features/treatment-logs/hooks/useUpdateTreatmentLog.ts`
-   - `features/treatment-logs/hooks/useDeleteTreatmentLog.ts`
-
-4. **Components** (chưa có):
-
-   - `features/treatment-logs/components/TreatmentLogTab.tsx` - Container
-   - `features/treatment-logs/components/TreatmentLogCard.tsx` - By-date view
-   - `features/treatment-logs/components/TreatmentLogServiceCard.tsx` - By-service view
-   - `features/treatment-logs/components/TreatmentLogModal.tsx` - Create/Edit modal
-
-5. **Constants** (chưa có):
-
-   - `features/treatment-logs/constants.ts` - Query keys, endpoints, etc.
-
-6. **Integration** (cần modify):
-   - `features/customers/views/CustomerDetailView.tsx` - Add TreatmentLogTab
-   - Import và thêm tab mới vào tabs array
-
-### 📝 Key Differences from Old Implementation
-
-| Aspect             | Old Implementation            | New Implementation (Requirements)                        |
-| ------------------ | ----------------------------- | -------------------------------------------------------- |
-| API Pattern        | All REST APIs                 | Hybrid (GET=API, CUD=Server Actions)                     |
-| Schemas            | Scattered validation          | Centralized Zod 3-layer pattern                          |
-| Response Structure | Mixed flat/nested             | Consistent nested structure                              |
-| Hooks Pattern      | Custom hook `useTreatmentLog` | Separate React Query hooks per action                    |
-| Repository Layer   | Missing                       | Proper repo pattern                                      |
-| Service Layer      | Missing                       | Proper service pattern                                   |
-| Modal Pattern      | Single modal with mode        | Same (good pattern, keep it)                             |
-| View Modes         | by-date + by-service          | Same (good feature, keep it)                             |
-| Employee Selection | Custom logic                  | Reuse `useWorkingEmployees()`                            |
-| Permission Check   | None                          | Auth gate via `getSessionUser()`                         |
-| Status Constants   | Hardcoded strings             | Zod enum: "Chưa điều trị", "Đang điều trị", "Hoàn thành" |
-
-### 🎯 Implementation Priority
-
-**Phase 1A - Backend Foundation** (Implement first):
-
-1. Zod schemas
-2. Repository layer
-3. Service layer
-4. API Routes (checked-in appointments + treatment logs)
-5. Server Actions
-
-**Phase 1B - Frontend Core** (Then implement):
-
-1. API client
-2. React Query hooks
-3. TreatmentLogModal component
-4. Basic TreatmentLogCard (by-date only)
-
-**Phase 1C - Frontend Advanced**:
-
-1. TreatmentLogServiceCard (by-service view)
-2. View mode toggle
-3. Integration vào Customer Detail
-4. Polish UX (loading, empty states, etc.)
-
-**Phase 2 - Enhancements** (Later):
-
-1. Media upload (images/xrays)
-2. Enhanced permissions
-3. Performance optimizations
