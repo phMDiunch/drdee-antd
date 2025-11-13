@@ -2,22 +2,17 @@
 "use client";
 
 import React from "react";
-import { Button, Space, Typography } from "antd";
-import { PlusOutlined, FileExcelOutlined } from "@ant-design/icons";
+import { Button, Typography } from "antd";
+import { FileExcelOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
 type Props = {
   dailyCount: number;
-  onCreate: () => void;
   onExportExcel?: () => void;
 };
 
-export default function PaymentFilters({
-  dailyCount,
-  onCreate,
-  onExportExcel,
-}: Props) {
+export default function PaymentFilters({ dailyCount, onExportExcel }: Props) {
   return (
     <div
       style={{
@@ -31,16 +26,11 @@ export default function PaymentFilters({
         {dailyCount} phiếu thu hôm nay
       </Text>
 
-      <Space>
-        {onExportExcel && (
-          <Button icon={<FileExcelOutlined />} onClick={onExportExcel}>
-            Xuất Excel
-          </Button>
-        )}
-        <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-          Tạo phiếu thu
+      {onExportExcel && (
+        <Button icon={<FileExcelOutlined />} onClick={onExportExcel}>
+          Xuất Excel
         </Button>
-      </Space>
+      )}
     </div>
   );
 }

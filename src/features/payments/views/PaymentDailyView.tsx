@@ -8,12 +8,10 @@ import {
   PaymentStatistics,
   PaymentFilters,
   PaymentVoucherTable,
-  CreatePaymentVoucherModal,
   UpdatePaymentVoucherModal,
   PrintableReceipt,
   usePaymentVouchersDaily,
   useDeletePaymentVoucher,
-  useCreatePaymentVoucher,
   useUpdatePaymentVoucher,
   exportPaymentVouchersToExcel,
 } from "@/features/payments";
@@ -24,7 +22,6 @@ import { useClinicById } from "@/features/clinics";
 import { useNotify } from "@/shared/hooks/useNotify";
 import type {
   PaymentVoucherResponse,
-  CreatePaymentVoucherRequest,
   UpdatePaymentVoucherRequest,
 } from "@/shared/validation/payment-voucher.schema";
 
@@ -55,7 +52,6 @@ export default function PaymentDailyView() {
   const vouchers = useMemo(() => data?.items ?? [], [data?.items]);
 
   // Modal state - separate for Create and Update
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [editingVoucher, setEditingVoucher] =
     useState<PaymentVoucherResponse | null>(null);
@@ -67,14 +63,9 @@ export default function PaymentDailyView() {
 
   // Mutations
   const deleteMutation = useDeletePaymentVoucher();
-  const createMutation = useCreatePaymentVoucher();
   const updateMutation = useUpdatePaymentVoucher();
 
   // Handlers
-  const handleCreateClick = useCallback(() => {
-    setEditingVoucher(null);
-    setCreateModalOpen(true);
-  }, []);
 
   const handleEdit = useCallback((voucher: PaymentVoucherResponse) => {
     setEditingVoucher(voucher);
@@ -143,21 +134,9 @@ export default function PaymentDailyView() {
   );
 
   const handleCloseModal = useCallback(() => {
-    setCreateModalOpen(false);
     setUpdateModalOpen(false);
     setEditingVoucher(null);
   }, []);
-
-  const handleCreateSubmit = useCallback(
-    (values: CreatePaymentVoucherRequest) => {
-      createMutation.mutate(values, {
-        onSuccess: () => {
-          handleCloseModal();
-        },
-      });
-    },
-    [createMutation, handleCloseModal]
-  );
 
   const handleUpdateSubmit = useCallback(
     (id: string, values: UpdatePaymentVoucherRequest) => {
@@ -211,7 +190,6 @@ export default function PaymentDailyView() {
       <div style={{ marginTop: 24 }}>
         <PaymentFilters
           dailyCount={data?.count ?? 0}
-          onCreate={handleCreateClick}
           onExportExcel={handleExportExcel}
         />
 
@@ -223,13 +201,6 @@ export default function PaymentDailyView() {
           onPrint={handlePrint}
         />
       </div>
-
-      <CreatePaymentVoucherModal
-        open={createModalOpen}
-        confirmLoading={createMutation.isPending}
-        onCancel={handleCloseModal}
-        onSubmit={handleCreateSubmit}
-      />
 
       {editingVoucher && (
         <UpdatePaymentVoucherModal
