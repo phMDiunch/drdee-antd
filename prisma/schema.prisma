@@ -54,6 +54,9 @@ model Clinic {
 
   // Liên kết đến phiếu thu
   paymentVouchers PaymentVoucher[]
+
+  // Liên kết đến chăm sóc sau điều trị
+  treatmentCares TreatmentCare[]
 }
 
 model Employee {
@@ -450,59 +453,6 @@ model PaymentVoucherDetail {
   @@index([paymentVoucherId])
 }
 
-//---------------------------
-// TreatmentCare (Aftercare) v1
-//---------------------------
-
-model TreatmentCare {
-  id String @id @default(uuid())
-
-  // Liên kết
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id])
-
-  // Cơ sở báo cáo: theo nhân viên chăm sóc (careStaff)
-  clinicId String
-
-  careStaffId String
-  careStaff   Employee @relation(fields: [careStaffId], references: [id])
-
-  // Ngày nghiệp vụ
-  treatmentDate DateTime @db.Date // Ngày điều trị (Date-only)
-  careAt        DateTime @db.Timestamptz // Thời điểm chăm sóc
-
-  // Nội dung & Trạng thái
-  careContent String
-  careStatus  TreatmentCareStatus
-
-  // Snapshot (gộp theo treatmentDate)
-  treatmentServiceNames String[]
-  treatingDoctorNames   String[]
-  treatingDoctorIds     String[]
-  treatmentClinicIds    String[]
-
-  // Audit
-  createdById String
-  updatedById String
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
-
-  createdBy Employee @relation("CreatedTreatmentCares", fields: [createdById], references: [id])
-  updatedBy Employee @relation("UpdatedTreatmentCares", fields: [updatedById], references: [id])
-
-  // Indexes
-  @@index([clinicId, treatmentDate])
-  @@index([clinicId, careAt])
-  @@index([careStaffId, careAt])
-  @@index([customerId, treatmentDate])
-}
-
-enum TreatmentCareStatus {
-  STABLE
-  UNREACHABLE
-  NEEDS_FOLLOW_UP
-}
-
 model TreatmentLog {
   id String @id @default(uuid())
 
@@ -552,6 +502,57 @@ model TreatmentLog {
   createdBy  Employee  @relation("CreatedLogs", fields: [createdById], references: [id])
   updatedBy  Employee  @relation("UpdatedLogs", fields: [updatedById], references: [id])
 }
+
+//---------------------------
+// TreatmentCare (Aftercare) v1
+//---------------------------
+
+model TreatmentCare {
+  id String @id @default(uuid())
+
+  // Liên kết
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  // Cơ sở báo cáo: theo nhân viên chăm sóc (careStaff)
+  clinicId String
+  clinic   Clinic   @relation(fields: [clinicId], references: [id])
+
+  careStaffId String
+  careStaff   Employee @relation(fields: [careStaffId], references: [id])
+
+  // Ngày nghiệp vụ
+  treatmentDate DateTime @db.Date // Ngày điều trị (Date-only)
+  careAt        DateTime @db.Timestamptz // Thời điểm chăm sóc
+
+  // Nội dung & Trạng thái
+  careContent String
+  careStatus  String
+
+  // Snapshot (gộp theo treatmentDate)
+  treatmentServiceNames String[]
+  treatingDoctorNames   String[]
+  treatingDoctorIds     String[]
+  treatmentClinicIds    String[]
+
+  // Audit
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  createdBy Employee @relation("CreatedTreatmentCares", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedTreatmentCares", fields: [updatedById], references: [id])
+
+  // Indexes
+  @@index([clinicId, treatmentDate])
+  @@index([clinicId, careAt])
+  @@index([careStaffId, careAt])
+  @@index([customerId, treatmentDate])
+}
+
+
+
 
 // ===================================
 //        SUPPLIER MODEL

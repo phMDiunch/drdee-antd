@@ -40,9 +40,9 @@
   3. Error nếu không xác định được
 - ✅ **Multiple Records**: 1 customer có thể được chăm sóc nhiều lần trong 1 ngày điều trị
 - ✅ **Status Enum**: `TreatmentCareStatus`
-  - `STABLE`: Ổn định
+  - `STABLE`: Bệnh nhân đã ổn
   - `UNREACHABLE`: Không liên lạc được
-  - `NEEDS_FOLLOW_UP`: Cần theo dõi
+  - `NEEDS_FOLLOW_UP`: Cần chăm sóc thêm
 
 ### Repository Pattern
 
@@ -126,9 +126,9 @@ Hàng 5: [* Nội dung chăm sóc (Textarea)                                    
 - "\* Ngày điều trị": readonly display từ table context (YYYY-MM-DD)
 - "\* Thời gian chăm sóc": DatePicker showTime, default now(), disabled (read-only)
 - "\* Trạng thái": Radio vertical
-  - "Ổn định" (STABLE)
+  - "Bệnh nhân đã ổn" (STABLE)
   - "Không liên lạc được" (UNREACHABLE)
-  - "Cần theo dõi" (NEEDS_FOLLOW_UP)
+  - "Cần chăm sóc thêm" (NEEDS_FOLLOW_UP)
 - "\* Nội dung chăm sóc": Textarea rows={4}, placeholder "Ghi chú tình trạng khách hàng sau điều trị..."
 
 ### Validation
@@ -305,9 +305,9 @@ Staff xem lịch sử chăm sóc 35 ngày gần nhất, grouped theo ngày
 
 **Status Colors**:
 
-- STABLE: Green (success)
-- UNREACHABLE: Red (error)
-- NEEDS_FOLLOW_UP: Orange (warning)
+- STABLE: Green (success) - "Bệnh nhân đã ổn"
+- UNREACHABLE: Red (error) - "Không liên lạc được"
+- NEEDS_FOLLOW_UP: Orange (warning) - "Cần chăm sóc thêm"
 
 **Grouping**:
 
@@ -1409,9 +1409,9 @@ import { TreatmentCareStatus } from "@prisma/client";
 import type { RadioGroupProps } from "antd";
 
 export const TREATMENT_CARE_STATUS_OPTIONS: RadioGroupProps["options"] = [
-  { label: "Ổn định", value: TreatmentCareStatus.STABLE },
+  { label: "Bệnh nhân đã ổn", value: TreatmentCareStatus.STABLE },
   { label: "Không liên lạc được", value: TreatmentCareStatus.UNREACHABLE },
-  { label: "Cần theo dõi", value: TreatmentCareStatus.NEEDS_FOLLOW_UP },
+  { label: "Cần chăm sóc thêm", value: TreatmentCareStatus.NEEDS_FOLLOW_UP },
 ];
 
 export const TREATMENT_CARE_STATUS_COLORS = {
@@ -1421,9 +1421,9 @@ export const TREATMENT_CARE_STATUS_COLORS = {
 } as const;
 
 export const TREATMENT_CARE_STATUS_LABELS = {
-  [TreatmentCareStatus.STABLE]: "Ổn định",
+  [TreatmentCareStatus.STABLE]: "Bệnh nhân đã ổn",
   [TreatmentCareStatus.UNREACHABLE]: "Không liên lạc được",
-  [TreatmentCareStatus.NEEDS_FOLLOW_UP]: "Cần theo dõi",
+  [TreatmentCareStatus.NEEDS_FOLLOW_UP]: "Cần chăm sóc thêm",
 } as const;
 ```
 
