@@ -72,4 +72,13 @@ export const menuItems: MenuItem[] = [
       { key: "/dental-services", label: "Dịch vụ nha khoa" },
     ],
   },
+  {
+    key: "demo",
+    icon: <ExperimentOutlined />,
+    label: "Demo",
+    children: [
+      { key: "/demo/sales-dashboard", label: "Sales Dashboard" },
+      { key: "/demo/revenue-dashboard", label: "Revenue Dashboard" },
+    ],
+  },
 ];

@@ -31,9 +31,7 @@
 - ✅ **Date Filtering**:
   - Revenue: Theo `PaymentVoucher.paymentDate`
   - Sales: Theo `ConsultedService.serviceConfirmDate`
-  - UTC parse chuẩn, display VN timezone ở FE
 - ✅ **Comparison Periods**:
-  - Previous Period: Cùng độ dài khoảng thời gian nhưng trước đó
   - Previous Month: Toàn bộ tháng trước (full month)
   - Previous Year: Cùng tháng năm trước
 

@@ -834,6 +834,52 @@ useEffect(() => {
 - Menu: icon cấp 1, children không icon, `key` = path
 - Modal: `destroyOnHidden` (không dùng `destroyOnClose` - deprecated)
 
+## 10. Demo & Prototypes
+
+**Purpose**: Demo UI/UX với mock data để preview design trước khi implement backend
+
+**Structure**:
+```
+src/
+├── app/
+│   └── (private)/
+│       └── demo/                    # Demo pages (PHẢI trong (private) để auth)
+│           ├── layout.tsx           # Demo layout với warning banner
+│           └── sales-dashboard/
+│               └── page.tsx         # Route: /demo/sales-dashboard
+├── demos/                           # Demo-specific code (tách biệt khỏi features)
+│   └── sales-dashboard/
+│       ├── components/              # Demo components
+│       ├── types.ts                 # Demo types
+│       ├── mockData.ts              # Demo mock data
+│       └── hooks/                   # Demo hooks (if needed)
+```
+
+**Rules**:
+
+1. ✅ **Mock Data Only**: Demo pages CHỈ dùng mock data, không call API
+2. ✅ **Warning Banner**: Mọi demo page có Alert banner "Demo Mode" trong `demo/layout.tsx`
+3. ✅ **Separated Folder**: Toàn bộ code demo trong `src/demos/`, KHÔNG trong `src/features/`
+4. ✅ **Inside (private)**: Demo pages PHẢI ở trong `app/(private)/demo/` để có authentication
+5. ✅ **Separated Menu**: Demo có menu riêng, tách biệt với production features
+6. ❌ **No Complex Logic**: Không implement business logic phức tạp trong demo
+7. ✅ **Keep After Migration**: Giữ lại demo pages sau khi migrate sang production (để reference)
+
+**When to Use Demo**:
+- ✅ Design new dashboard layouts
+- ✅ Test UI libraries (Chart.js, D3, etc.)
+- ✅ Prototype complex interactions
+- ✅ Preview for stakeholders
+
+**Migration to Production**:
+1. Refactor/rewrite components từ `demos/` sang `features/` (clean code)
+2. Tạo production page trong `/dashboard/` hoặc feature route
+3. Replace mock data với API hooks (React Query)
+4. Add loading/error states
+5. Implement permissions & validation
+6. Testing
+7. ✅ Keep demo page trong `demos/` (không xóa - để reference/comparison)
+
 ---
 
 # IV. CHECKLIST KHI IMPLEMENT FEATURE MỚI
