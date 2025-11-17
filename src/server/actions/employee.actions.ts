@@ -30,7 +30,7 @@ export async function setEmployeeStatusAction(
   status: "WORKING" | "RESIGNED"
 ) {
   const user = await getSessionUser();
-  return employeeService.setStatus(user, id, status);
+  return employeeService.setStatus(user, id, { status });
 }
 
 export async function resendEmployeeInviteAction(id: string) {

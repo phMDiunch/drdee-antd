@@ -52,8 +52,25 @@ export default function EmployeeTable({
   onToggleStatus,
   onResendInvite,
 }: Props) {
-  const columns = useMemo<ColumnsType<EmployeeResponse>>(
-    () => [
+  const columns = useMemo<ColumnsType<EmployeeResponse>>(() => {
+    // Calculate unique values for filters from data
+    const clinicCodes = Array.from(
+      new Set(
+        data
+          .map((item) => item.clinic?.clinicCode)
+          .filter((code): code is string => !!code)
+      )
+    ).sort();
+
+    const departments = Array.from(
+      new Set(data.map((item) => item.department).filter(Boolean))
+    ).sort();
+
+    const jobTitles = Array.from(
+      new Set(data.map((item) => item.jobTitle).filter(Boolean))
+    ).sort();
+
+    return [
       {
         title: "Tên nhân viên",
         dataIndex: "fullName",
@@ -104,13 +121,9 @@ export default function EmployeeTable({
             b.clinic?.clinicCode || ""
           ),
         filterSearch: true,
-        filters: [
-          ...new Set(
-            data.map((item) => item.clinic?.clinicCode).filter(Boolean)
-          ),
-        ].map((code) => ({
-          text: code!,
-          value: code!,
+        filters: clinicCodes.map((code) => ({
+          text: code,
+          value: code,
         })),
         onFilter: (value, record) => record.clinic?.clinicCode === value,
         render: (_: unknown, row) => (
@@ -133,11 +146,9 @@ export default function EmployeeTable({
         key: "department",
         sorter: (a, b) => a.department.localeCompare(b.department),
         filterSearch: true,
-        filters: [
-          ...new Set(data.map((item) => item.department).filter(Boolean)),
-        ].map((dept) => ({
-          text: dept!,
-          value: dept!,
+        filters: departments.map((dept) => ({
+          text: dept,
+          value: dept,
         })),
         onFilter: (value, record) => record.department === value,
         // width: 180,
@@ -148,11 +159,9 @@ export default function EmployeeTable({
         key: "jobTitle",
         sorter: (a, b) => a.jobTitle.localeCompare(b.jobTitle),
         filterSearch: true,
-        filters: [
-          ...new Set(data.map((item) => item.jobTitle).filter(Boolean)),
-        ].map((title) => ({
-          text: title!,
-          value: title!,
+        filters: jobTitles.map((title) => ({
+          text: title,
+          value: title,
         })),
         onFilter: (value, record) => record.jobTitle === value,
         // width: 180,
@@ -235,19 +244,18 @@ export default function EmployeeTable({
           );
         },
       },
-    ],
-    [
-      disabled,
-      onEdit,
-      onDelete,
-      deleteLoadingId,
-      onResendInvite,
-      inviteLoadingId,
-      onToggleStatus,
-      statusLoadingId,
-      data,
-    ]
-  );
+    ];
+  }, [
+    data,
+    disabled,
+    statusLoadingId,
+    inviteLoadingId,
+    deleteLoadingId,
+    onEdit,
+    onDelete,
+    onToggleStatus,
+    onResendInvite,
+  ]);
 
   return (
     <Table<EmployeeResponse>

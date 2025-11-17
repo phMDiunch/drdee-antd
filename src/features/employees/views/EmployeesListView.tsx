@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Typography } from "antd";
 import { useNotify } from "@/shared/hooks/useNotify";
@@ -65,30 +65,6 @@ export default function EmployeesListView() {
     });
     return { total: data.length, pending, working, resigned };
   }, [data]);
-
-  useEffect(() => {
-    if (employeesQuery.error) {
-      notify.error(employeesQuery.error, {
-        fallback: "Không thể tải danh sách nhân viên.",
-      });
-    }
-  }, [employeesQuery.error, notify]);
-
-  useEffect(() => {
-    if (statusMutation.error) {
-      notify.error(statusMutation.error, {
-        fallback: "Không thể cập nhật trạng thái nhân viên.",
-      });
-    }
-  }, [statusMutation.error, notify]);
-
-  useEffect(() => {
-    if (deleteMutation.error) {
-      notify.error(deleteMutation.error, {
-        fallback: "Không thể xoá nhân viên.",
-      });
-    }
-  }, [deleteMutation.error, notify]);
 
   const openCreateModal = useCallback(() => setModalOpen(true), []);
   const closeModal = useCallback(() => setModalOpen(false), []);
