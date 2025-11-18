@@ -46,6 +46,33 @@ export interface RawEmployeeData {
   revenue: number;
 }
 
+/**
+ * Các kiểu dữ liệu helper nội bộ cho tổng hợp dữ liệu
+ */
+type QueryConfig = {
+  additionalSelect?: Record<string, unknown>;
+  additionalWhere?: Record<string, unknown>;
+};
+
+type AggregationMap = Map<
+  string | null,
+  {
+    fullName?: string;
+    customersVisited: Set<string>;
+    consultations: number;
+    closed: number;
+    revenue: number;
+  }
+>;
+
+type ServiceRecord = {
+  serviceConfirmDate?: Date | null;
+  consultationDate?: Date;
+  customerId: string;
+  finalPrice?: number;
+  [key: string]: unknown;
+};
+
 export const salesReportRepo = {
   /**
    * Get date range for a given month
@@ -59,13 +86,121 @@ export const salesReportRepo = {
   },
 
   /**
+   * Helper: Lấy danh sách dịch vụ đã chốt
+   * Hàm helper nội bộ (private)
+   */
+  async queryClosedServices(
+    startDate: Date,
+    endDate: Date,
+    clinicId: string | undefined,
+    config: QueryConfig = {}
+  ) {
+    return prisma.consultedService.findMany({
+      where: {
+        serviceStatus: "Đã chốt",
+        serviceConfirmDate: { gte: startDate, lte: endDate },
+        ...(clinicId && { clinicId }),
+        ...config.additionalWhere,
+      },
+      select: {
+        serviceConfirmDate: true,
+        customerId: true,
+        finalPrice: true,
+        ...config.additionalSelect,
+      },
+    });
+  },
+
+  /**
+   * Helper: Lấy tất cả dịch vụ tư vấn (cả đã chốt và chưa chốt)
+   * Hàm helper nội bộ (private)
+   */
+  async queryAllConsultations(
+    startDate: Date,
+    endDate: Date,
+    clinicId: string | undefined,
+    config: QueryConfig = {}
+  ) {
+    return prisma.consultedService.findMany({
+      where: {
+        consultationDate: { gte: startDate, lte: endDate },
+        ...(clinicId && { clinicId }),
+        ...config.additionalWhere,
+      },
+      select: {
+        consultationDate: true,
+        customerId: true,
+        ...config.additionalSelect,
+      },
+    });
+  },
+
+  /**
+   * Helper: Tổng hợp số lượt tư vấn vào Map
+   * Hàm helper nội bộ (private)
+   */
+  aggregateConsultations(
+    allServices: ServiceRecord[],
+    getKey: (service: ServiceRecord) => string | null,
+    getMetadata?: (service: ServiceRecord) => { fullName?: string }
+  ): AggregationMap {
+    const map: AggregationMap = new Map();
+
+    allServices.forEach((service) => {
+      const key = getKey(service);
+      if (!map.has(key)) {
+        map.set(key, {
+          ...getMetadata?.(service),
+          customersVisited: new Set(),
+          consultations: 0,
+          closed: 0,
+          revenue: 0,
+        });
+      }
+      const data = map.get(key)!;
+      data.customersVisited.add(service.customerId);
+      data.consultations++;
+    });
+
+    return map;
+  },
+
+  /**
+   * Helper: Tổng hợp dịch vụ đã chốt vào Map có sẵn
+   * Hàm helper nội bộ (private)
+   */
+  aggregateClosedDeals(
+    services: ServiceRecord[],
+    map: AggregationMap,
+    getKey: (service: ServiceRecord) => string | null,
+    getMetadata?: (service: ServiceRecord) => { fullName?: string }
+  ): void {
+    services.forEach((service) => {
+      if (!service.serviceConfirmDate) return;
+      const key = getKey(service);
+      if (!map.has(key)) {
+        map.set(key, {
+          ...getMetadata?.(service),
+          customersVisited: new Set(),
+          consultations: 0,
+          closed: 0,
+          revenue: 0,
+        });
+      }
+      const data = map.get(key)!;
+      data.closed++;
+      data.revenue += service.finalPrice || 0;
+    });
+  },
+
+  /**
    * Get KPI data for the month
    */
   async getKpiData(params: GetSalesSummaryQuery) {
     const { month, clinicId } = params;
     const { startDate, endDate } = this.getMonthDateRange(month);
 
-    // Calculate previous month and same month last year
+    // Tính toán tháng trước và cùng kỳ năm ngoái
     const [year, monthNum] = month.split("-").map(Number);
     const prevMonth = new Date(year, monthNum - 2, 1);
     const prevMonthEnd = new Date(year, monthNum - 1, 0, 23, 59, 59, 999);
@@ -85,351 +220,243 @@ export const salesReportRepo = {
       ...(clinicId && { clinicId }),
     };
 
-    // Current month data
-    const currentMonthServices = await prisma.consultedService.findMany({
-      where: {
-        ...baseWhere,
-        serviceConfirmDate: {
-          gte: startDate,
-          lte: endDate,
+    // Chỉ select các field cần thiết, không JOIN customer
+    const selectFields = {
+      finalPrice: true,
+      customerId: true,
+      customer: {
+        select: {
+          createdAt: true,
         },
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            createdAt: true,
+    };
+
+    // Chạy 3 queries song song để tăng hiệu suất
+    const [currentMonthServices, prevMonthServices, lastYearServices] =
+      await Promise.all([
+        // Dữ liệu tháng hiện tại
+        prisma.consultedService.findMany({
+          where: {
+            ...baseWhere,
+            serviceConfirmDate: {
+              gte: startDate,
+              lte: endDate,
+            },
           },
-        },
-      },
-    });
-
-    // Previous month data
-    const prevMonthServices = await prisma.consultedService.findMany({
-      where: {
-        ...baseWhere,
-        serviceConfirmDate: {
-          gte: prevMonth,
-          lte: prevMonthEnd,
-        },
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            createdAt: true,
+          select: selectFields,
+        }),
+        // Dữ liệu tháng trước
+        prisma.consultedService.findMany({
+          where: {
+            ...baseWhere,
+            serviceConfirmDate: {
+              gte: prevMonth,
+              lte: prevMonthEnd,
+            },
           },
-        },
-      },
-    });
-
-    // Same month last year data
-    const lastYearServices = await prisma.consultedService.findMany({
-      where: {
-        ...baseWhere,
-        serviceConfirmDate: {
-          gte: sameMonthLastYear,
-          lte: sameMonthLastYearEnd,
-        },
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            createdAt: true,
+          select: selectFields,
+        }),
+        // Dữ liệu cùng kỳ năm ngoái
+        prisma.consultedService.findMany({
+          where: {
+            ...baseWhere,
+            serviceConfirmDate: {
+              gte: sameMonthLastYear,
+              lte: sameMonthLastYearEnd,
+            },
           },
-        },
-      },
-    });
+          select: selectFields,
+        }),
+      ]);
 
-    // Calculate metrics
-    const totalSales = currentMonthServices.reduce(
-      (sum, s) => sum + s.finalPrice,
-      0
-    );
-    const closedDeals = currentMonthServices.length;
+    // Helper: Tính metrics cho một khoảng thời gian
+    const calculatePeriodMetrics = (
+      services: Array<{
+        finalPrice: number;
+        customerId: string;
+        customer: { createdAt: Date };
+      }>,
+      periodStart: Date,
+      periodEnd: Date
+    ) => {
+      let totalSales = 0;
+      let newCustomerSales = 0;
+      const newCustomerIds = new Set<string>();
 
-    // New customers: createdAt in current month
-    const newCustomers = new Set(
-      currentMonthServices
-        .filter(
-          (s) =>
-            s.customer.createdAt >= startDate && s.customer.createdAt <= endDate
-        )
-        .map((s) => s.customerId)
-    ).size;
+      // Chỉ duyệt 1 lần để tính tất cả metrics
+      services.forEach((s) => {
+        totalSales += s.finalPrice;
 
-    // New vs old customer sales
-    const newCustomerSales = currentMonthServices
-      .filter(
-        (s) =>
-          s.customer.createdAt >= startDate && s.customer.createdAt <= endDate
-      )
-      .reduce((sum, s) => sum + s.finalPrice, 0);
-    const oldCustomerSales = totalSales - newCustomerSales;
+        const isNewCustomer =
+          s.customer.createdAt >= periodStart &&
+          s.customer.createdAt <= periodEnd;
 
-    // Previous month metrics
-    const prevMonthSales = prevMonthServices.reduce(
-      (sum, s) => sum + s.finalPrice,
-      0
-    );
-    const prevMonthDeals = prevMonthServices.length;
-    const prevMonthNewCustomers = new Set(
-      prevMonthServices
-        .filter(
-          (s) =>
-            s.customer.createdAt >= prevMonth &&
-            s.customer.createdAt <= prevMonthEnd
-        )
-        .map((s) => s.customerId)
-    ).size;
-    const prevMonthNewCustomerSales = prevMonthServices
-      .filter(
-        (s) =>
-          s.customer.createdAt >= prevMonth &&
-          s.customer.createdAt <= prevMonthEnd
-      )
-      .reduce((sum, s) => sum + s.finalPrice, 0);
+        if (isNewCustomer) {
+          newCustomerIds.add(s.customerId);
+          newCustomerSales += s.finalPrice;
+        }
+      });
 
-    // Last year metrics
-    const lastYearSales = lastYearServices.reduce(
-      (sum, s) => sum + s.finalPrice,
-      0
-    );
-    const lastYearDeals = lastYearServices.length;
-    const lastYearNewCustomers = new Set(
-      lastYearServices
-        .filter(
-          (s) =>
-            s.customer.createdAt >= sameMonthLastYear &&
-            s.customer.createdAt <= sameMonthLastYearEnd
-        )
-        .map((s) => s.customerId)
-    ).size;
+      return {
+        totalSales,
+        closedDeals: services.length,
+        newCustomers: newCustomerIds.size,
+        newCustomerSales,
+        oldCustomerSales: totalSales - newCustomerSales,
+      };
+    };
 
-    // Calculate growth percentages
+    // Helper: Tính % tăng trưởng
     const calculateGrowth = (current: number, previous: number) => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
     };
 
+    // Tính metrics cho 3 kỳ
+    const current = calculatePeriodMetrics(
+      currentMonthServices,
+      startDate,
+      endDate
+    );
+    const prev = calculatePeriodMetrics(
+      prevMonthServices,
+      prevMonth,
+      prevMonthEnd
+    );
+    const lastYear = calculatePeriodMetrics(
+      lastYearServices,
+      sameMonthLastYear,
+      sameMonthLastYearEnd
+    );
+
     return {
-      totalSales,
-      totalSalesGrowthMoM: calculateGrowth(totalSales, prevMonthSales),
-      totalSalesGrowthYoY: calculateGrowth(totalSales, lastYearSales),
+      totalSales: current.totalSales,
+      totalSalesGrowthMoM: calculateGrowth(current.totalSales, prev.totalSales),
+      totalSalesGrowthYoY: calculateGrowth(
+        current.totalSales,
+        lastYear.totalSales
+      ),
 
-      closedDeals,
-      closedDealsGrowthMoM: calculateGrowth(closedDeals, prevMonthDeals),
-      closedDealsGrowthYoY: calculateGrowth(closedDeals, lastYearDeals),
+      closedDeals: current.closedDeals,
+      closedDealsGrowthMoM: calculateGrowth(
+        current.closedDeals,
+        prev.closedDeals
+      ),
+      closedDealsGrowthYoY: calculateGrowth(
+        current.closedDeals,
+        lastYear.closedDeals
+      ),
 
-      newCustomers,
+      newCustomers: current.newCustomers,
       newCustomersGrowthMoM: calculateGrowth(
-        newCustomers,
-        prevMonthNewCustomers
+        current.newCustomers,
+        prev.newCustomers
       ),
       newCustomersGrowthYoY: calculateGrowth(
-        newCustomers,
-        lastYearNewCustomers
+        current.newCustomers,
+        lastYear.newCustomers
       ),
 
-      newCustomerSales,
-      oldCustomerSales,
+      newCustomerSales: current.newCustomerSales,
+      oldCustomerSales: current.oldCustomerSales,
       newCustomerGrowth: calculateGrowth(
-        newCustomerSales,
-        prevMonthNewCustomerSales
+        current.newCustomerSales,
+        prev.newCustomerSales
       ),
     };
+  },
+
+  /**
+   * Helper: Tổng hợp dữ liệu theo dimension (generic aggregation function)
+   * Hàm helper nội bộ (private) - dùng chung cho tất cả các dimension
+   */
+  async aggregateByDimension<T>(
+    params: GetSalesSummaryQuery,
+    config: {
+      additionalSelect?: Record<string, unknown>;
+      getKey: (service: ServiceRecord) => string | null;
+      getMetadata?: (service: ServiceRecord) => { fullName?: string };
+      mapResult: (
+        key: string | null,
+        data: {
+          fullName?: string;
+          customersVisited: Set<string>;
+          consultations: number;
+          closed: number;
+          revenue: number;
+        }
+      ) => T;
+      filterNull?: boolean; // true cho sale/doctor, false cho các dimension khác
+    }
+  ): Promise<T[]> {
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+
+    // Chạy 2 queries song song để tăng hiệu suất
+    const [services, allServices] = await Promise.all([
+      this.queryClosedServices(startDate, endDate, clinicId, {
+        additionalSelect: config.additionalSelect,
+      }),
+      this.queryAllConsultations(startDate, endDate, clinicId, {
+        additionalSelect: config.additionalSelect,
+      }),
+    ]);
+
+    // Tổng hợp số lượt tư vấn
+    const map = this.aggregateConsultations(
+      allServices,
+      config.getKey,
+      config.getMetadata
+    );
+
+    // Tổng hợp dịch vụ đã chốt
+    this.aggregateClosedDeals(services, map, config.getKey, config.getMetadata);
+
+    // Chuyển đổi Map thành array và áp dụng filter nếu cần
+    let entries = Array.from(map.entries());
+
+    if (config.filterNull) {
+      entries = entries.filter(([key]) => key !== null);
+    }
+
+    return entries.map(([key, data]) => config.mapResult(key, data));
   },
 
   /**
    * Get daily breakdown data
    */
   async getDailyData(params: GetSalesSummaryQuery): Promise<RawDailyData[]> {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const services = await prisma.consultedService.findMany({
-      where: {
-        serviceStatus: "Đã chốt",
-        serviceConfirmDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(clinicId && { clinicId }),
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-      },
+    return this.aggregateByDimension(params, {
+      getKey: (s) => s.consultationDate?.toISOString().split("T")[0] || "",
+      mapResult: (date, data) => ({
+        date: date!,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
     });
-
-    // Get all consulted services (not just closed) for consultations count
-    const allServices = await prisma.consultedService.findMany({
-      where: {
-        consultationDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(clinicId && { clinicId }),
-      },
-      select: {
-        consultationDate: true,
-        customerId: true,
-      },
-    });
-
-    // Group by date
-    const dailyMap = new Map<
-      string,
-      {
-        customersVisited: Set<string>;
-        consultations: number;
-        closed: number;
-        revenue: number;
-      }
-    >();
-
-    // Count consultations
-    allServices.forEach((service) => {
-      const date = service.consultationDate.toISOString().split("T")[0];
-      if (!dailyMap.has(date)) {
-        dailyMap.set(date, {
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const day = dailyMap.get(date)!;
-      day.customersVisited.add(service.customerId);
-      day.consultations++;
-    });
-
-    // Count closed deals - group by serviceConfirmDate (ngày chốt)
-    services.forEach((service) => {
-      if (!service.serviceConfirmDate) return;
-      const date = service.serviceConfirmDate.toISOString().split("T")[0];
-      if (!dailyMap.has(date)) {
-        dailyMap.set(date, {
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const day = dailyMap.get(date)!;
-      day.closed++;
-      day.revenue += service.finalPrice;
-    });
-
-    // Convert to array
-    return Array.from(dailyMap.entries()).map(([date, data]) => ({
-      date,
-      customersVisited: data.customersVisited.size,
-      consultations: data.consultations,
-      closed: data.closed,
-      revenue: data.revenue,
-    }));
   },
 
   /**
    * Get source breakdown data
    */
   async getSourceData(params: GetSalesSummaryQuery): Promise<RawSourceData[]> {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const services = await prisma.consultedService.findMany({
-      where: {
-        serviceStatus: "Đã chốt",
-        serviceConfirmDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(clinicId && { clinicId }),
+    return this.aggregateByDimension(params, {
+      additionalSelect: {
+        customer: { select: { source: true } },
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            source: true,
-          },
-        },
-      },
+      getKey: (s) =>
+        (s as unknown as { customer: { source: string | null } }).customer
+          .source,
+      mapResult: (source, data) => ({
+        source,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
     });
-
-    // Get all consulted services for consultations count
-    const allServices = await prisma.consultedService.findMany({
-      where: {
-        consultationDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(clinicId && { clinicId }),
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            source: true,
-          },
-        },
-      },
-    });
-
-    // Group by source
-    const sourceMap = new Map<
-      string | null,
-      {
-        customersVisited: Set<string>;
-        consultations: number;
-        closed: number;
-        revenue: number;
-      }
-    >();
-
-    // Count consultations
-    allServices.forEach((service) => {
-      const source = service.customer.source;
-      if (!sourceMap.has(source)) {
-        sourceMap.set(source, {
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const sourceData = sourceMap.get(source)!;
-      sourceData.customersVisited.add(service.customerId);
-      sourceData.consultations++;
-    });
-
-    // Count closed deals
-    services.forEach((service) => {
-      const source = service.customer.source;
-      if (!sourceMap.has(source)) {
-        sourceMap.set(source, {
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const sourceData = sourceMap.get(source)!;
-      sourceData.closed++;
-      sourceData.revenue += service.finalPrice;
-    });
-
-    return Array.from(sourceMap.entries()).map(([source, data]) => ({
-      source,
-      customersVisited: data.customersVisited.size,
-      consultations: data.consultations,
-      closed: data.closed,
-      revenue: data.revenue,
-    }));
   },
 
   /**
@@ -438,220 +465,53 @@ export const salesReportRepo = {
   async getServiceData(
     params: GetSalesSummaryQuery
   ): Promise<RawServiceData[]> {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const services = await prisma.consultedService.findMany({
-      where: {
-        serviceStatus: "Đã chốt",
-        serviceConfirmDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(clinicId && { clinicId }),
+    return this.aggregateByDimension(params, {
+      additionalSelect: {
+        dentalService: { select: { serviceGroup: true } },
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-        dentalService: {
-          select: {
-            serviceGroup: true,
-          },
-        },
-      },
+      getKey: (s) =>
+        (s as unknown as { dentalService: { serviceGroup: string | null } })
+          .dentalService.serviceGroup,
+      mapResult: (serviceGroup, data) => ({
+        serviceGroup,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
     });
-
-    // Get all consulted services for consultations count
-    const allServices = await prisma.consultedService.findMany({
-      where: {
-        consultationDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(clinicId && { clinicId }),
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-        dentalService: {
-          select: {
-            serviceGroup: true,
-          },
-        },
-      },
-    });
-
-    // Group by service group
-    const serviceMap = new Map<
-      string | null,
-      {
-        customersVisited: Set<string>;
-        consultations: number;
-        closed: number;
-        revenue: number;
-      }
-    >();
-
-    // Count consultations
-    allServices.forEach((service) => {
-      const serviceGroup = service.dentalService.serviceGroup;
-      if (!serviceMap.has(serviceGroup)) {
-        serviceMap.set(serviceGroup, {
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const serviceData = serviceMap.get(serviceGroup)!;
-      serviceData.customersVisited.add(service.customerId);
-      serviceData.consultations++;
-    });
-
-    // Count closed deals
-    services.forEach((service) => {
-      const serviceGroup = service.dentalService.serviceGroup;
-      if (!serviceMap.has(serviceGroup)) {
-        serviceMap.set(serviceGroup, {
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const serviceData = serviceMap.get(serviceGroup)!;
-      serviceData.closed++;
-      serviceData.revenue += service.finalPrice;
-    });
-
-    return Array.from(serviceMap.entries()).map(([serviceGroup, data]) => ({
-      serviceGroup,
-      customersVisited: data.customersVisited.size,
-      consultations: data.consultations,
-      closed: data.closed,
-      revenue: data.revenue,
-    }));
   },
 
   /**
    * Get sale performance data
    */
   async getSaleData(params: GetSalesSummaryQuery): Promise<RawEmployeeData[]> {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const services = await prisma.consultedService.findMany({
-      where: {
-        serviceStatus: "Đã chốt",
-        serviceConfirmDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        consultingSaleId: { not: null },
-        ...(clinicId && { clinicId }),
+    return this.aggregateByDimension(params, {
+      additionalSelect: {
+        consultingSale: { select: { id: true, fullName: true } },
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-        consultingSale: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
+      getKey: (s) => {
+        const sale = s as {
+          consultingSale?: { id: string; fullName: string } | null;
+        };
+        return sale.consultingSale?.id || null;
       },
-    });
-
-    // Get all consulted services for consultations count
-    const allServices = await prisma.consultedService.findMany({
-      where: {
-        consultationDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        consultingSaleId: { not: null },
-        ...(clinicId && { clinicId }),
+      getMetadata: (s) => {
+        const sale = s as {
+          consultingSale?: { id: string; fullName: string } | null;
+        };
+        return { fullName: sale.consultingSale?.fullName };
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-        consultingSale: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
+      mapResult: (id, data) => ({
+        id: id!,
+        fullName: data.fullName!,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+      filterNull: true,
     });
-
-    // Group by sale
-    const saleMap = new Map<
-      string,
-      {
-        fullName: string;
-        customersVisited: Set<string>;
-        consultations: number;
-        closed: number;
-        revenue: number;
-      }
-    >();
-
-    // Count consultations
-    allServices.forEach((service) => {
-      if (!service.consultingSale) return;
-      const saleId = service.consultingSale.id;
-      if (!saleMap.has(saleId)) {
-        saleMap.set(saleId, {
-          fullName: service.consultingSale.fullName,
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const saleData = saleMap.get(saleId)!;
-      saleData.customersVisited.add(service.customerId);
-      saleData.consultations++;
-    });
-
-    // Count closed deals
-    services.forEach((service) => {
-      if (!service.consultingSale) return;
-      const saleId = service.consultingSale.id;
-      if (!saleMap.has(saleId)) {
-        saleMap.set(saleId, {
-          fullName: service.consultingSale.fullName,
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const saleData = saleMap.get(saleId)!;
-      saleData.closed++;
-      saleData.revenue += service.finalPrice;
-    });
-
-    return Array.from(saleMap.entries()).map(([id, data]) => ({
-      id,
-      fullName: data.fullName,
-      customersVisited: data.customersVisited.size,
-      consultations: data.consultations,
-      closed: data.closed,
-      revenue: data.revenue,
-    }));
   },
 
   /**
@@ -660,115 +520,32 @@ export const salesReportRepo = {
   async getDoctorData(
     params: GetSalesSummaryQuery
   ): Promise<RawEmployeeData[]> {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const services = await prisma.consultedService.findMany({
-      where: {
-        serviceStatus: "Đã chốt",
-        serviceConfirmDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        consultingDoctorId: { not: null },
-        ...(clinicId && { clinicId }),
+    return this.aggregateByDimension(params, {
+      additionalSelect: {
+        consultingDoctor: { select: { id: true, fullName: true } },
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-        consultingDoctor: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
+      getKey: (s) => {
+        const doctor = s as {
+          consultingDoctor?: { id: string; fullName: string } | null;
+        };
+        return doctor.consultingDoctor?.id || null;
       },
-    });
-
-    // Get all consulted services for consultations count
-    const allServices = await prisma.consultedService.findMany({
-      where: {
-        consultationDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        consultingDoctorId: { not: null },
-        ...(clinicId && { clinicId }),
+      getMetadata: (s) => {
+        const doctor = s as {
+          consultingDoctor?: { id: string; fullName: string } | null;
+        };
+        return { fullName: doctor.consultingDoctor?.fullName };
       },
-      include: {
-        customer: {
-          select: {
-            id: true,
-          },
-        },
-        consultingDoctor: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
+      mapResult: (id, data) => ({
+        id: id!,
+        fullName: data.fullName!,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+      filterNull: true,
     });
-
-    // Group by doctor
-    const doctorMap = new Map<
-      string,
-      {
-        fullName: string;
-        customersVisited: Set<string>;
-        consultations: number;
-        closed: number;
-        revenue: number;
-      }
-    >();
-
-    // Count consultations
-    allServices.forEach((service) => {
-      if (!service.consultingDoctor) return;
-      const doctorId = service.consultingDoctor.id;
-      if (!doctorMap.has(doctorId)) {
-        doctorMap.set(doctorId, {
-          fullName: service.consultingDoctor.fullName,
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const doctorData = doctorMap.get(doctorId)!;
-      doctorData.customersVisited.add(service.customerId);
-      doctorData.consultations++;
-    });
-
-    // Count closed deals
-    services.forEach((service) => {
-      if (!service.consultingDoctor) return;
-      const doctorId = service.consultingDoctor.id;
-      if (!doctorMap.has(doctorId)) {
-        doctorMap.set(doctorId, {
-          fullName: service.consultingDoctor.fullName,
-          customersVisited: new Set(),
-          consultations: 0,
-          closed: 0,
-          revenue: 0,
-        });
-      }
-      const doctorData = doctorMap.get(doctorId)!;
-      doctorData.closed++;
-      doctorData.revenue += service.finalPrice;
-    });
-
-    return Array.from(doctorMap.entries()).map(([id, data]) => ({
-      id,
-      fullName: data.fullName,
-      customersVisited: data.customersVisited.size,
-      consultations: data.consultations,
-      closed: data.closed,
-      revenue: data.revenue,
-    }));
   },
 
   /**
@@ -779,7 +556,7 @@ export const salesReportRepo = {
     const { startDate, endDate } = this.getMonthDateRange(month);
 
     const baseWhere = {
-      // Show all services (both "Đã chốt" and "Chưa chốt")
+      // Hiển thị tất cả dịch vụ (cả "Đã chốt" và "Chưa chốt")
       consultationDate: {
         gte: startDate,
         lte: endDate,
@@ -787,15 +564,15 @@ export const salesReportRepo = {
       ...(clinicId && { clinicId }),
     };
 
-    // Build additional filters based on tab
+    // Xây dựng bộ lọc bổ sung theo tab
     let additionalWhere = {};
     switch (tab) {
       case "daily":
-        // Parse date string (YYYY-MM-DD) and create date range for the full day
-        // Filter by consultationDate (ngày tư vấn) để hiển thị cả dịch vụ chưa chốt
-        const [year, month, day] = key.split("-").map(Number);
-        const keyDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-        const keyDateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
+        // Phân tích chuỗi ngày (YYYY-MM-DD) và tạo khoảng thời gian cho cả ngày
+        // Lọc theo consultationDate (ngày tư vấn) để hiển thị cả dịch vụ chưa chốt
+        const [year, monthNum, day] = key.split("-").map(Number);
+        const keyDate = new Date(year, monthNum - 1, day, 0, 0, 0, 0);
+        const keyDateEnd = new Date(year, monthNum - 1, day, 23, 59, 59, 999);
         additionalWhere = {
           consultationDate: {
             gte: keyDate,
@@ -834,7 +611,13 @@ export const salesReportRepo = {
         ...baseWhere,
         ...additionalWhere,
       },
-      include: {
+      select: {
+        id: true,
+        consultationDate: true,
+        serviceStatus: true,
+        serviceConfirmDate: true,
+        finalPrice: true,
+        customerId: true,
         customer: {
           select: {
             id: true,
