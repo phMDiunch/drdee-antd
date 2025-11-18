@@ -19,7 +19,7 @@ export function useSalesSummary(filters: GetSalesSummaryQuery) {
   };
 
   const query = useQuery({
-    queryKey: ["sales-dashboard", "summary", month, clinicId],
+    queryKey: ["sales-report", "summary", month, clinicId],
     queryFn: () => getSalesSummaryApi(queryParams),
     staleTime: calculateStaleTime(month),
     gcTime: 5 * 60 * 60 * 1000, // 5 hours

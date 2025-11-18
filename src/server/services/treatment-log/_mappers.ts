@@ -4,7 +4,6 @@ import type {
   TreatmentLogResponse,
   AppointmentForTreatmentResponse,
 } from "@/shared/validation/treatment-log.schema";
-import { prisma } from "@/services/prisma/prisma";
 
 /**
  * Type for treatment log with relations (from repo)

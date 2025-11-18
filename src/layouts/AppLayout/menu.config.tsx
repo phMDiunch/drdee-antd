@@ -81,9 +81,6 @@ export const menuItems: MenuItem[] = [
     key: "demo",
     icon: <ExperimentOutlined />,
     label: "Demo",
-    children: [
-      { key: "/demo/sales-dashboard", label: "Sales Dashboard" },
-      { key: "/demo/revenue-dashboard", label: "Revenue Dashboard" },
-    ],
+    children: [{ key: "/demo/revenue-dashboard", label: "Revenue Dashboard" }],
   },
 ];

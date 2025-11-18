@@ -845,10 +845,10 @@ src/
 │   └── (private)/
 │       └── demo/                    # Demo pages (PHẢI trong (private) để auth)
 │           ├── layout.tsx           # Demo layout với warning banner
-│           └── sales-dashboard/
-│               └── page.tsx         # Route: /demo/sales-dashboard
+│           └── revenue-dashboard/
+│               └── page.tsx         # Route: /demo/revenue-dashboard
 ├── demos/                           # Demo-specific code (tách biệt khỏi features)
-│   └── sales-dashboard/
+│   └── revenue-dashboard/
 │       ├── components/              # Demo components
 │       ├── types.ts                 # Demo types
 │       ├── mockData.ts              # Demo mock data

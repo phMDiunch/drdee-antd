@@ -63,16 +63,100 @@ export const salesReportService = {
       clinicId,
     };
 
-    // Lấy tất cả dữ liệu song song để tăng hiệu suất
-    const [kpiData, dailyData, sourceData, serviceData, saleData, doctorData] =
-      await Promise.all([
-        salesReportRepo.getKpiData(params),
-        salesReportRepo.getDailyData(params),
-        salesReportRepo.getSourceData(params),
-        salesReportRepo.getServiceData(params),
-        salesReportRepo.getSaleData(params),
-        salesReportRepo.getDoctorData(params),
-      ]);
+    // Lấy dữ liệu song song: KPI riêng, các dimension dùng chung raw data
+    const { startDate, endDate } = salesReportRepo.getMonthDateRange(
+      params.month
+    );
+    const [kpiData, rawData] = await Promise.all([
+      salesReportRepo.getKpiData(params),
+      salesReportRepo.queryAllAggregationData(startDate, endDate, clinicId),
+    ]);
+
+    // Group dữ liệu theo từng dimension (trong memory, rất nhanh)
+    const dailyData = salesReportRepo.groupByDimension(rawData, {
+      getKey: (s) => s.consultationDate?.toISOString().split("T")[0] || "",
+      mapResult: (date, data) => ({
+        date: date!,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+    });
+
+    const sourceData = salesReportRepo.groupByDimension(rawData, {
+      getKey: (s) =>
+        (s as unknown as { customer: { source: string | null } }).customer
+          .source,
+      mapResult: (source, data) => ({
+        source,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+    });
+
+    const serviceData = salesReportRepo.groupByDimension(rawData, {
+      getKey: (s) =>
+        (s as unknown as { dentalService: { serviceGroup: string | null } })
+          .dentalService.serviceGroup,
+      mapResult: (serviceGroup, data) => ({
+        serviceGroup,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+    });
+
+    const saleData = salesReportRepo.groupByDimension(rawData, {
+      getKey: (s) => {
+        const sale = s as {
+          consultingSale?: { id: string; fullName: string } | null;
+        };
+        return sale.consultingSale?.id || null;
+      },
+      getMetadata: (s) => {
+        const sale = s as {
+          consultingSale?: { id: string; fullName: string } | null;
+        };
+        return { fullName: sale.consultingSale?.fullName };
+      },
+      mapResult: (id, data) => ({
+        id: id!,
+        fullName: data.fullName!,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+      filterNull: true,
+    });
+
+    const doctorData = salesReportRepo.groupByDimension(rawData, {
+      getKey: (s) => {
+        const doctor = s as {
+          consultingDoctor?: { id: string; fullName: string } | null;
+        };
+        return doctor.consultingDoctor?.id || null;
+      },
+      getMetadata: (s) => {
+        const doctor = s as {
+          consultingDoctor?: { id: string; fullName: string } | null;
+        };
+        return { fullName: doctor.consultingDoctor?.fullName };
+      },
+      mapResult: (id, data) => ({
+        id: id!,
+        fullName: data.fullName!,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+      filterNull: true,
+    });
 
     // Chuyển đổi dữ liệu bằng mapper functions
     const kpi = mapKpiData(kpiData);

@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
-import { Card, Table, Button, Typography, Space, Tag, Empty } from "antd";
-import { LeftOutlined } from "@ant-design/icons";
+import { Card, Table, Typography, Space, Tag, Empty } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { ConsultedServiceDetail } from "@/shared/validation/sales-report.schema";
 import type { TabType } from "../hooks/useSalesDetail";

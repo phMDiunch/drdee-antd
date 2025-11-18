@@ -49,11 +49,6 @@ export interface RawEmployeeData {
 /**
  * Các kiểu dữ liệu helper nội bộ cho tổng hợp dữ liệu
  */
-type QueryConfig = {
-  additionalSelect?: Record<string, unknown>;
-  additionalWhere?: Record<string, unknown>;
-};
-
 type AggregationMap = Map<
   string | null,
   {
@@ -86,53 +81,49 @@ export const salesReportRepo = {
   },
 
   /**
-   * Helper: Lấy danh sách dịch vụ đã chốt
-   * Hàm helper nội bộ (private)
+   * Helper: Lấy TẤT CẢ dữ liệu aggregation (1 lần query duy nhất)
+   * Query song song closedServices và allConsultations với đầy đủ relations
    */
-  async queryClosedServices(
+  async queryAllAggregationData(
     startDate: Date,
     endDate: Date,
-    clinicId: string | undefined,
-    config: QueryConfig = {}
+    clinicId: string | undefined
   ) {
-    return prisma.consultedService.findMany({
-      where: {
-        serviceStatus: "Đã chốt",
-        serviceConfirmDate: { gte: startDate, lte: endDate },
-        ...(clinicId && { clinicId }),
-        ...config.additionalWhere,
-      },
-      select: {
-        serviceConfirmDate: true,
-        customerId: true,
-        finalPrice: true,
-        ...config.additionalSelect,
-      },
-    });
-  },
+    const [closedServices, allConsultations] = await Promise.all([
+      prisma.consultedService.findMany({
+        where: {
+          serviceStatus: "Đã chốt",
+          serviceConfirmDate: { gte: startDate, lte: endDate },
+          ...(clinicId && { clinicId }),
+        },
+        select: {
+          serviceConfirmDate: true,
+          consultationDate: true,
+          customerId: true,
+          finalPrice: true,
+          customer: { select: { source: true } },
+          dentalService: { select: { serviceGroup: true } },
+          consultingSale: { select: { id: true, fullName: true } },
+          consultingDoctor: { select: { id: true, fullName: true } },
+        },
+      }),
+      prisma.consultedService.findMany({
+        where: {
+          consultationDate: { gte: startDate, lte: endDate },
+          ...(clinicId && { clinicId }),
+        },
+        select: {
+          consultationDate: true,
+          customerId: true,
+          customer: { select: { source: true } },
+          dentalService: { select: { serviceGroup: true } },
+          consultingSale: { select: { id: true, fullName: true } },
+          consultingDoctor: { select: { id: true, fullName: true } },
+        },
+      }),
+    ]);
 
-  /**
-   * Helper: Lấy tất cả dịch vụ tư vấn (cả đã chốt và chưa chốt)
-   * Hàm helper nội bộ (private)
-   */
-  async queryAllConsultations(
-    startDate: Date,
-    endDate: Date,
-    clinicId: string | undefined,
-    config: QueryConfig = {}
-  ) {
-    return prisma.consultedService.findMany({
-      where: {
-        consultationDate: { gte: startDate, lte: endDate },
-        ...(clinicId && { clinicId }),
-        ...config.additionalWhere,
-      },
-      select: {
-        consultationDate: true,
-        customerId: true,
-        ...config.additionalSelect,
-      },
-    });
+    return { closedServices, allConsultations };
   },
 
   /**
@@ -367,13 +358,15 @@ export const salesReportRepo = {
   },
 
   /**
-   * Helper: Tổng hợp dữ liệu theo dimension (generic aggregation function)
+   * Helper: Group dữ liệu theo dimension từ raw data
    * Hàm helper nội bộ (private) - dùng chung cho tất cả các dimension
    */
-  async aggregateByDimension<T>(
-    params: GetSalesSummaryQuery,
+  groupByDimension<T>(
+    rawData: {
+      closedServices: ServiceRecord[];
+      allConsultations: ServiceRecord[];
+    },
     config: {
-      additionalSelect?: Record<string, unknown>;
       getKey: (service: ServiceRecord) => string | null;
       getMetadata?: (service: ServiceRecord) => { fullName?: string };
       mapResult: (
@@ -388,29 +381,21 @@ export const salesReportRepo = {
       ) => T;
       filterNull?: boolean; // true cho sale/doctor, false cho các dimension khác
     }
-  ): Promise<T[]> {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    // Chạy 2 queries song song để tăng hiệu suất
-    const [services, allServices] = await Promise.all([
-      this.queryClosedServices(startDate, endDate, clinicId, {
-        additionalSelect: config.additionalSelect,
-      }),
-      this.queryAllConsultations(startDate, endDate, clinicId, {
-        additionalSelect: config.additionalSelect,
-      }),
-    ]);
-
+  ): T[] {
     // Tổng hợp số lượt tư vấn
     const map = this.aggregateConsultations(
-      allServices,
+      rawData.allConsultations,
       config.getKey,
       config.getMetadata
     );
 
     // Tổng hợp dịch vụ đã chốt
-    this.aggregateClosedDeals(services, map, config.getKey, config.getMetadata);
+    this.aggregateClosedDeals(
+      rawData.closedServices,
+      map,
+      config.getKey,
+      config.getMetadata
+    );
 
     // Chuyển đổi Map thành array và áp dụng filter nếu cần
     let entries = Array.from(map.entries());
@@ -426,7 +411,15 @@ export const salesReportRepo = {
    * Get daily breakdown data
    */
   async getDailyData(params: GetSalesSummaryQuery): Promise<RawDailyData[]> {
-    return this.aggregateByDimension(params, {
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+    const rawData = await this.queryAllAggregationData(
+      startDate,
+      endDate,
+      clinicId
+    );
+
+    return this.groupByDimension(rawData, {
       getKey: (s) => s.consultationDate?.toISOString().split("T")[0] || "",
       mapResult: (date, data) => ({
         date: date!,
@@ -442,10 +435,15 @@ export const salesReportRepo = {
    * Get source breakdown data
    */
   async getSourceData(params: GetSalesSummaryQuery): Promise<RawSourceData[]> {
-    return this.aggregateByDimension(params, {
-      additionalSelect: {
-        customer: { select: { source: true } },
-      },
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+    const rawData = await this.queryAllAggregationData(
+      startDate,
+      endDate,
+      clinicId
+    );
+
+    return this.groupByDimension(rawData, {
       getKey: (s) =>
         (s as unknown as { customer: { source: string | null } }).customer
           .source,
@@ -465,10 +463,15 @@ export const salesReportRepo = {
   async getServiceData(
     params: GetSalesSummaryQuery
   ): Promise<RawServiceData[]> {
-    return this.aggregateByDimension(params, {
-      additionalSelect: {
-        dentalService: { select: { serviceGroup: true } },
-      },
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+    const rawData = await this.queryAllAggregationData(
+      startDate,
+      endDate,
+      clinicId
+    );
+
+    return this.groupByDimension(rawData, {
       getKey: (s) =>
         (s as unknown as { dentalService: { serviceGroup: string | null } })
           .dentalService.serviceGroup,
@@ -486,10 +489,15 @@ export const salesReportRepo = {
    * Get sale performance data
    */
   async getSaleData(params: GetSalesSummaryQuery): Promise<RawEmployeeData[]> {
-    return this.aggregateByDimension(params, {
-      additionalSelect: {
-        consultingSale: { select: { id: true, fullName: true } },
-      },
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+    const rawData = await this.queryAllAggregationData(
+      startDate,
+      endDate,
+      clinicId
+    );
+
+    return this.groupByDimension(rawData, {
       getKey: (s) => {
         const sale = s as {
           consultingSale?: { id: string; fullName: string } | null;
@@ -520,10 +528,15 @@ export const salesReportRepo = {
   async getDoctorData(
     params: GetSalesSummaryQuery
   ): Promise<RawEmployeeData[]> {
-    return this.aggregateByDimension(params, {
-      additionalSelect: {
-        consultingDoctor: { select: { id: true, fullName: true } },
-      },
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+    const rawData = await this.queryAllAggregationData(
+      startDate,
+      endDate,
+      clinicId
+    );
+
+    return this.groupByDimension(rawData, {
       getKey: (s) => {
         const doctor = s as {
           consultingDoctor?: { id: string; fullName: string } | null;

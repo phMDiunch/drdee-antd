@@ -17,9 +17,9 @@ import { CUSTOMER_SOURCES } from "@/features/customers/constants";
 import dayjs from "dayjs";
 
 /**
- * Map KPI data from repo to response format
+ * Input type từ Repository layer
  */
-export function mapKpiData(kpiData: {
+type RawKpiData = {
   totalSales: number;
   totalSalesGrowthMoM: number;
   totalSalesGrowthYoY: number;
@@ -32,7 +32,40 @@ export function mapKpiData(kpiData: {
   newCustomerSales: number;
   oldCustomerSales: number;
   newCustomerGrowth: number;
-}): KpiData {
+};
+
+type RawDetailRecord = {
+  id: string;
+  consultationDate: Date;
+  serviceConfirmDate: Date | null;
+  finalPrice: number;
+  serviceStatus: string;
+  customer: {
+    id: string;
+    fullName: string;
+    phone: string | null;
+    source: string | null;
+  };
+  dentalService: {
+    id: string;
+    name: string;
+    serviceGroup: string | null;
+  };
+  consultingSale: {
+    id: string;
+    fullName: string;
+  } | null;
+  consultingDoctor: {
+    id: string;
+    fullName: string;
+  } | null;
+};
+
+/**
+ * Chuyển đổi dữ liệu KPI từ repo sang response format
+ * Làm tròn các % tăng trưởng về 1 chữ số thập phân
+ */
+export function mapKpiData(kpiData: RawKpiData): KpiData {
   return {
     totalSales: kpiData.totalSales,
     totalSalesGrowthMoM: Math.round(kpiData.totalSalesGrowthMoM * 10) / 10,
@@ -50,7 +83,8 @@ export function mapKpiData(kpiData: {
 }
 
 /**
- * Map daily data from repo to response format with ranking
+ * Chuyển đổi dữ liệu theo ngày từ repo sang response format
+ * Tính toán ranking dựa trên doanh thu, sau đó sắp xếp lại theo ngày
  */
 export function mapDailyData(
   dailyData: RawDailyData[],
@@ -83,7 +117,8 @@ export function mapDailyData(
 }
 
 /**
- * Map source data from repo to response format
+ * Chuyển đổi dữ liệu theo nguồn khách từ repo sang response format
+ * Tra cứu label từ CUSTOMER_SOURCES constants
  */
 export function mapSourceData(
   sourceData: RawSourceData[],
@@ -121,7 +156,7 @@ export function mapSourceData(
 }
 
 /**
- * Map service data from repo to response format
+ * Chuyển đổi dữ liệu theo nhóm dịch vụ từ repo sang response format
  */
 export function mapServiceData(
   serviceData: RawServiceData[],
@@ -149,7 +184,7 @@ export function mapServiceData(
 }
 
 /**
- * Map sale data from repo to response format
+ * Chuyển đổi dữ liệu hiệu suất nhân viên tư vấn từ repo sang response format
  */
 export function mapSaleData(
   saleData: RawEmployeeData[],
@@ -177,7 +212,7 @@ export function mapSaleData(
 }
 
 /**
- * Map doctor data from repo to response format
+ * Chuyển đổi dữ liệu hiệu suất bác sĩ tư vấn từ repo sang response format
  */
 export function mapDoctorData(
   doctorData: RawEmployeeData[],
@@ -205,35 +240,11 @@ export function mapDoctorData(
 }
 
 /**
- * Map detail records from repo to response format
+ * Chuyển đổi chi tiết các dịch vụ tư vấn từ repo sang response format
+ * Dùng cho detail panel khi click vào một dimension cụ thể
  */
 export function mapDetailRecords(
-  services: Array<{
-    id: string;
-    consultationDate: Date;
-    serviceConfirmDate: Date | null;
-    finalPrice: number;
-    serviceStatus: string;
-    customer: {
-      id: string;
-      fullName: string;
-      phone: string | null;
-      source: string | null;
-    };
-    dentalService: {
-      id: string;
-      name: string;
-      serviceGroup: string | null;
-    };
-    consultingSale: {
-      id: string;
-      fullName: string;
-    } | null;
-    consultingDoctor: {
-      id: string;
-      fullName: string;
-    } | null;
-  }>
+  services: RawDetailRecord[]
 ): ConsultedServiceDetail[] {
   return services.map((service) => ({
     id: service.id,

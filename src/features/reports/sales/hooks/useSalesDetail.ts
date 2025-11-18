@@ -16,7 +16,7 @@ export function useSalesDetail(
   const { month, clinicId } = filters;
 
   const query = useQuery({
-    queryKey: ["sales-dashboard", "detail", tab, key, month, clinicId],
+    queryKey: ["sales-report", "detail", tab, key, month, clinicId],
     queryFn: () => {
       if (!tab || !key) throw new Error("Tab and key are required");
 
