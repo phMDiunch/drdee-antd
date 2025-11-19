@@ -156,10 +156,6 @@ model Employee {
   createdTreatmentCares   TreatmentCare[] @relation("CreatedTreatmentCares")
   updatedTreatmentCares   TreatmentCare[] @relation("UpdatedTreatmentCares")
 
-  // Liên kết đến nhà cung cấp
-  createdSuppliers Supplier[] @relation("CreatedSuppliers")
-  updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
-
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
   @@index([email]) // Optimize: Login by email
