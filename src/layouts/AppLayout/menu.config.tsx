@@ -36,10 +36,7 @@ export const menuItems: MenuItem[] = [
     key: "appointments",
     icon: <CalendarOutlined />,
     label: "Lịch hẹn",
-    children: [
-      { key: "/appointments/daily", label: "Theo ngày" },
-      { key: "/appointments", label: "Danh sách" },
-    ],
+    children: [{ key: "/appointments/daily", label: "Theo ngày" }],
   },
   {
     key: "consulted-services",
@@ -57,16 +54,16 @@ export const menuItems: MenuItem[] = [
     key: "payments",
     icon: <DollarOutlined />,
     label: "Thanh toán",
-    children: [
-      { key: "/payments", label: "Phiếu thu" },
-      { key: "/payments/reports", label: "Báo cáo" },
-    ],
+    children: [{ key: "/payments", label: "Phiếu thu" }],
   },
   {
     key: "reports",
     icon: <BarChartOutlined />,
     label: "Báo cáo",
-    children: [{ key: "/reports/sales", label: "Doanh số" }],
+    children: [
+      { key: "/reports/sales", label: "Doanh số" },
+      { key: "/reports/revenue", label: "Doanh thu" },
+    ],
   },
   {
     key: "/settings",
@@ -76,11 +73,5 @@ export const menuItems: MenuItem[] = [
       { key: "/clinics", label: "Phòng khám" },
       { key: "/dental-services", label: "Dịch vụ nha khoa" },
     ],
-  },
-  {
-    key: "demo",
-    icon: <ExperimentOutlined />,
-    label: "Demo",
-    children: [{ key: "/demo/revenue-dashboard", label: "Revenue Dashboard" }],
   },
 ];

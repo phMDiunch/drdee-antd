@@ -844,11 +844,9 @@ src/
 ├── app/
 │   └── (private)/
 │       └── demo/                    # Demo pages (PHẢI trong (private) để auth)
-│           ├── layout.tsx           # Demo layout với warning banner
-│           └── revenue-dashboard/
-│               └── page.tsx         # Route: /demo/revenue-dashboard
+│           └── layout.tsx           # Demo layout với warning banner
 ├── demos/                           # Demo-specific code (tách biệt khỏi features)
-│   └── revenue-dashboard/
+│   └── [demo-name]/
 │       ├── components/              # Demo components
 │       ├── types.ts                 # Demo types
 │       ├── mockData.ts              # Demo mock data

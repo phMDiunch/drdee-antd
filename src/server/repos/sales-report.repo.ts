@@ -409,6 +409,7 @@ export const salesReportRepo = {
 
   /**
    * Get daily breakdown data
+   * Sort by date ASC (mapper sẽ sort thêm 1 lần by revenue để tính rank)
    */
   async getDailyData(params: GetSalesSummaryQuery): Promise<RawDailyData[]> {
     const { month, clinicId } = params;
@@ -419,7 +420,7 @@ export const salesReportRepo = {
       clinicId
     );
 
-    return this.groupByDimension(rawData, {
+    const result = this.groupByDimension(rawData, {
       getKey: (s) => s.consultationDate?.toISOString().split("T")[0] || "",
       mapResult: (date, data) => ({
         date: date!,
@@ -429,10 +430,13 @@ export const salesReportRepo = {
         revenue: data.revenue,
       }),
     });
+
+    return result.sort((a, b) => a.date.localeCompare(b.date));
   },
 
   /**
    * Get source breakdown data
+   * Sort by revenue DESC
    */
   async getSourceData(params: GetSalesSummaryQuery): Promise<RawSourceData[]> {
     const { month, clinicId } = params;
@@ -443,7 +447,7 @@ export const salesReportRepo = {
       clinicId
     );
 
-    return this.groupByDimension(rawData, {
+    const result = this.groupByDimension(rawData, {
       getKey: (s) =>
         (s as unknown as { customer: { source: string | null } }).customer
           .source,
@@ -455,10 +459,13 @@ export const salesReportRepo = {
         revenue: data.revenue,
       }),
     });
+
+    return result.sort((a, b) => b.revenue - a.revenue);
   },
 
   /**
    * Get service breakdown data
+   * Sort by revenue DESC
    */
   async getServiceData(
     params: GetSalesSummaryQuery
@@ -471,7 +478,7 @@ export const salesReportRepo = {
       clinicId
     );
 
-    return this.groupByDimension(rawData, {
+    const result = this.groupByDimension(rawData, {
       getKey: (s) =>
         (s as unknown as { dentalService: { serviceGroup: string | null } })
           .dentalService.serviceGroup,
@@ -483,10 +490,13 @@ export const salesReportRepo = {
         revenue: data.revenue,
       }),
     });
+
+    return result.sort((a, b) => b.revenue - a.revenue);
   },
 
   /**
    * Get sale performance data
+   * Sort by revenue DESC
    */
   async getSaleData(params: GetSalesSummaryQuery): Promise<RawEmployeeData[]> {
     const { month, clinicId } = params;
@@ -497,7 +507,7 @@ export const salesReportRepo = {
       clinicId
     );
 
-    return this.groupByDimension(rawData, {
+    const result = this.groupByDimension(rawData, {
       getKey: (s) => {
         const sale = s as {
           consultingSale?: { id: string; fullName: string } | null;
@@ -520,10 +530,13 @@ export const salesReportRepo = {
       }),
       filterNull: true,
     });
+
+    return result.sort((a, b) => b.revenue - a.revenue);
   },
 
   /**
    * Get doctor performance data
+   * Sort by revenue DESC
    */
   async getDoctorData(
     params: GetSalesSummaryQuery
@@ -536,7 +549,7 @@ export const salesReportRepo = {
       clinicId
     );
 
-    return this.groupByDimension(rawData, {
+    const result = this.groupByDimension(rawData, {
       getKey: (s) => {
         const doctor = s as {
           consultingDoctor?: { id: string; fullName: string } | null;
@@ -559,6 +572,8 @@ export const salesReportRepo = {
       }),
       filterNull: true,
     });
+
+    return result.sort((a, b) => b.revenue - a.revenue);
   },
 
   /**

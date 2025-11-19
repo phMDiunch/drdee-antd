@@ -84,159 +84,159 @@ export function mapKpiData(kpiData: RawKpiData): KpiData {
 
 /**
  * Chuyển đổi dữ liệu theo ngày từ repo sang response format
- * Tính toán ranking dựa trên doanh thu, sau đó sắp xếp lại theo ngày
+ * Data đã được sort by date ASC ở repo layer
+ * Tính toán ranking dựa trên doanh thu (cần sort by revenue DESC)
  */
 export function mapDailyData(
   dailyData: RawDailyData[],
   totalRevenue: number
 ): DailyDetailData[] {
-  const byDateWithRank: DailyDetailData[] = dailyData
-    .map((d) => ({
-      id: d.date,
-      date: dayjs(d.date).format("DD/MM/YYYY"),
-      rank: 0, // Sẽ được gán ở bước sau
-      customersVisited: d.customersVisited,
-      consultations: d.consultations,
-      closed: d.closed,
-      revenue: d.revenue,
-      closingRate:
-        d.consultations > 0
-          ? Math.round((d.closed / d.consultations) * 1000) / 10
-          : 0,
-      averagePerService: d.closed > 0 ? Math.round(d.revenue / d.closed) : 0,
-      revenuePercentage:
-        totalRevenue > 0
-          ? Math.round((d.revenue / totalRevenue) * 1000) / 10
-          : 0,
-    }))
-    .sort((a, b) => b.revenue - a.revenue) // Sắp xếp theo doanh thu giảm dần để gán rank
-    .map((item, index) => ({ ...item, rank: index + 1 })) // Gán rank
-    .sort((a, b) => a.id.localeCompare(b.id)); // Sắp xếp lại theo ngày tăng dần
+  // Map sang format output
+  const mapped = dailyData.map((d) => ({
+    id: d.date,
+    date: dayjs(d.date).format("DD/MM/YYYY"),
+    rank: 0, // Sẽ được gán ở bước sau
+    customersVisited: d.customersVisited,
+    consultations: d.consultations,
+    closed: d.closed,
+    revenue: d.revenue,
+    closingRate:
+      d.consultations > 0
+        ? Math.round((d.closed / d.consultations) * 1000) / 10
+        : 0,
+    averagePerService: d.closed > 0 ? Math.round(d.revenue / d.closed) : 0,
+    revenuePercentage:
+      totalRevenue > 0 ? Math.round((d.revenue / totalRevenue) * 1000) / 10 : 0,
+  }));
 
-  return byDateWithRank;
+  // Sort by revenue DESC để gán rank
+  const withRank = mapped
+    .sort((a, b) => b.revenue - a.revenue)
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+
+  // Sort lại by date ASC để hiển thị theo thứ tự thời gian
+  return withRank.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
  * Chuyển đổi dữ liệu theo nguồn khách từ repo sang response format
  * Tra cứu label từ CUSTOMER_SOURCES constants
+ * Data đã được sort by revenue DESC ở repo layer
+ * Rank được gán dựa trên thứ tự trong array đã sort (1 = doanh số cao nhất)
  */
 export function mapSourceData(
   sourceData: RawSourceData[],
   totalRevenue: number
 ): SourceDetailData[] {
-  return sourceData
-    .map((s) => {
-      const sourceValue = s.source;
-      let sourceLabel = "Không rõ nguồn";
-      if (sourceValue) {
-        const sourceConfig = CUSTOMER_SOURCES.find(
-          (cs) => cs.value === sourceValue
-        );
-        sourceLabel = sourceConfig?.label || sourceValue;
-      }
-      return {
-        id: sourceValue || "null",
-        source: sourceLabel,
-        customersVisited: s.customersVisited,
-        consultations: s.consultations,
-        closed: s.closed,
-        revenue: s.revenue,
-        closingRate:
-          s.consultations > 0
-            ? Math.round((s.closed / s.consultations) * 1000) / 10
-            : 0,
-        averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
-        revenuePercentage:
-          totalRevenue > 0
-            ? Math.round((s.revenue / totalRevenue) * 1000) / 10
-            : 0,
-      };
-    })
-    .sort((a, b) => b.revenue - a.revenue);
+  return sourceData.map((s, index) => {
+    const sourceValue = s.source;
+    let sourceLabel = "Không rõ nguồn";
+    if (sourceValue) {
+      const sourceConfig = CUSTOMER_SOURCES.find(
+        (cs) => cs.value === sourceValue
+      );
+      sourceLabel = sourceConfig?.label || sourceValue;
+    }
+    return {
+      id: sourceValue || "null",
+      source: sourceLabel,
+      rank: index + 1,
+      customersVisited: s.customersVisited,
+      consultations: s.consultations,
+      closed: s.closed,
+      revenue: s.revenue,
+      closingRate:
+        s.consultations > 0
+          ? Math.round((s.closed / s.consultations) * 1000) / 10
+          : 0,
+      averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
+      revenuePercentage:
+        totalRevenue > 0
+          ? Math.round((s.revenue / totalRevenue) * 1000) / 10
+          : 0,
+    };
+  });
 }
 
 /**
  * Chuyển đổi dữ liệu theo nhóm dịch vụ từ repo sang response format
+ * Data đã được sort by revenue DESC ở repo layer
+ * Rank được gán dựa trên thứ tự trong array đã sort (1 = doanh số cao nhất)
  */
 export function mapServiceData(
   serviceData: RawServiceData[],
   totalRevenue: number
 ): ServiceDetailData[] {
-  return serviceData
-    .map((s) => ({
-      id: s.serviceGroup || "null",
-      service: s.serviceGroup || "Không rõ nhóm dịch vụ",
-      customersVisited: s.customersVisited,
-      consultations: s.consultations,
-      closed: s.closed,
-      revenue: s.revenue,
-      closingRate:
-        s.consultations > 0
-          ? Math.round((s.closed / s.consultations) * 1000) / 10
-          : 0,
-      averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
-      revenuePercentage:
-        totalRevenue > 0
-          ? Math.round((s.revenue / totalRevenue) * 1000) / 10
-          : 0,
-    }))
-    .sort((a, b) => b.revenue - a.revenue);
+  return serviceData.map((s, index) => ({
+    id: s.serviceGroup || "null",
+    service: s.serviceGroup || "Không rõ nhóm dịch vụ",
+    rank: index + 1,
+    customersVisited: s.customersVisited,
+    consultations: s.consultations,
+    closed: s.closed,
+    revenue: s.revenue,
+    closingRate:
+      s.consultations > 0
+        ? Math.round((s.closed / s.consultations) * 1000) / 10
+        : 0,
+    averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
+    revenuePercentage:
+      totalRevenue > 0 ? Math.round((s.revenue / totalRevenue) * 1000) / 10 : 0,
+  }));
 }
 
 /**
  * Chuyển đổi dữ liệu hiệu suất nhân viên tư vấn từ repo sang response format
+ * Data đã được sort by revenue DESC ở repo layer
+ * Rank được gán dựa trên thứ tự trong array đã sort (1 = doanh số cao nhất)
  */
 export function mapSaleData(
   saleData: RawEmployeeData[],
   totalRevenue: number
 ): SaleDetailData[] {
-  return saleData
-    .map((s) => ({
-      id: s.id,
-      saleName: s.fullName,
-      customersVisited: s.customersVisited,
-      consultations: s.consultations,
-      closed: s.closed,
-      revenue: s.revenue,
-      closingRate:
-        s.consultations > 0
-          ? Math.round((s.closed / s.consultations) * 1000) / 10
-          : 0,
-      averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
-      revenuePercentage:
-        totalRevenue > 0
-          ? Math.round((s.revenue / totalRevenue) * 1000) / 10
-          : 0,
-    }))
-    .sort((a, b) => b.revenue - a.revenue);
+  return saleData.map((s, index) => ({
+    id: s.id,
+    saleName: s.fullName,
+    rank: index + 1,
+    customersVisited: s.customersVisited,
+    consultations: s.consultations,
+    closed: s.closed,
+    revenue: s.revenue,
+    closingRate:
+      s.consultations > 0
+        ? Math.round((s.closed / s.consultations) * 1000) / 10
+        : 0,
+    averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
+    revenuePercentage:
+      totalRevenue > 0 ? Math.round((s.revenue / totalRevenue) * 1000) / 10 : 0,
+  }));
 }
 
 /**
  * Chuyển đổi dữ liệu hiệu suất bác sĩ tư vấn từ repo sang response format
+ * Data đã được sort by revenue DESC ở repo layer
+ * Rank được gán dựa trên thứ tự trong array đã sort (1 = doanh số cao nhất)
  */
 export function mapDoctorData(
   doctorData: RawEmployeeData[],
   totalRevenue: number
 ): DoctorDetailData[] {
-  return doctorData
-    .map((d) => ({
-      id: d.id,
-      doctorName: d.fullName,
-      customersVisited: d.customersVisited,
-      consultations: d.consultations,
-      closed: d.closed,
-      revenue: d.revenue,
-      closingRate:
-        d.consultations > 0
-          ? Math.round((d.closed / d.consultations) * 1000) / 10
-          : 0,
-      averagePerService: d.closed > 0 ? Math.round(d.revenue / d.closed) : 0,
-      revenuePercentage:
-        totalRevenue > 0
-          ? Math.round((d.revenue / totalRevenue) * 1000) / 10
-          : 0,
-    }))
-    .sort((a, b) => b.revenue - a.revenue);
+  return doctorData.map((d, index) => ({
+    id: d.id,
+    doctorName: d.fullName,
+    rank: index + 1,
+    customersVisited: d.customersVisited,
+    consultations: d.consultations,
+    closed: d.closed,
+    revenue: d.revenue,
+    closingRate:
+      d.consultations > 0
+        ? Math.round((d.closed / d.consultations) * 1000) / 10
+        : 0,
+    averagePerService: d.closed > 0 ? Math.round(d.revenue / d.closed) : 0,
+    revenuePercentage:
+      totalRevenue > 0 ? Math.round((d.revenue / totalRevenue) * 1000) / 10 : 0,
+  }));
 }
 
 /**

@@ -79,6 +79,7 @@ export type DailyDetailData = z.infer<typeof DailyDetailDataSchema>;
 export const SourceDetailDataSchema = z.object({
   id: z.string(),
   source: z.string(),
+  rank: z.number(), // Ranking based on revenue (1 = highest)
   customersVisited: z.number(),
   consultations: z.number(),
   closed: z.number(),
@@ -96,6 +97,7 @@ export type SourceDetailData = z.infer<typeof SourceDetailDataSchema>;
 export const ServiceDetailDataSchema = z.object({
   id: z.string(),
   service: z.string(),
+  rank: z.number(), // Ranking based on revenue (1 = highest)
   customersVisited: z.number(),
   consultations: z.number(),
   closed: z.number(),
@@ -113,6 +115,7 @@ export type ServiceDetailData = z.infer<typeof ServiceDetailDataSchema>;
 export const SaleDetailDataSchema = z.object({
   id: z.string(),
   saleName: z.string(),
+  rank: z.number(), // Ranking based on revenue (1 = highest)
   customersVisited: z.number(),
   consultations: z.number(),
   closed: z.number(),
@@ -130,6 +133,7 @@ export type SaleDetailData = z.infer<typeof SaleDetailDataSchema>;
 export const DoctorDetailDataSchema = z.object({
   id: z.string(),
   doctorName: z.string(),
+  rank: z.number(), // Ranking based on revenue (1 = highest)
   customersVisited: z.number(),
   consultations: z.number(),
   closed: z.number(),

@@ -42,7 +42,7 @@ export default function SalesReportStats({ data, loading }: KpiCardsProps) {
             title="Tổng doanh số"
             value={data.totalSales}
             prefix={<DollarOutlined style={{ color: "#1890ff" }} />}
-            valueStyle={{ color: "#1890ff", fontSize: 28, fontWeight: "bold" }}
+            valueStyle={{ color: "#1890ff", fontSize: 20 }}
             suffix="₫"
           />
           <GrowthIndicator
@@ -63,7 +63,7 @@ export default function SalesReportStats({ data, loading }: KpiCardsProps) {
             title="Số dịch vụ chốt"
             value={data.closedDeals}
             prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
-            valueStyle={{ color: "#52c41a", fontSize: 28, fontWeight: "bold" }}
+            valueStyle={{ color: "#52c41a", fontSize: 20 }}
           />
           <GrowthIndicator
             value={data.closedDealsGrowthMoM}
@@ -83,7 +83,7 @@ export default function SalesReportStats({ data, loading }: KpiCardsProps) {
             title="Số khách mới"
             value={data.newCustomers}
             prefix={<UserAddOutlined style={{ color: "#722ed1" }} />}
-            valueStyle={{ color: "#722ed1", fontSize: 28, fontWeight: "bold" }}
+            valueStyle={{ color: "#722ed1", fontSize: 20 }}
           />
           <GrowthIndicator
             value={data.newCustomersGrowthMoM}
