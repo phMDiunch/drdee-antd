@@ -1,3 +1,6 @@
+import { redirect } from "next/navigation";
+
 export default function Home() {
-  return <div>hello world</div>;
+  // Redirect authenticated users to dashboard
+  redirect("/dashboard");
 }

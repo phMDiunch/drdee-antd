@@ -390,7 +390,6 @@ model ConsultedService {
   paymentDetails PaymentVoucherDetail[]
 }
 
-
 model PaymentVoucher {
   id String @id @default(uuid())
 
@@ -516,7 +515,7 @@ model TreatmentCare {
 
   // Cơ sở báo cáo: theo nhân viên chăm sóc (careStaff)
   clinicId String
-  clinic   Clinic   @relation(fields: [clinicId], references: [id])
+  clinic   Clinic @relation(fields: [clinicId], references: [id])
 
   careStaffId String
   careStaff   Employee @relation(fields: [careStaffId], references: [id])
@@ -549,55 +548,4 @@ model TreatmentCare {
   @@index([clinicId, careAt])
   @@index([careStaffId, careAt])
   @@index([customerId, treatmentDate])
-}
-
-
-
-
-// ===================================
-//        SUPPLIER MODEL
-// ===================================
-model Supplier {
-  id           String  @id @default(uuid())
-  supplierCode String? @unique // Mã nhà cung cấp tự động
-  name         String // Tên nhà cung cấp
-
-  // Thông tin phân loại - dùng constants
-  categoryType String // "medical_equipment", "consumables", "pharmaceuticals"
-
-  // Thông tin liên hệ
-  phone         String?
-  email         String?
-  website       String?
-  address       String?
-  contactPerson String? // Người liên hệ chính
-  contactPhone  String? // SĐT người liên hệ
-
-  // Thông tin pháp lý
-  taxId           String? @unique // Mã số thuế
-  businessLicense String? // Số giấy phép KD
-  bankName        String?
-  bankAccount     String?
-
-  // Thông tin đánh giá
-  rating     Int?    @default(5) // 1-5 sao
-  ratingNote String? // Ghi chú đánh giá
-
-  // Thông tin khác
-  description String? // Mô tả, ghi chú
-  isActive    Boolean @default(true)
-
-  // Metadata
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
-
-  createdById String
-  updatedById String
-  createdBy   Employee @relation("CreatedSuppliers", fields: [createdById], references: [id])
-  updatedBy   Employee @relation("UpdatedSuppliers", fields: [updatedById], references: [id])
-
-  // Indexes
-  @@index([categoryType])
-  @@index([isActive])
-  @@index([createdAt])
 }
