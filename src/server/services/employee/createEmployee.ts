@@ -9,31 +9,6 @@ import { mapEmployeeToResponse } from "./_mappers";
 import { getSupabaseAdminClient } from "@/services/supabase/admin";
 import { employeePermissions } from "@/shared/permissions/employee.permissions";
 
-function buildInviteRedirectUrl(employeeId: string) {
-  const baseUrl =
-    process.env.SUPABASE_INVITE_REDIRECT_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
-
-  let url: URL;
-  try {
-    url = new URL(baseUrl);
-  } catch {
-    url = new URL("http://localhost:3000");
-  }
-
-  if (!url.pathname || url.pathname === "/") {
-    url.pathname = "/complete-profile";
-  }
-
-  if (!url.pathname.endsWith("/complete-profile")) {
-    url.pathname = "/complete-profile";
-  }
-
-  url.searchParams.set("employeeId", employeeId);
-  return url.toString();
-}
-
 async function inviteEmployeeToSupabase(args: {
   email: string;
   employeeId: string;
@@ -51,12 +26,10 @@ async function inviteEmployeeToSupabase(args: {
       500
     );
   }
-  const redirectTo = buildInviteRedirectUrl(args.employeeId);
 
   const { data, error } = await client.auth.admin.inviteUserByEmail(
     args.email,
     {
-      redirectTo,
       data: {
         employeeId: args.employeeId,
         role: args.role,

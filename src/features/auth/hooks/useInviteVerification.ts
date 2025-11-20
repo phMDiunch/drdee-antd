@@ -17,8 +17,48 @@ export function useInviteVerification() {
       const supabase = createClient();
 
       try {
-        // Check if user has a valid session from invite link
-        // Invite flow: Supabase creates session after user clicks invite link
+        // First, check if there's a token_hash in URL that needs verification
+        const hashParams = new URLSearchParams(window.location.search);
+        const tokenHash = hashParams.get("token_hash");
+        const type = hashParams.get("type");
+
+        // If we have token_hash, verify it with Supabase
+        if (tokenHash && type === "invite") {
+          const { data, error: verifyError } =
+            await supabase.auth.verifyOtp({
+              token_hash: tokenHash,
+              type: "invite",
+            });
+
+          if (cancelled) return;
+
+          if (verifyError || !data.session) {
+            setStatus("error");
+            setErrorMessage(
+              "Liên kết mời không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ quản trị viên để được gửi lại lời mời."
+            );
+            return;
+          }
+
+          // Successfully verified, extract employeeId from metadata
+          const empId = data.session.user.user_metadata
+            ?.employeeId as string | undefined;
+
+          if (!empId) {
+            setStatus("error");
+            setErrorMessage(
+              "Liên kết mời không hợp lệ. Thiếu thông tin nhân viên."
+            );
+            return;
+          }
+
+          setEmployeeId(empId);
+          setStatus("verified");
+          setErrorMessage(null);
+          return;
+        }
+
+        // If no token_hash in URL, check existing session
         const {
           data: { session },
           error: sessionError,

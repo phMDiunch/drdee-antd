@@ -1,7 +1,7 @@
 // src/app/(auth)/complete-profile/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef, Suspense } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Card,
   Typography,
@@ -59,20 +59,6 @@ type FormValues = {
 };
 
 export default function CompleteProfilePage() {
-  return (
-    <Suspense
-      fallback={
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <Spin size="large" />
-        </div>
-      }
-    >
-      <CompleteProfileContent />
-    </Suspense>
-  );
-}
-
-function CompleteProfileContent() {
   const notify = useNotify();
   const router = useRouter();
 
@@ -92,27 +78,24 @@ function CompleteProfileContent() {
   } = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(CompleteProfileRequestSchema) as any,
-    defaultValues: useMemo(
-      () => ({
-        id: employeeId ?? "",
-        fullName: "",
-        dob: undefined,
-        gender: "",
-        favoriteColor: "#4096ff",
-        currentAddress: "",
-        hometown: "",
-        nationalId: "",
-        nationalIdIssueDate: undefined,
-        nationalIdIssuePlace: "",
-        taxId: "",
-        insuranceNumber: "",
-        bankAccountNumber: "",
-        bankName: "",
-        password: "",
-        confirmPassword: "",
-      }),
-      [employeeId]
-    ),
+    defaultValues: {
+      id: employeeId ?? "",
+      fullName: "",
+      dob: undefined,
+      gender: "",
+      favoriteColor: "#4096ff",
+      currentAddress: "",
+      hometown: "",
+      nationalId: "",
+      nationalIdIssueDate: undefined,
+      nationalIdIssuePlace: "",
+      taxId: "",
+      insuranceNumber: "",
+      bankAccountNumber: "",
+      bankName: "",
+      password: "",
+      confirmPassword: "",
+    },
     mode: "onBlur",
     reValidateMode: "onChange",
   });
