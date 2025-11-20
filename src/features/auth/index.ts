@@ -17,6 +17,7 @@ export * from "./hooks/useLogout";
 export * from "./hooks/useForgotPassword";
 export * from "./hooks/useResetPassword";
 export * from "./hooks/usePasswordResetSession";
+export * from "./hooks/useInviteVerification";
 
 // ===== CONSTANTS =====
 export * from "./constants";

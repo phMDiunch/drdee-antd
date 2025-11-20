@@ -126,12 +126,17 @@ src/
 
 ### 📧 **Profile Completion Flow:**
 
-1. **Employee**: Clicks email link → `/complete-profile?token=xxx`
-2. **Public API**: `GET /api/public/employees/:id` → fetch basic info
-3. **Form**: Employee fills profile completion form
-4. **Public API**: `POST /api/public/employees/complete-profile`
-5. **Service**: Update profile + set Supabase password + change status
-6. **Redirect**: To login page for authentication
+1. **Admin creates employee**: Triggers `inviteUserByEmail()` with `employeeId` in metadata
+2. **Supabase sends invite email**: Link contains secure invite code
+3. **Employee clicks link**: Redirects to `/complete-profile?code=xxx&type=invite`
+4. **Session verification**: `useInviteVerification()` hook validates invite session
+5. **Extract employeeId**: From `session.user.user_metadata.employeeId` (not URL)
+6. **Fetch employee data**: `GET /api/public/employees/:id` with verified ID
+7. **Form submission**: `POST /api/public/employees/:id/complete-profile`
+8. **Service layer**: Update profile + set password via Supabase admin + change status to WORKING
+9. **Redirect**: To `/dashboard` (user now has valid auth session)
+
+**Security Note**: employeeId comes from trusted auth metadata, not URL parameters. See `docs/features/005.1_Complete_Profile_Security.md` for details.
 
 ### 📊 **List/Detail Flow:**
 

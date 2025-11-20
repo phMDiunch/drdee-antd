@@ -84,18 +84,19 @@ src/
 
 1. **UI**: `ForgotPasswordForm` → submit email.
 2. **Hook**: `useForgotPassword` (**useMutation**) gọi `forgotPasswordApi`.
-3. **Client API**: `forgotPasswordApi` → `POST /api/v1/auth/forgot-password` → parse JSON bằng **Zod**.
-4. **Server API**: `forgot-password/route.ts` → validate body (Zod) → `supabase.auth.resetPasswordForEmail()` → Supabase gửi email với reset link → trả `{ ok: true }`.
+3. **Client API**: `forgotPasswordApi` → `supabase.auth.resetPasswordForEmail()` với `redirectTo: '/reset-password'`.
+4. **Supabase**: Gửi email với reset link → link chứa access_token trong URL hash fragment.
 5. **Hook onSuccess**: toast thông báo "Email đã được gửi".
-6. **Email Link**: User click link → redirect về `/reset-password?token=...`.
+6. **Email Link**: User click link → redirect về `/reset-password#access_token=...&type=recovery`.
 
 ## 6) Data Flow (Reset Password)
 
-1. **UI**: `ResetPasswordForm` → submit password + confirmPassword.
-2. **Hook**: `useResetPassword` (**useMutation**) gọi `resetPasswordApi`.
-3. **Client API**: `resetPasswordApi` → `POST /api/v1/auth/reset-password` → parse JSON bằng **Zod**.
-4. **Server API**: `reset-password/route.ts` → validate body (Zod) → `supabase.auth.updateUser({ password })` → update password → trả `{ ok: true }`.
-5. **Hook onSuccess**: toast + `router.replace("/login")`.
+1. **Page Load**: `/reset-password` → `usePasswordResetSession()` kiểm tra session từ URL hash.
+2. **Session Check**: Supabase client tự động extract token từ hash và tạo session.
+3. **UI**: Nếu có session hợp lệ → hiển thị `ResetPasswordForm`.
+4. **Form Submit**: User nhập password mới → `useResetPassword` gọi `resetPasswordApi`.
+5. **Client API**: `resetPasswordApi` → `supabase.auth.updateUser({ password })`.
+6. **Hook onSuccess**: toast + `router.replace("/login")`.
 
 ## 7) API Contracts
 
@@ -116,14 +117,15 @@ src/
 
 **Forgot Password:**
 
-- **Client**: `supabase.auth.resetPasswordForEmail(email, { redirectTo })`
-- **Flow**: Supabase sends email → user clicks link → redirected to `/reset-password?code=xxx`
+- **Client**: `supabase.auth.resetPasswordForEmail(email, { redirectTo: '/reset-password' })`
+- **Flow**: Supabase sends email → user clicks link → redirected to `/reset-password#access_token=...&type=recovery`
+- **Note**: Uses implicit flow (access_token in URL hash), not PKCE
 - **Response**: `{ ok: true }` or throws Error
 
 **Reset Password:**
 
 - **Client**: `supabase.auth.updateUser({ password })`
-- **Requirements**: Valid reset session (from URL code parameter)
+- **Requirements**: Valid session (auto-created from URL hash access_token)
 - **Response**: `{ ok: true }` or throws Error
 
 ## 8) Middleware Protection

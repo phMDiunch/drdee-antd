@@ -17,7 +17,7 @@ import {
   ColorPicker,
 } from "antd";
 import dayjs from "dayjs";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -29,6 +29,7 @@ import {
   useEmployeeForProfileCompletion,
 } from "@/features/employees";
 import { useNotify } from "@/shared/hooks/useNotify";
+import { useInviteVerification } from "@/features/auth";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -73,9 +74,11 @@ export default function CompleteProfilePage() {
 
 function CompleteProfileContent() {
   const notify = useNotify();
-  const searchParams = useSearchParams();
-  const employeeId = searchParams?.get("employeeId") ?? undefined;
   const router = useRouter();
+
+  // Verify invite session and get employeeId from auth metadata
+  const inviteVerification = useInviteVerification();
+  const employeeId = inviteVerification.employeeId ?? undefined;
 
   const employeeQuery = useEmployeeForProfileCompletion(employeeId);
   const completeMutation = useCompleteProfilePublic();
@@ -189,6 +192,30 @@ function CompleteProfileContent() {
       // Error toast is handled inside the mutation hook.
     }
   });
+
+  // Show loading while verifying invite session
+  if (inviteVerification.isLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 80 }}>
+        <Spin tip="Đang xác thực liên kết mời..." size="large">
+          <div style={{ width: 200, height: 100 }} />
+        </Spin>
+      </div>
+    );
+  }
+
+  // Show error if invite verification failed
+  if (inviteVerification.isError) {
+    return (
+      <Empty
+        description={
+          inviteVerification.errorMessage ||
+          "Liên kết mời không hợp lệ hoặc đã hết hạn."
+        }
+        style={{ marginTop: 80 }}
+      />
+    );
+  }
 
   if (!employeeId) {
     return (
