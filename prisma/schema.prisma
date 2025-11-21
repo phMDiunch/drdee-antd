@@ -545,3 +545,41 @@ model TreatmentCare {
   @@index([careStaffId, careAt])
   @@index([customerId, treatmentDate])
 }
+
+//---------------------------
+// MasterData (Shared across app)
+//---------------------------
+
+model MasterData {
+  id String @id @default(uuid())
+
+  // Phân loại
+  type String // SUPPLIER_GROUP, DEPARTMENT, MATERIAL_CATEGORY, UNIT
+
+  // Định danh & Hiển thị
+  key         String  // Mã định danh (slug: 'implant', 'noi-nha') - IMMUTABLE
+  value       String  // Tên hiển thị ('Implant', 'Nội nha') - MUTABLE
+  description String? // Mô tả thêm
+
+  // Trạng thái
+  isActive Boolean @default(true) // Soft delete
+
+  // Self-referencing hierarchy (Nhóm → Phân nhóm)
+  parentId String?
+  parent   MasterData?  @relation("MasterDataHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children MasterData[] @relation("MasterDataHierarchy")
+
+  // Audit
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Relations (placeholder - sẽ được thêm khi implement Supplier/Material)
+  // suppliers              Supplier[]   @relation("SupplierGroup")
+  // materialsAsDepartment  Material[]   @relation("MaterialDepartment")
+  // materialsAsCategory    Material[]   @relation("MaterialCategory")
+
+  // Constraints & Indexes
+  @@unique([type, key], name: "unique_type_key") // Unique key per type
+  @@index([type, isActive]) // Fast filter by type + active
+  @@map("master_data")
+}
