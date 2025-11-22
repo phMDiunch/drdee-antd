@@ -1,26 +1,30 @@
-// src/features/master-data/hooks/useUpdateMasterData.ts
+// src/features/master-data/hooks/useToggleMasterDataActive.ts
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
-import { updateMasterDataAction } from "@/server/actions/master-data.actions";
+import { toggleMasterDataActiveAction } from "@/server/actions/master-data.actions";
 import { MASTER_DATA_MESSAGES } from "../constants";
 import { MASTER_DATA_QUERY_KEYS } from "@/shared/constants/master-data";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
-import type { UpdateMasterDataRequest } from "@/shared/validation/master-data.schema";
 
-export function useUpdateMasterData() {
+export function useToggleMasterDataActive() {
   const qc = useQueryClient();
   const notify = useNotify();
 
   return useMutation({
-    mutationFn: (data: UpdateMasterDataRequest) => updateMasterDataAction(data),
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      toggleMasterDataActiveAction(id, isActive),
     onSuccess: (_, variables) => {
-      notify.success(MASTER_DATA_MESSAGES.UPDATE_SUCCESS);
-      // Invalidate all master-data queries (list, roots, detail)
+      notify.success(
+        variables.isActive
+          ? MASTER_DATA_MESSAGES.ACTIVATE_SUCCESS
+          : MASTER_DATA_MESSAGES.DEACTIVATE_SUCCESS
+      );
+      // Invalidate all master-data queries
       qc.invalidateQueries({
         queryKey: MASTER_DATA_QUERY_KEYS.all(),
-        refetchType: "active", // Force refetch active queries
+        refetchType: "active",
       });
       qc.invalidateQueries({
         queryKey: MASTER_DATA_QUERY_KEYS.detail(variables.id),

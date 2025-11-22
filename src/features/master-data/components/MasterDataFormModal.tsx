@@ -2,10 +2,13 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { Modal, Form, Input, Row, Col, Select, Switch, TreeSelect } from "antd";
+import { Modal, Form, Input, Row, Col, Switch } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMasterDataList } from "../hooks/useMasterDataList";
+import {
+  useMasterDataList,
+  useMasterDataRoots,
+} from "../hooks/useMasterDataList";
 import type {
   MasterDataResponse,
   CreateMasterDataRequest,
@@ -15,13 +18,14 @@ import {
   CreateMasterDataRequestSchema,
   UpdateMasterDataRequestSchema,
 } from "@/shared/validation/master-data.schema";
-import { MASTER_DATA_TYPE_OPTIONS } from "../constants";
+import slugify from "slugify";
 
 type Props = {
   open: boolean;
   mode: "create" | "edit";
   isAdmin?: boolean;
   initial?: MasterDataResponse | null;
+  parentId?: string; // For creating child items
   confirmLoading?: boolean;
   onCancel: () => void;
   onSubmit: (
@@ -30,18 +34,20 @@ type Props = {
 };
 
 const defaultFormValues: CreateMasterDataRequest = {
-  type: "",
   key: "",
   value: "",
   description: undefined,
+  allowHierarchy: false,
   isActive: true,
   parentId: undefined,
+  rootId: undefined,
 };
 
 export default function MasterDataFormModal({
   open,
   mode,
   initial,
+  parentId: propParentId, // Rename to avoid confusion with form field
   confirmLoading,
   onCancel,
   onSubmit,
@@ -58,12 +64,13 @@ export default function MasterDataFormModal({
     if (mode === "edit" && initial) {
       return {
         id: initial.id,
-        type: initial.type,
         key: initial.key,
         value: initial.value,
         description: initial.description ?? undefined,
+        allowHierarchy: initial.allowHierarchy,
         isActive: initial.isActive,
         parentId: initial.parentId ?? undefined,
+        rootId: initial.rootId ?? undefined,
       };
     }
     return defaultFormValues;
@@ -74,6 +81,7 @@ export default function MasterDataFormModal({
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { isSubmitting },
   } = useForm({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,48 +91,91 @@ export default function MasterDataFormModal({
     defaultValues,
   });
 
-  const selectedType = watch("type");
+  const valueField = watch("value");
+  const selectedRootId = watch("rootId");
 
-  // Fetch master data for parent selection (same type only)
-  const { data: parentOptions = [] } = useMasterDataList(selectedType, false);
+  // Determine if creating root or child item
+  const isCreatingRoot = mode === "create" && !propParentId;
+  const isCreatingChild = mode === "create" && !!propParentId;
 
+  // Auto-generate key from value (only in create mode)
+  useEffect(() => {
+    if (mode === "create" && valueField) {
+      const generatedKey = slugify(valueField, {
+        lower: true,
+        locale: "vi",
+        strict: true,
+      });
+      setValue("key", generatedKey, { shouldValidate: false });
+    }
+  }, [mode, valueField, setValue]);
+
+  // Determine which rootId to fetch parent options for
+  // For child creation: use rootId from form (set in reset effect)
+  // For root creation: don't fetch (not needed)
+  const rootIdForFetch = isCreatingChild ? selectedRootId : null;
+
+  // Fetch root categories for root selector
+  const { data: rootCategories = [] } = useMasterDataRoots(false);
+
+  // Fetch items in selected root for parent selection (only when creating child)
+  const { data: parentOptions = [] } = useMasterDataList(rootIdForFetch, false);
+
+  // Reset form when modal opens or when propParentId changes
   useEffect(() => {
     if (!open) return;
-    reset(defaultValues);
-  }, [open, defaultValues, reset]);
+
+    // If creating a child item, set parentId from prop and auto-set rootId
+    if (mode === "create" && propParentId) {
+      // Find parent to get its rootId
+      const allItems = [...rootCategories, ...parentOptions];
+      const parent = allItems.find((item) => item.id === propParentId);
+
+      if (parent) {
+        const childRootId = parent.rootId ?? parent.id; // Parent's rootId or parent itself is root
+
+        reset({
+          key: "",
+          value: "",
+          description: undefined,
+          allowHierarchy: false,
+          isActive: true,
+          parentId: propParentId,
+          rootId: childRootId,
+        });
+      }
+    } else {
+      reset(defaultValues);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, propParentId, reset]);
 
   const onValid = (values: CreateMasterDataRequest & { id?: string }) => {
     if (mode === "edit") {
       const payload: UpdateMasterDataRequest = {
         id: values.id || (initial?.id as string),
-        type: values.type,
         key: values.key,
         value: values.value,
         description: values.description,
+        allowHierarchy: values.allowHierarchy,
         isActive: values.isActive,
         parentId: values.parentId,
+        rootId: values.rootId,
       };
       onSubmit(payload);
     } else {
       const payload: CreateMasterDataRequest = {
-        type: values.type,
         key: values.key,
         value: values.value,
         description: values.description,
+        allowHierarchy: values.allowHierarchy,
         isActive: values.isActive,
         parentId: values.parentId,
+        rootId: values.rootId,
       };
       onSubmit(payload);
     }
   };
-
-  const treeData = parentOptions
-    .filter((item) => item.id !== initial?.id) // Exclude self
-    .map((item) => ({
-      title: `${item.key} - ${item.value}`,
-      value: item.id,
-      key: item.id,
-    }));
 
   return (
     <Modal
@@ -143,132 +194,344 @@ export default function MasterDataFormModal({
       maskClosable={false}
     >
       <Form layout="vertical" requiredMark>
-        <Row gutter={12}>
-          <Col xs={24} lg={12}>
-            <Controller
-              name="type"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Form.Item
-                  label="Loại danh mục"
-                  required
-                  validateStatus={fieldState.error ? "error" : ""}
-                  help={fieldState.error?.message}
-                >
-                  <Select
-                    {...field}
-                    options={MASTER_DATA_TYPE_OPTIONS}
-                    placeholder="Chọn loại"
-                    disabled={mode === "edit"}
-                  />
-                </Form.Item>
-              )}
-            />
-          </Col>
+        {/* Conditional: Root Item or Child Item */}
+        {isCreatingRoot && (
+          // Creating Root Category
+          <>
+            {/* Row 1: Tên danh mục, Mã */}
+            <Row gutter={12}>
+              <Col xs={24} lg={12}>
+                <Controller
+                  name="value"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Tên danh mục"
+                      required
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={fieldState.error?.message}
+                    >
+                      <Input {...field} placeholder="VD: Nhóm Nhà Cung Cấp" />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
 
-          <Col xs={24} lg={12}>
-            <Controller
-              name="key"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Form.Item
-                  label="Mã"
-                  required
-                  validateStatus={fieldState.error ? "error" : ""}
-                  help={
-                    fieldState.error?.message ||
-                    "Chữ in hoa/thường, số, gạch dưới, gạch ngang. Không dấu, không khoảng trắng."
-                  }
-                >
-                  <Input {...field} placeholder="VD: SUPPLIER_A" />
-                </Form.Item>
-              )}
-            />
-          </Col>
-        </Row>
+              <Col xs={24} lg={12}>
+                <Controller
+                  name="key"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Mã"
+                      required
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={
+                        fieldState.error?.message ||
+                        "Tự động tạo từ tên. Có thể sửa."
+                      }
+                    >
+                      <Input {...field} placeholder="VD: nhom-ncc" />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
 
-        <Row gutter={12}>
-          <Col xs={24}>
-            <Controller
-              name="value"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Form.Item
-                  label="Giá trị"
-                  required
-                  validateStatus={fieldState.error ? "error" : ""}
-                  help={fieldState.error?.message}
-                >
-                  <Input {...field} placeholder="VD: Nhà cung cấp A" />
-                </Form.Item>
-              )}
-            />
-          </Col>
-        </Row>
+            {/* Row 2: Cho phép phân cấp, Kích hoạt */}
+            <Row gutter={12}>
+              <Col xs={12}>
+                <Controller
+                  name="allowHierarchy"
+                  control={control}
+                  render={({ field }) => (
+                    <Form.Item label="Cho phép phân cấp">
+                      <Switch checked={field.value} onChange={field.onChange} />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
 
-        <Row gutter={12}>
-          <Col xs={24}>
-            <Controller
-              name="description"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Form.Item
-                  label="Mô tả"
-                  validateStatus={fieldState.error ? "error" : ""}
-                  help={fieldState.error?.message}
-                >
-                  <Input.TextArea
-                    {...field}
-                    value={field.value ?? ""}
-                    rows={3}
-                    placeholder="Mô tả chi tiết (tùy chọn)"
-                    maxLength={500}
-                    showCount
-                  />
-                </Form.Item>
-              )}
-            />
-          </Col>
-        </Row>
+              <Col xs={12}>
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <Form.Item label="Kích hoạt">
+                      <Switch checked={field.value} onChange={field.onChange} />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
 
-        <Row gutter={12}>
-          <Col xs={24} lg={16}>
-            <Controller
-              name="parentId"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Form.Item
-                  label="Parent (Phân cấp)"
-                  validateStatus={fieldState.error ? "error" : ""}
-                  help={fieldState.error?.message}
-                >
-                  <TreeSelect
-                    {...field}
-                    value={field.value ?? undefined}
-                    treeData={treeData}
-                    placeholder="Chọn parent (tùy chọn)"
-                    allowClear
-                    showSearch
-                    treeNodeFilterProp="title"
-                    disabled={!selectedType}
-                  />
-                </Form.Item>
-              )}
-            />
-          </Col>
+            {/* Row 3: Mô tả */}
+            <Row gutter={12}>
+              <Col xs={24}>
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Mô tả"
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={fieldState.error?.message}
+                    >
+                      <Input.TextArea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={2}
+                        placeholder="Mô tả chi tiết (tùy chọn)"
+                        maxLength={500}
+                        showCount
+                      />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+          </>
+        )}
 
-          <Col xs={24} lg={8}>
-            <Controller
-              name="isActive"
-              control={control}
-              render={({ field }) => (
-                <Form.Item label="Kích hoạt">
-                  <Switch checked={field.value} onChange={field.onChange} />
-                </Form.Item>
-              )}
-            />
-          </Col>
-        </Row>
+        {isCreatingChild && (
+          // Creating Child Item
+          <>
+            {/* Row 1: Parent (locked - from "Add Child" button) */}
+            <Row gutter={12}>
+              <Col xs={24}>
+                <Controller
+                  name="parentId"
+                  control={control}
+                  render={({ field, fieldState }) => {
+                    // Find parent item to display label
+                    const allItems = [...rootCategories, ...parentOptions];
+                    const parentItem = allItems.find(
+                      (item) => item.id === field.value
+                    );
+                    const parentLabel = parentItem
+                      ? `${parentItem.value} (${parentItem.key})`
+                      : field.value ?? "";
+
+                    return (
+                      <Form.Item
+                        label="Parent"
+                        required
+                        validateStatus={fieldState.error ? "error" : ""}
+                        help={
+                          fieldState.error?.message ||
+                          "Đã chọn từ nút 'Add Child'. Dùng Edit để đổi parent."
+                        }
+                      >
+                        <Input
+                          value={parentLabel}
+                          disabled
+                          placeholder="Loading..."
+                        />
+                      </Form.Item>
+                    );
+                  }}
+                />
+              </Col>
+            </Row>
+
+            {/* Row 2: Value, Key */}
+            <Row gutter={12}>
+              <Col xs={24} lg={12}>
+                <Controller
+                  name="value"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Tên danh mục"
+                      required
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={fieldState.error?.message}
+                    >
+                      <Input {...field} placeholder="VD: Răng Cửa" />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+
+              <Col xs={24} lg={12}>
+                <Controller
+                  name="key"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Mã"
+                      required
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={
+                        fieldState.error?.message ||
+                        "Tự động tạo từ Giá trị. Có thể sửa."
+                      }
+                    >
+                      <Input {...field} placeholder="VD: rang-cua" />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+
+            {/* Row 3: Cho phép phân cấp, Kích hoạt */}
+            <Row gutter={12}>
+              <Col xs={12}>
+                <Controller
+                  name="allowHierarchy"
+                  control={control}
+                  render={({ field }) => (
+                    <Form.Item label="Cho phép phân cấp">
+                      <Switch checked={field.value} onChange={field.onChange} />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+
+              <Col xs={12}>
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <Form.Item label="Kích hoạt">
+                      <Switch checked={field.value} onChange={field.onChange} />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+
+            {/* Row 4: Mô tả */}
+            <Row gutter={12}>
+              <Col xs={24}>
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Mô tả"
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={fieldState.error?.message}
+                    >
+                      <Input.TextArea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={2}
+                        placeholder="Mô tả chi tiết (tùy chọn)"
+                        maxLength={500}
+                        showCount
+                      />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+          </>
+        )}
+
+        {mode === "edit" && (
+          // Editing Existing Item
+          <>
+            {/* Row 1: Tên danh mục, Mã */}
+            <Row gutter={12}>
+              <Col xs={24} lg={12}>
+                <Controller
+                  name="value"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Tên danh mục"
+                      required
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={fieldState.error?.message}
+                    >
+                      <Input {...field} placeholder="VD: Nhà cung cấp A" />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+
+              <Col xs={24} lg={12}>
+                <Controller
+                  name="key"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Mã"
+                      required
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={
+                        fieldState.error?.message || "Không thể sửa sau khi tạo"
+                      }
+                    >
+                      <Input {...field} placeholder="VD: ncc-a" disabled />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+
+            {/* Row 2: Cho phép phân cấp, Kích hoạt */}
+            <Row gutter={12}>
+              <Col xs={12}>
+                <Controller
+                  name="allowHierarchy"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Cho phép phân cấp"
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={
+                        fieldState.error?.message ||
+                        "Không thể tắt nếu đã có mục con"
+                      }
+                    >
+                      <Switch checked={field.value} onChange={field.onChange} />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+
+              <Col xs={12}>
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <Form.Item label="Kích hoạt">
+                      <Switch checked={field.value} onChange={field.onChange} />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+
+            {/* Row 3: Mô tả */}
+            <Row gutter={12}>
+              <Col xs={24}>
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Form.Item
+                      label="Mô tả"
+                      validateStatus={fieldState.error ? "error" : ""}
+                      help={fieldState.error?.message}
+                    >
+                      <Input.TextArea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={2}
+                        placeholder="Mô tả chi tiết (tùy chọn)"
+                        maxLength={500}
+                        showCount
+                      />
+                    </Form.Item>
+                  )}
+                />
+              </Col>
+            </Row>
+          </>
+        )}
       </Form>
     </Modal>
   );

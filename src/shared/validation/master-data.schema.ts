@@ -1,15 +1,10 @@
 // src/shared/validation/master-data.schema.ts
 import { z } from "zod";
-import { MASTER_DATA_TYPE_LIST } from "@/shared/constants/master-data";
 
 /**
  * Base Schema - Shared fields
  */
 export const MasterDataBaseSchema = z.object({
-  type: z.enum(MASTER_DATA_TYPE_LIST as [string, ...string[]], {
-    message: "Vui lòng chọn loại danh mục",
-  }),
-
   key: z
     .string()
     .trim()
@@ -25,7 +20,11 @@ export const MasterDataBaseSchema = z.object({
 
   description: z.string().trim().max(500).optional().nullable(),
 
+  allowHierarchy: z.boolean().default(false), // Chỉ cho root items
+
   parentId: z.string().uuid().optional().nullable(),
+
+  rootId: z.string().uuid().optional().nullable(), // Auto-set based on parentId
 
   isActive: z.boolean().default(true),
 });
@@ -47,12 +46,13 @@ export const UpdateMasterDataRequestSchema = MasterDataBaseSchema.extend({
  */
 export const MasterDataResponseSchema = z.object({
   id: z.string().uuid(),
-  type: z.string(),
   key: z.string(),
   value: z.string(),
   description: z.string().nullable().optional(),
+  allowHierarchy: z.boolean(),
   isActive: z.boolean(),
   parentId: z.string().uuid().nullable().optional(),
+  rootId: z.string().uuid().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -66,7 +66,7 @@ export const MasterDataListResponseSchema = z.array(MasterDataResponseSchema);
  * Query Schema (for GET /api/v1/master-data)
  */
 export const GetMasterDataQuerySchema = z.object({
-  type: z.enum(MASTER_DATA_TYPE_LIST as [string, ...string[]]).optional(),
+  rootId: z.string().uuid().optional().nullable(), // Filter by root category
   includeInactive: z.boolean().optional(),
 });
 

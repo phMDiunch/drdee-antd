@@ -3,7 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getMasterDataById } from "../api";
-import { MASTER_DATA_QUERY_KEYS } from "../constants";
+import { MASTER_DATA_QUERY_KEYS } from "@/shared/constants/master-data";
 
 export function useMasterDataById(id: string | undefined) {
   return useQuery({

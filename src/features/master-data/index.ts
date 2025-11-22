@@ -6,7 +6,7 @@ export { default as MasterDataPageView } from "./views/MasterDataPageView";
 
 // ===== COMPONENTS (for external use) =====
 export { default as MasterDataFormModal } from "./components/MasterDataFormModal";
-export { default as MasterDataTable } from "./components/MasterDataTable";
+export { default as MasterDataTree } from "./components/MasterDataTree";
 
 // ===== HOOKS (for data fetching) =====
 export * from "./hooks/useMasterDataList";

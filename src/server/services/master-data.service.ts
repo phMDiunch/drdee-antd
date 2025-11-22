@@ -21,10 +21,19 @@ export const masterDataService = {
    */
   async list(
     currentUser: UserCore | null,
-    type?: string,
+    rootId?: string | null,
     includeInactive?: boolean
   ) {
-    const rows = await masterDataRepo.list(type, includeInactive);
+    const rows = await masterDataRepo.list(rootId, includeInactive);
+    return rows.map(mapMasterDataToResponse);
+  },
+
+  /**
+   * GET /api/v1/master-data/roots
+   * Get root categories only
+   */
+  async getRoots(currentUser: UserCore | null, includeInactive?: boolean) {
+    const rows = await masterDataRepo.getRoots(includeInactive);
     return rows.map(mapMasterDataToResponse);
   },
 
@@ -55,16 +64,25 @@ export const masterDataService = {
       key: normalizeKey(parsed.data.key),
     };
 
-    // Check unique key per type
-    const existing = await masterDataRepo.getByTypeAndKey(data.type, data.key);
-    if (existing) throw ERR.CONFLICT("Mã này đã tồn tại trong loại danh mục.");
+    // Check unique key (globally unique now)
+    const existing = await masterDataRepo.getByKey(data.key);
+    if (existing) throw ERR.CONFLICT("Mã này đã tồn tại.");
 
-    // Validate parentId if provided
+    // Auto-set rootId based on parentId
     if (data.parentId) {
       const parent = await masterDataRepo.getById(data.parentId);
       if (!parent) throw ERR.INVALID("Parent không tồn tại.");
-      if (parent.type !== data.type)
-        throw ERR.INVALID("Parent phải cùng type.");
+
+      // Set rootId: nếu parent là root (rootId=null) thì dùng parent.id, nếu không thì inherit parent.rootId
+      data.rootId = parent.rootId ?? parent.id;
+
+      // Validate hierarchy: Chỉ trong cùng root
+      if (parent.allowHierarchy === false && parent.parentId !== null) {
+        throw ERR.INVALID("Parent này không cho phép có con.");
+      }
+    } else {
+      // Root item: rootId = null
+      data.rootId = null;
     }
 
     const created = await masterDataRepo.create(data);
@@ -93,22 +111,24 @@ export const masterDataService = {
       key: normalizeKey(parsed.data.key),
     };
 
-    // Check unique key per type (exclude self)
-    if (data.key !== existing.key || data.type !== existing.type) {
-      const dup = await masterDataRepo.getByTypeAndKey(data.type, data.key);
-      if (dup && dup.id !== id)
-        throw ERR.CONFLICT("Mã này đã tồn tại trong loại danh mục.");
+    // Check unique key (exclude self)
+    if (data.key !== existing.key) {
+      const dup = await masterDataRepo.getByKey(data.key);
+      if (dup && dup.id !== id) throw ERR.CONFLICT("Mã này đã tồn tại.");
     }
 
-    // Validate circular reference
-    if (data.parentId) {
-      if (data.parentId === id) throw ERR.INVALID("Không thể tự tham chiếu.");
+    // Don't allow changing rootId/parentId (keep category)
+    data.rootId = existing.rootId;
+    data.parentId = existing.parentId;
 
-      const hasCircular = await masterDataRepo.checkCircularReference(
-        id,
-        data.parentId
-      );
-      if (hasCircular) throw ERR.INVALID("Không thể tạo vòng lặp phân cấp.");
+    // Check allowHierarchy: Nếu đã có children, không cho đổi allowHierarchy thành false
+    if (data.allowHierarchy === false && existing.allowHierarchy === true) {
+      const children = await masterDataRepo.getChildren(id);
+      if (children.length > 0) {
+        throw ERR.CONFLICT(
+          "Không thể tắt phân cấp khi đã có mục con. Hãy xóa các mục con trước."
+        );
+      }
     }
 
     const updated = await masterDataRepo.update(id, data);
@@ -116,7 +136,24 @@ export const masterDataService = {
   },
 
   /**
-   * DELETE soft delete (admin only)
+   * Toggle active/inactive (soft delete/restore) - admin only
+   */
+  async toggleActive(
+    currentUser: UserCore | null,
+    id: string,
+    isActive: boolean
+  ) {
+    requireAdmin(currentUser);
+
+    const existing = await masterDataRepo.getById(id);
+    if (!existing) throw ERR.NOT_FOUND("Dữ liệu chủ không tồn tại.");
+
+    const updated = await masterDataRepo.toggleActive(id, isActive);
+    return mapMasterDataToResponse(updated);
+  },
+
+  /**
+   * DELETE (hard delete - permanent) - admin only
    */
   async remove(currentUser: UserCore | null, id: string) {
     requireAdmin(currentUser);
@@ -127,10 +164,12 @@ export const masterDataService = {
     // Check if has children
     const children = await masterDataRepo.getChildren(id);
     if (children.length > 0)
-      throw ERR.CONFLICT("Không thể xóa mục có mục con.");
+      throw ERR.CONFLICT(
+        "Không thể xóa mục có mục con. Hãy xóa các mục con trước."
+      );
 
-    // Soft delete (set isActive = false)
-    const updated = await masterDataRepo.softDelete(id);
-    return mapMasterDataToResponse(updated);
+    // Hard delete (permanent deletion)
+    await masterDataRepo.hardDelete(id);
+    return { success: true };
   },
 };

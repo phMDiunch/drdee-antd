@@ -553,21 +553,28 @@ model TreatmentCare {
 model MasterData {
   id String @id @default(uuid())
 
-  // Phân loại
-  type String // SUPPLIER_GROUP, DEPARTMENT, MATERIAL_CATEGORY, UNIT
-
   // Định danh & Hiển thị
-  key         String  // Mã định danh (slug: 'implant', 'noi-nha') - IMMUTABLE
-  value       String  // Tên hiển thị ('Implant', 'Nội nha') - MUTABLE
+  key         String  @unique // Mã định danh (slug: 'nhom-ncc-chinh') - IMMUTABLE, UNIQUE globally
+  value       String  // Tên hiển thị ('Nhóm NCC Chính') - MUTABLE
   description String? // Mô tả thêm
+
+  // Hierarchy Configuration
+  allowHierarchy Boolean @default(false) // Root items: cho phép có children
 
   // Trạng thái
   isActive Boolean @default(true) // Soft delete
 
-  // Self-referencing hierarchy (Nhóm → Phân nhóm)
+  // Self-referencing hierarchy (Parent-Child trong cùng root)
   parentId String?
-  parent   MasterData?  @relation("MasterDataHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children MasterData[] @relation("MasterDataHierarchy")
+  parent   MasterData?  @relation("Hierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children MasterData[] @relation("Hierarchy")
+  // NoAction: App tự handle delete/update logic (vì dùng soft delete + check children)
+
+  // Root category tracking
+  rootId      String?
+  root        MasterData?  @relation("RootCategory", fields: [rootId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  descendants MasterData[] @relation("RootCategory")
+  // Cascade: Khi xóa root → xóa hết descendants (prevented in app logic)
 
   // Audit
   createdAt DateTime @default(now()) @db.Timestamptz
@@ -578,8 +585,8 @@ model MasterData {
   // materialsAsDepartment  Material[]   @relation("MaterialDepartment")
   // materialsAsCategory    Material[]   @relation("MaterialCategory")
 
-  // Constraints & Indexes
-  @@unique([type, key], name: "unique_type_key") // Unique key per type
-  @@index([type, isActive]) // Fast filter by type + active
+  // Indexes
+  @@index([rootId, isActive]) // Fast filter by root category + active
+  @@index([parentId]) // Fast hierarchy queries
   @@map("master_data")
 }

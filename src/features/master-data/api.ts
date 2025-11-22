@@ -14,7 +14,9 @@ export async function getMasterDataList(
   query?: GetMasterDataQuery
 ): Promise<MasterDataResponse[]> {
   const searchParams = new URLSearchParams();
-  if (query?.type) searchParams.set("type", query.type);
+  if (query?.rootId !== undefined) {
+    searchParams.set("rootId", query.rootId === null ? "null" : query.rootId);
+  }
   if (query?.includeInactive) searchParams.set("includeInactive", "true");
 
   const response = await fetch(
@@ -28,6 +30,32 @@ export async function getMasterDataList(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.message ?? "Failed to fetch master data");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Fetch root categories only
+ */
+export async function getMasterDataRoots(
+  includeInactive?: boolean
+): Promise<MasterDataResponse[]> {
+  const searchParams = new URLSearchParams();
+  if (includeInactive) searchParams.set("includeInactive", "true");
+
+  const response = await fetch(
+    `/api/v1/master-data/roots?${searchParams.toString()}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message ?? "Failed to fetch root categories");
   }
 
   const result = await response.json();

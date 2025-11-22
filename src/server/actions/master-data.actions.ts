@@ -25,7 +25,18 @@ export async function updateMasterDataAction(body: UpdateMasterDataRequest) {
 }
 
 /**
- * Server Action: Delete Master Data (Admin only)
+ * Server Action: Toggle Active/Inactive (Soft delete/restore) - Admin only
+ */
+export async function toggleMasterDataActiveAction(
+  id: string,
+  isActive: boolean
+) {
+  const currentUser = await getSessionUser();
+  return masterDataService.toggleActive(currentUser, id, isActive);
+}
+
+/**
+ * Server Action: Delete Master Data (Hard delete - permanent) - Admin only
  */
 export async function deleteMasterDataAction(id: string) {
   const currentUser = await getSessionUser();

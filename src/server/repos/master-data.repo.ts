@@ -8,11 +8,40 @@ import type {
 export const masterDataRepo = {
   /**
    * List master data with optional filters
+   * - rootId === undefined: Return ALL items (for tree view)
+   * - rootId === null: Return only root items (parentId=null, rootId=null)
+   * - rootId === string: Return items in that root category
    */
-  async list(type?: string, includeInactive?: boolean) {
+  async list(rootId?: string | null, includeInactive?: boolean) {
+    const whereClause: Record<string, unknown> = {
+      ...(includeInactive ? {} : { isActive: true }),
+    };
+
+    // Only add rootId filter if explicitly provided
+    if (rootId === null) {
+      // Get only root items
+      whereClause.parentId = null;
+      whereClause.rootId = null;
+    } else if (rootId !== undefined) {
+      // Get items in specific root category
+      whereClause.rootId = rootId;
+    }
+    // If rootId === undefined, get ALL items (no filter)
+
+    return prisma.masterData.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+    });
+  },
+
+  /**
+   * Get root items only (parentId = null, rootId = null)
+   */
+  async getRoots(includeInactive?: boolean) {
     return prisma.masterData.findMany({
       where: {
-        ...(type && { type }),
+        parentId: null,
+        rootId: null,
         ...(includeInactive ? {} : { isActive: true }),
       },
       orderBy: { createdAt: "desc" },
@@ -27,11 +56,11 @@ export const masterDataRepo = {
   },
 
   /**
-   * Get master data by type and key (for uniqueness check)
+   * Get master data by key (for uniqueness check - globally unique)
    */
-  async getByTypeAndKey(type: string, key: string) {
+  async getByKey(key: string) {
     return prisma.masterData.findUnique({
-      where: { unique_type_key: { type, key } },
+      where: { key },
     });
   },
 
@@ -59,12 +88,21 @@ export const masterDataRepo = {
   },
 
   /**
-   * Soft delete (set isActive = false)
+   * Toggle isActive (soft delete/restore)
    */
-  async softDelete(id: string) {
+  async toggleActive(id: string, isActive: boolean) {
     return prisma.masterData.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive },
+    });
+  },
+
+  /**
+   * Hard delete (permanent deletion)
+   */
+  async hardDelete(id: string) {
+    return prisma.masterData.delete({
+      where: { id },
     });
   },
 

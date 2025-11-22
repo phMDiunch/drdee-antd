@@ -4,7 +4,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "@/shared/hooks/useNotify";
 import { deleteMasterDataAction } from "@/server/actions/master-data.actions";
-import { MASTER_DATA_MESSAGES, MASTER_DATA_QUERY_KEYS } from "../constants";
+import { MASTER_DATA_MESSAGES } from "../constants";
+import { MASTER_DATA_QUERY_KEYS } from "@/shared/constants/master-data";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 export function useDeleteMasterData() {
@@ -15,8 +16,10 @@ export function useDeleteMasterData() {
     mutationFn: (id: string) => deleteMasterDataAction(id),
     onSuccess: () => {
       notify.success(MASTER_DATA_MESSAGES.DELETE_SUCCESS);
+      // Invalidate all master-data queries (list, roots, detail)
       qc.invalidateQueries({
-        queryKey: MASTER_DATA_QUERY_KEYS.lists(),
+        queryKey: MASTER_DATA_QUERY_KEYS.all(),
+        refetchType: "active", // Force refetch active queries
       });
     },
     onError: (e: unknown) =>
