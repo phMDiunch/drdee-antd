@@ -16,6 +16,7 @@ export function useArchiveClinic() {
       notify.success(CLINIC_MESSAGES.ARCHIVE_SUCCESS);
       qc.invalidateQueries({
         queryKey: ["clinics"],
+        refetchType: "active",
       });
     },
     onError: (e: unknown) =>

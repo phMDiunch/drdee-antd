@@ -7,7 +7,7 @@ import { GetMasterDataQuerySchema } from "@/shared/validation/master-data.schema
 /**
  * GET /api/v1/master-data
  * Query params: rootId (optional), includeInactive (optional)
- * Used by: useMasterDataList hook
+ * Used by: useMasterData hook
  * Cache: 5 minutes
  */
 export async function GET(request: NextRequest) {

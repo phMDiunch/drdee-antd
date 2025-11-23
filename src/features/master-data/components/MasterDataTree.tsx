@@ -54,7 +54,7 @@ export default function MasterDataTree({
       const children = data
         .filter((child) => child.parentId === item.id)
         .map(buildTree);
-
+      console.log("Building tree for item:", item, "with children:", children);
       return {
         key: item.id,
         title: (
@@ -142,7 +142,6 @@ export default function MasterDataTree({
         isLeaf: children.length === 0,
       };
     };
-
     // Find root items (no parent)
     const roots = data.filter((item) => !item.parentId);
     roots.forEach((root) => {

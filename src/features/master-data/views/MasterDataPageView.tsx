@@ -6,7 +6,7 @@ import { Button, Space, Typography, Switch } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import MasterDataTree from "@/features/master-data/components/MasterDataTree";
 import MasterDataFormModal from "@/features/master-data/components/MasterDataFormModal";
-import { useMasterDataList } from "@/features/master-data/hooks/useMasterDataList";
+import { useMasterData } from "@/features/master-data/hooks/useMasterDataList";
 import { useCreateMasterData } from "@/features/master-data/hooks/useCreateMasterData";
 import { useUpdateMasterData } from "@/features/master-data/hooks/useUpdateMasterData";
 import { useDeleteMasterData } from "@/features/master-data/hooks/useDeleteMasterData";
@@ -26,11 +26,12 @@ export default function MasterDataPageView({ isAdmin }: Props) {
 
   // Get ALL master data items (roots and children) for tree display
   // Pass undefined to get all items, not null (which means roots only)
-  const { data, isLoading } = useMasterDataList(undefined, includeInactive);
+  const { data, isLoading } = useMasterData(undefined, includeInactive);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [editing, setEditing] = useState<MasterDataResponse | null>(null);
+
   const [parentForNewChild, setParentForNewChild] =
     useState<MasterDataResponse | null>(null);
 

@@ -71,8 +71,8 @@ export const menuItems: MenuItem[] = [
     label: "Cài đặt",
     children: [
       { key: "/clinics", label: "Phòng khám" },
-      { key: "/dental-services", label: "Dịch vụ nha khoa" },
       { key: "/master-data", label: "Danh mục hệ thống" },
+      { key: "/dental-services", label: "Dịch vụ nha khoa" },
     ],
   },
 ];

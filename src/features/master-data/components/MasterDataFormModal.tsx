@@ -5,10 +5,7 @@ import React, { useEffect, useMemo } from "react";
 import { Modal, Form, Input, Row, Col, Switch } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useMasterDataList,
-  useMasterDataRoots,
-} from "../hooks/useMasterDataList";
+import { useMasterData } from "../hooks/useMasterDataList";
 import type {
   MasterDataResponse,
   CreateMasterDataRequest,
@@ -92,7 +89,6 @@ export default function MasterDataFormModal({
   });
 
   const valueField = watch("value");
-  const selectedRootId = watch("rootId");
 
   // Determine if creating root or child item
   const isCreatingRoot = mode === "create" && !propParentId;
@@ -110,16 +106,8 @@ export default function MasterDataFormModal({
     }
   }, [mode, valueField, setValue]);
 
-  // Determine which rootId to fetch parent options for
-  // For child creation: use rootId from form (set in reset effect)
-  // For root creation: don't fetch (not needed)
-  const rootIdForFetch = isCreatingChild ? selectedRootId : null;
-
-  // Fetch root categories for root selector
-  const { data: rootCategories = [] } = useMasterDataRoots(false);
-
-  // Fetch items in selected root for parent selection (only when creating child)
-  const { data: parentOptions = [] } = useMasterDataList(rootIdForFetch, false);
+  // Fetch ALL master data items (for finding parent when creating child)
+  const { data: allItems = [] } = useMasterData(undefined, false);
 
   // Reset form when modal opens or when propParentId changes
   useEffect(() => {
@@ -128,7 +116,6 @@ export default function MasterDataFormModal({
     // If creating a child item, set parentId from prop and auto-set rootId
     if (mode === "create" && propParentId) {
       // Find parent to get its rootId
-      const allItems = [...rootCategories, ...parentOptions];
       const parent = allItems.find((item) => item.id === propParentId);
 
       if (parent) {
@@ -304,7 +291,6 @@ export default function MasterDataFormModal({
                   control={control}
                   render={({ field, fieldState }) => {
                     // Find parent item to display label
-                    const allItems = [...rootCategories, ...parentOptions];
                     const parentItem = allItems.find(
                       (item) => item.id === field.value
                     );

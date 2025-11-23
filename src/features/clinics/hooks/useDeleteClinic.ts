@@ -16,6 +16,7 @@ export function useDeleteClinic() {
       notify.success(CLINIC_MESSAGES.DELETE_SUCCESS);
       qc.invalidateQueries({
         queryKey: ["clinics"],
+        refetchType: "active",
       });
     },
     onError: (e: unknown) =>

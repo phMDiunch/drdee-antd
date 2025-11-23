@@ -21,13 +21,12 @@ export function useToggleMasterDataActive() {
           ? MASTER_DATA_MESSAGES.ACTIVATE_SUCCESS
           : MASTER_DATA_MESSAGES.DEACTIVATE_SUCCESS
       );
-      // Invalidate all master-data queries
       qc.invalidateQueries({
-        queryKey: MASTER_DATA_QUERY_KEYS.all(),
+        queryKey: MASTER_DATA_QUERY_KEYS.byId(variables.id),
         refetchType: "active",
       });
       qc.invalidateQueries({
-        queryKey: MASTER_DATA_QUERY_KEYS.detail(variables.id),
+        queryKey: ["master-data"],
         refetchType: "active",
       });
     },

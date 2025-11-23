@@ -16,7 +16,10 @@ export function useCreateDentalService() {
       createDentalServiceAction(data),
     onSuccess: () => {
       notify.success(DENTAL_SERVICE_MESSAGES.CREATE_SUCCESS);
-      qc.invalidateQueries({ queryKey: ["dental-services"] });
+      qc.invalidateQueries({
+        queryKey: ["dental-services"],
+        refetchType: "active",
+      });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

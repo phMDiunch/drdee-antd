@@ -17,13 +17,12 @@ export function useUpdateMasterData() {
     mutationFn: (data: UpdateMasterDataRequest) => updateMasterDataAction(data),
     onSuccess: (_, variables) => {
       notify.success(MASTER_DATA_MESSAGES.UPDATE_SUCCESS);
-      // Invalidate all master-data queries (list, roots, detail)
       qc.invalidateQueries({
-        queryKey: MASTER_DATA_QUERY_KEYS.all(),
-        refetchType: "active", // Force refetch active queries
+        queryKey: MASTER_DATA_QUERY_KEYS.byId(variables.id),
+        refetchType: "active",
       });
       qc.invalidateQueries({
-        queryKey: MASTER_DATA_QUERY_KEYS.detail(variables.id),
+        queryKey: ["master-data"],
         refetchType: "active",
       });
     },

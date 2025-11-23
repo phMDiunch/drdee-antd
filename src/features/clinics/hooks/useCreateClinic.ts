@@ -18,6 +18,7 @@ export function useCreateClinic() {
       notify.success(CLINIC_MESSAGES.CREATE_SUCCESS);
       qc.invalidateQueries({
         queryKey: ["clinics"],
+        refetchType: "active",
       });
     },
     onError: (e: unknown) =>

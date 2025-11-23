@@ -402,20 +402,48 @@ export async function GET(req: Request) {
 
 **Caching Strategy:**
 
-| Data Type       | Cache    | Example                                           |
-| --------------- | -------- | ------------------------------------------------- |
-| **Master Data** | 5 min    | `dental-services`, `clinics`, `employees/working` |
-| **All Others**  | No cache | `customers`, `appointments`, `*/daily`, etc.      |
+| Layer           | Data Type    | Server Cache | Client Cache | Example                                      |
+| --------------- | ------------ | ------------ | ------------ | -------------------------------------------- |
+| **API Route**   | Master Data  | 5 min        | -            | `dental-services`, `clinics`, `master-data`  |
+| **API Route**   | All Others   | No cache     | -            | `customers`, `appointments`, `*/daily`, etc. |
+| **React Query** | Master Data  | -            | Infinity     | Static data, ít thay đổi, chỉ admin thay đổi |
+| **React Query** | Transactions | -            | 1-5 min      | Data động, thay đổi thường xuyên             |
 
-**Cache Headers:**
+**Server Cache Headers (API Routes):**
 
-````typescript
-// Master data only (5 minutes)
+```typescript
+// Master data only (5 minutes server cache)
 "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
 
-// All other routes - no cache
+// All other routes - no server cache
 // (no headers needed)
-```**Key Principles:**
+```
+
+**Client Cache Strategy (React Query Hooks):**
+
+```typescript
+// ✅ Master Data (clinics, dental-services, master-data, employees/working)
+// Chỉ fetch lại khi user F5 hoặc vào app lại
+staleTime: Infinity,              // Dữ liệu không bao giờ bị coi là "cũ"
+gcTime: 1000 * 60 * 60 * 24,     // Giữ trong memory 24h
+refetchOnWindowFocus: false,      // Chuyển tab không fetch lại
+refetchOnMount: false,            // Component mount lại không fetch lại
+refetchOnReconnect: false,        // Mất mạng có lại không fetch lại
+
+// ✅ Transactional Data (customers, appointments, payments, etc.)
+// Fetch lại thường xuyên hơn để đảm bảo data fresh
+staleTime: 60 * 1000,             // 1 phút
+gcTime: 5 * 60 * 1000,            // 5 phút
+refetchOnWindowFocus: true,       // Có thể fetch lại khi chuyển tab
+```
+
+**Lưu ý quan trọng:**
+
+- Admin thấy thay đổi **ngay lập tức** sau mutations vì React Query tự động invalidate cache
+- User khác có thể thấy sau khi F5 (tradeoff chấp nhận được cho master data)
+- Server cache (5 min) + Client cache (Infinity) = Performance tối ưu
+
+**Key Principles:**
 
 - ✅ **Service-centric validation** - No route validation
 - ✅ **Standard JSDoc** - Document params, usage, cache
@@ -465,17 +493,62 @@ export async function getCustomerDetailApi(id: string) {
 
 ### 4.2. React Query Hooks (`src/features/<features>/hooks/`)
 
-**Query Hook:**
+**Hook Naming Convention:**
+
+| Hook Type      | Pattern                 | Example               |
+| -------------- | ----------------------- | --------------------- |
+| List (query)   | `use<FeaturePlural>()`  | `useClinics()`        |
+| Detail (query) | `use<Feature>ById()`    | `useClinicById(id)`   |
+| Create         | `useCreate<Feature>()`  | `useCreateClinic()`   |
+| Update         | `useUpdate<Feature>()`  | `useUpdateClinic(id)` |
+| Delete         | `useDelete<Feature>()`  | `useDeleteClinic()`   |
+| Archive        | `useArchive<Feature>()` | `useArchiveClinic()`  |
+
+**Query Keys Pattern:**
 
 ```typescript
-// useCustomers.ts
+// src/features/<feature>/constants.ts
+export const <FEATURE>_QUERY_KEYS = {
+  list: (params?) => ["<feature-plural>", params] as const,
+  byId: (id: string) => ["<feature-singular>", id] as const,
+} as const;
+
+// Ví dụ:
+export const CLINIC_QUERY_KEYS = {
+  list: (includeArchived?: boolean) =>
+    ["clinics", { includeArchived }] as const,
+  byId: (id: string) => ["clinic", id] as const,
+} as const;
+```
+
+**Query Hook - Master Data Pattern:**
+
+```typescript
+// useClinics.ts (Master Data)
+export function useClinics(includeArchived?: boolean) {
+  return useQuery({
+    queryKey: CLINIC_QUERY_KEYS.list(includeArchived),
+    queryFn: () => getClinicsApi(includeArchived),
+    staleTime: Infinity, // Dữ liệu không bao giờ bị coi là "cũ"
+    gcTime: 1000 * 60 * 60 * 24, // Giữ trong memory 24h
+    refetchOnWindowFocus: false, // Chuyển tab không fetch lại
+    refetchOnMount: false, // Component mount lại không fetch lại
+    refetchOnReconnect: false, // Mất mạng có lại không fetch lại
+  });
+}
+```
+
+**Query Hook - Transactional Data Pattern:**
+
+```typescript
+// useCustomers.ts (Transactional Data)
 export function useCustomers(params?: GetCustomersQuery) {
   return useQuery({
     queryKey: ["customers", params],
     queryFn: () => getCustomersApi(params),
-    staleTime: 60 * 1000, // 1 min
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    staleTime: 60 * 1000, // 1 phút
+    gcTime: 5 * 60 * 1000, // 5 phút
+    refetchOnWindowFocus: true, // Fetch lại khi chuyển tab
   });
 }
 ```
@@ -488,7 +561,10 @@ export function useCreateCustomer() {
     mutationFn: createCustomerAction,
     onSuccess: () => {
       notify.success(CUSTOMER_MESSAGES.CREATE_SUCCESS);
-      qc.invalidateQueries({ queryKey: ["customers"] });
+      qc.invalidateQueries({
+        queryKey: ["customers"],
+        refetchType: "active", // ✅ Force refetch ngay lập tức
+      });
     },
     onError: (e) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
@@ -496,19 +572,28 @@ export function useCreateCustomer() {
 }
 
 // Update: invalidate detail + list
-qc.invalidateQueries({ queryKey: ["customers", "detail", id] });
-qc.invalidateQueries({ queryKey: ["customers"] });
+qc.invalidateQueries({
+  queryKey: CUSTOMER_QUERY_KEYS.byId(id),
+  refetchType: "active",
+});
+qc.invalidateQueries({
+  queryKey: ["customers"],
+  refetchType: "active",
+});
 
 // Delete: invalidate list only
-qc.invalidateQueries({ queryKey: ["customers"] });
+qc.invalidateQueries({
+  queryKey: ["customers"],
+  refetchType: "active",
+});
 ```
 
-**Caching Strategy:**
+**Caching Strategy Summary:**
 
-| Data Type    | staleTime  | gcTime | refetchOnWindowFocus |
-| ------------ | ---------- | ------ | -------------------- |
-| Master data  | `Infinity` | 24h    | false                |
-| Transactions | 1 min      | 5 min  | true                 |
+| Data Type        | staleTime  | gcTime | refetchOnWindowFocus | refetchOnMount | refetchOnReconnect |
+| ---------------- | ---------- | ------ | -------------------- | -------------- | ------------------ |
+| **Master Data**  | `Infinity` | 24h    | `false`              | `false`        | `false`            |
+| **Transactions** | 1 min      | 5 min  | `true`               | (default)      | (default)          |
 
 **Quy tắc:**
 
@@ -839,6 +924,7 @@ useEffect(() => {
 **Purpose**: Demo UI/UX với mock data để preview design trước khi implement backend
 
 **Structure**:
+
 ```
 src/
 ├── app/
@@ -864,12 +950,14 @@ src/
 7. ✅ **Keep After Migration**: Giữ lại demo pages sau khi migrate sang production (để reference)
 
 **When to Use Demo**:
+
 - ✅ Design new dashboard layouts
 - ✅ Test UI libraries (Chart.js, D3, etc.)
 - ✅ Prototype complex interactions
 - ✅ Preview for stakeholders
 
 **Migration to Production**:
+
 1. Refactor/rewrite components từ `demos/` sang `features/` (clean code)
 2. Tạo production page trong `/dashboard/` hoặc feature route
 3. Replace mock data với API hooks (React Query)
@@ -915,4 +1003,7 @@ src/
 ---
 
 **Last Updated:** 2025-01-06
-````
+
+```
+
+```

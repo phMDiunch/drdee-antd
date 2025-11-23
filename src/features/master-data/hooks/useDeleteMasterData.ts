@@ -16,10 +16,9 @@ export function useDeleteMasterData() {
     mutationFn: (id: string) => deleteMasterDataAction(id),
     onSuccess: () => {
       notify.success(MASTER_DATA_MESSAGES.DELETE_SUCCESS);
-      // Invalidate all master-data queries (list, roots, detail)
       qc.invalidateQueries({
-        queryKey: MASTER_DATA_QUERY_KEYS.all(),
-        refetchType: "active", // Force refetch active queries
+        queryKey: ["master-data"],
+        refetchType: "active",
       });
     },
     onError: (e: unknown) =>
