@@ -160,6 +160,10 @@ model Employee {
   createdSuppliers Supplier[] @relation("CreatedSuppliers")
   updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
 
+  // Liên kết đến vật tư
+  createdMaterials Material[] @relation("CreatedMaterials")
+  updatedMaterials Material[] @relation("UpdatedMaterials")
+
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
   @@index([email]) // Optimize: Login by email
@@ -614,4 +618,50 @@ model Supplier {
   @@index([name])
   @@index([supplierGroup, archivedAt])
   @@map("suppliers")
+}
+
+//---------------------------
+// Material (Vật tư)
+//---------------------------
+
+model Material {
+  id          String  @id @default(uuid())
+  code        String  @unique // MAT0001, MAT0002... (Tự sinh)
+  name        String  @unique
+  description String? // Mô tả, quy cách đóng gói
+
+  // Store MasterData.key (String), NOT id (UUID)
+  // NO FK relation → Allows MasterData to be deleted
+  // Frontend: Display MasterData.value if found, else display key itself
+  unit         String // Đơn vị tính (category='don-vi-tinh') - Required
+  materialType String // Loại vật tư (category='loai-vat-tu') - Required
+  department   String // Bộ môn (category='bo-mon') - Required
+  category     String? // Nhóm vật tư (category='nhom-vat-tu')
+  subCategory  String? // Phân nhóm (category='phan-nhom-vat-tu')
+
+  minStockLevel Int? // Mức tồn kho tối thiểu
+  imageUrl      String? // URL hình ảnh
+  tags          String[] @default([]) // Array of MasterData keys (category='tag-vat-tu')
+
+  archivedAt DateTime? @db.Timestamptz // Soft delete
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+
+  createdById String // ID của người tạo
+  updatedById String // ID của người cập nhật
+
+  createdBy Employee @relation("CreatedMaterials", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedMaterials", fields: [updatedById], references: [id])
+
+  // Relations (placeholder - sẽ được thêm khi implement Goods Receipt/Issue)
+  // receiptDetails  GoodsReceiptDetail[]
+  // issueDetails    GoodsIssueDetail[]
+  // stockQuants     StockQuant[]
+
+  // Indexes
+  @@index([code])
+  @@index([name])
+  @@index([materialType, department, category, archivedAt])
+  @@index([tags]) // GIN index for array search in PostgreSQL
+  @@map("materials")
 }

@@ -11,6 +11,8 @@ import {
   SettingOutlined,
   MedicineBoxOutlined,
   ExperimentOutlined,
+  InboxOutlined,
+  BoxPlotOutlined,
 } from "@ant-design/icons";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -64,6 +66,12 @@ export const menuItems: MenuItem[] = [
       { key: "/reports/sales", label: "Doanh số" },
       { key: "/reports/revenue", label: "Doanh thu" },
     ],
+  },
+  {
+    key: "inventory",
+    icon: <InboxOutlined />,
+    label: "Quản lý kho",
+    children: [{ key: "/inventory/materials", label: "Danh mục vật tư" }],
   },
   {
     key: "/settings",
