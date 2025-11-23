@@ -159,6 +159,7 @@ export default function DentalServiceTable({
       columns={columns}
       dataSource={data}
       pagination={false}
+      scroll={{ x: 1200 }}
     />
   );
 }

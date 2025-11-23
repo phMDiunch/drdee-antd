@@ -156,6 +156,10 @@ model Employee {
   createdTreatmentCares   TreatmentCare[] @relation("CreatedTreatmentCares")
   updatedTreatmentCares   TreatmentCare[] @relation("UpdatedTreatmentCares")
 
+  // Liên kết đến nhà cung cấp
+  createdSuppliers Supplier[] @relation("CreatedSuppliers")
+  updatedSuppliers Supplier[] @relation("UpdatedSuppliers")
+
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
   @@index([email]) // Optimize: Login by email
@@ -571,4 +575,43 @@ model MasterData {
   @@unique([category, key]) // Unique constraint: key chỉ unique trong category
   @@index([category]) // Fast filter by category
   @@map("master_data")
+}
+
+//---------------------------
+// Supplier (Nhà cung cấp)
+//---------------------------
+
+model Supplier {
+  id        String  @id @default(uuid())
+  name      String  @unique
+  shortName String?
+
+  // Store MasterData.key (String), NOT id (UUID)
+  // NO FK relation → Allows MasterData to be deleted
+  // Frontend: Display MasterData.value if found, else display key itself
+  supplierGroup String? // e.g., 'ncc-chinh', 'ncc-phu'
+
+  phone   String?
+  email   String?
+  address String?
+  taxCode String?
+  note    String?
+
+  archivedAt DateTime? @db.Timestamptz // Soft delete
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+
+  createdById String // ID của người tạo
+  updatedById String // ID của người cập nhật
+
+  createdBy Employee @relation("CreatedSuppliers", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedSuppliers", fields: [updatedById], references: [id])
+
+  // Relations (uncomment when GoodsReceipt model is implemented)
+  // goodsReceipts GoodsReceipt[]
+
+  // Indexes
+  @@index([name])
+  @@index([supplierGroup, archivedAt])
+  @@map("suppliers")
 }
