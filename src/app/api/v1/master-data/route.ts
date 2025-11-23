@@ -1,57 +1,38 @@
 // src/app/api/v1/master-data/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { masterDataService } from "@/server/services/master-data.service";
-import { getSessionUser } from "@/server/utils/sessionCache";
-import { GetMasterDataQuerySchema } from "@/shared/validation/master-data.schema";
+import { ServiceError } from "@/server/services/errors";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
- * GET /api/v1/master-data
- * Query params: rootId (optional), includeInactive (optional)
- * Used by: useMasterData hook
- * Cache: 5 minutes
+ * GET /api/v1/master-data - List ALL master data
+ * No query params - always return everything
+ * Client will filter as needed
+ * Cache: 5 minutes (master data)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const currentUser = await getSessionUser();
+    const data = await masterDataService.list();
 
-    const searchParams = request.nextUrl.searchParams;
-    const rootIdParam = searchParams.get("rootId");
-
-    const parsed = GetMasterDataQuerySchema.safeParse({
-      rootId: rootIdParam === "null" ? null : rootIdParam ?? undefined,
-      includeInactive: searchParams.get("includeInactive") === "true",
+    // 🚀 API Response Caching - Master data cache 5 minutes
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
     });
-
-    if (!parsed.success) {
+  } catch (e: unknown) {
+    if (e instanceof ServiceError) {
       return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? "Invalid query" },
-        { status: 400 }
+        { error: e.message, code: e.code },
+        { status: e.httpStatus }
       );
     }
-
-    const data = await masterDataService.list(
-      currentUser,
-      parsed.data.rootId,
-      parsed.data.includeInactive
-    );
-
-    // Cache for 5 minutes (master data changes infrequently)
     return NextResponse.json(
-      { data },
-      {
-        status: 200,
-        headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-        },
-      }
-    );
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal server error";
-    const errorStatus = (error as { status?: number }).status ?? 500;
-    return NextResponse.json(
-      { message: errorMessage },
-      { status: errorStatus }
+      { error: COMMON_MESSAGES.SERVER_ERROR },
+      { status: 500 }
     );
   }
 }
+
+// POST removed - Use createMasterDataAction() Server Action instead

@@ -1,83 +1,20 @@
 // src/features/master-data/api.ts
-import type {
-  MasterDataResponse,
-  GetMasterDataQuerySchema,
-} from "@/shared/validation/master-data.schema";
-import { z } from "zod";
-
-type GetMasterDataQuery = z.infer<typeof GetMasterDataQuerySchema>;
+import type { MasterDataResponse } from "@/shared/validation/master-data.schema";
 
 /**
- * Fetch master data list
+ * Fetch ALL master data (no filtering)
+ * Client will filter as needed
  */
-export async function getMasterDataList(
-  query?: GetMasterDataQuery
-): Promise<MasterDataResponse[]> {
-  const searchParams = new URLSearchParams();
-  if (query?.rootId !== undefined) {
-    searchParams.set("rootId", query.rootId === null ? "null" : query.rootId);
-  }
-  if (query?.includeInactive) searchParams.set("includeInactive", "true");
-
-  const response = await fetch(
-    `/api/v1/master-data?${searchParams.toString()}`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message ?? "Failed to fetch master data");
-  }
-
-  const result = await response.json();
-  return result.data;
-}
-
-/**
- * Fetch root categories only
- */
-export async function getMasterDataRoots(
-  includeInactive?: boolean
-): Promise<MasterDataResponse[]> {
-  const searchParams = new URLSearchParams();
-  if (includeInactive) searchParams.set("includeInactive", "true");
-
-  const response = await fetch(
-    `/api/v1/master-data/roots?${searchParams.toString()}`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message ?? "Failed to fetch root categories");
-  }
-
-  const result = await response.json();
-  return result.data;
-}
-
-/**
- * Fetch master data by ID
- */
-export async function getMasterDataById(
-  id: string
-): Promise<MasterDataResponse> {
-  const response = await fetch(`/api/v1/master-data/${id}`, {
+export async function getMasterDataList(): Promise<MasterDataResponse[]> {
+  const response = await fetch(`/api/v1/master-data`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message ?? "Failed to fetch master data");
+    throw new Error(error.error ?? "Failed to fetch master data");
   }
 
-  const result = await response.json();
-  return result.data;
+  return response.json(); // Direct return, no .data wrapper
 }

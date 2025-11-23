@@ -10,14 +10,12 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 export function useDeleteDentalService() {
   const qc = useQueryClient();
   const notify = useNotify();
+
   return useMutation({
     mutationFn: (id: string) => deleteDentalServiceAction(id),
     onSuccess: () => {
       notify.success(DENTAL_SERVICE_MESSAGES.DELETE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: ["dental-services"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: ["dental-services"] });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

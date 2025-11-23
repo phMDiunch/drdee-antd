@@ -553,28 +553,10 @@ model TreatmentCare {
 model MasterData {
   id String @id @default(uuid())
 
-  // Định danh & Hiển thị
-  key         String  @unique // Mã định danh (slug: 'nhom-ncc-chinh') - IMMUTABLE, UNIQUE globally
-  value       String  // Tên hiển thị ('Nhóm NCC Chính') - MUTABLE
-  description String? // Mô tả thêm
-
-  // Hierarchy Configuration
-  allowHierarchy Boolean @default(false) // Root items: cho phép có children
-
-  // Trạng thái
-  isActive Boolean @default(true) // Soft delete
-
-  // Self-referencing hierarchy (Parent-Child trong cùng root)
-  parentId String?
-  parent   MasterData?  @relation("Hierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children MasterData[] @relation("Hierarchy")
-  // NoAction: App tự handle delete/update logic (vì dùng soft delete + check children)
-
-  // Root category tracking
-  rootId      String?
-  root        MasterData?  @relation("RootCategory", fields: [rootId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  descendants MasterData[] @relation("RootCategory")
-  // Cascade: Khi xóa root → xóa hết descendants (prevented in app logic)
+  // Phân loại & Định danh
+  category String // Nhóm phân loại (slug: 'bao-hanh-chinh-hang')
+  key      String // Mã định danh (slug: '1-nam') - IMMUTABLE
+  value    String // Tên hiển thị ('1 năm') - MUTABLE
 
   // Audit
   createdAt DateTime @default(now()) @db.Timestamptz
@@ -586,7 +568,7 @@ model MasterData {
   // materialsAsCategory    Material[]   @relation("MaterialCategory")
 
   // Indexes
-  @@index([rootId, isActive]) // Fast filter by root category + active
-  @@index([parentId]) // Fast hierarchy queries
+  @@unique([category, key]) // Unique constraint: key chỉ unique trong category
+  @@index([category]) // Fast filter by category
   @@map("master_data")
 }

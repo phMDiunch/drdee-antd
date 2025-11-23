@@ -14,10 +14,7 @@ export function useUnarchiveClinic() {
     mutationFn: (id: string) => unarchiveClinicAction(id),
     onSuccess: () => {
       notify.success(CLINIC_MESSAGES.UNARCHIVE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: ["clinics"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: ["clinics"] });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

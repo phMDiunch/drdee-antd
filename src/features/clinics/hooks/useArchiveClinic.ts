@@ -14,10 +14,7 @@ export function useArchiveClinic() {
     mutationFn: (id: string) => archiveClinicAction(id),
     onSuccess: () => {
       notify.success(CLINIC_MESSAGES.ARCHIVE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: ["clinics"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: ["clinics"] });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

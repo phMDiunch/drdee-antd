@@ -14,10 +14,7 @@ export function useArchiveDentalService() {
     mutationFn: (id: string) => archiveDentalServiceAction(id),
     onSuccess: () => {
       notify.success(DENTAL_SERVICE_MESSAGES.ARCHIVE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: ["dental-services"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: ["dental-services"] });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

@@ -20,14 +20,8 @@ export function useUpdateDentalService(id: string) {
       updateDentalServiceAction(id, payload),
     onSuccess: () => {
       notify.success(DENTAL_SERVICE_MESSAGES.UPDATE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: DENTAL_SERVICE_QUERY_KEYS.byId(id),
-        refetchType: "active",
-      });
-      qc.invalidateQueries({
-        queryKey: ["dental-services"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: DENTAL_SERVICE_QUERY_KEYS.byId(id) });
+      qc.invalidateQueries({ queryKey: ["dental-services"] });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

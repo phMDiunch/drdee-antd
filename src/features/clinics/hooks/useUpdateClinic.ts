@@ -16,14 +16,8 @@ export function useUpdateClinic(id: string) {
       updateClinicAction(id, payload),
     onSuccess: () => {
       notify.success(CLINIC_MESSAGES.UPDATE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: CLINIC_QUERY_KEYS.byId(id),
-        refetchType: "active",
-      });
-      qc.invalidateQueries({
-        queryKey: ["clinics"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: CLINIC_QUERY_KEYS.byId(id) });
+      qc.invalidateQueries({ queryKey: ["clinics"] });
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

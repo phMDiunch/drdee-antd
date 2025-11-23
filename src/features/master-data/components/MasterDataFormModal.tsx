@@ -2,10 +2,10 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { Modal, Form, Input, Row, Col, Switch } from "antd";
+import { Modal, Input, Row, Col, AutoComplete } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMasterData } from "../hooks/useMasterDataList";
+import { useMasterDataCategories } from "../hooks/useMasterDataCategories";
 import type {
   MasterDataResponse,
   CreateMasterDataRequest,
@@ -20,9 +20,8 @@ import slugify from "slugify";
 type Props = {
   open: boolean;
   mode: "create" | "edit";
-  isAdmin?: boolean;
   initial?: MasterDataResponse | null;
-  parentId?: string; // For creating child items
+  categoryPrefill?: string; // Pre-fill category when adding to existing category
   confirmLoading?: boolean;
   onCancel: () => void;
   onSubmit: (
@@ -31,20 +30,16 @@ type Props = {
 };
 
 const defaultFormValues: CreateMasterDataRequest = {
+  category: "",
   key: "",
   value: "",
-  description: undefined,
-  allowHierarchy: false,
-  isActive: true,
-  parentId: undefined,
-  rootId: undefined,
 };
 
 export default function MasterDataFormModal({
   open,
   mode,
   initial,
-  parentId: propParentId, // Rename to avoid confusion with form field
+  categoryPrefill,
   confirmLoading,
   onCancel,
   onSubmit,
@@ -61,17 +56,19 @@ export default function MasterDataFormModal({
     if (mode === "edit" && initial) {
       return {
         id: initial.id,
+        category: initial.category,
         key: initial.key,
         value: initial.value,
-        description: initial.description ?? undefined,
-        allowHierarchy: initial.allowHierarchy,
-        isActive: initial.isActive,
-        parentId: initial.parentId ?? undefined,
-        rootId: initial.rootId ?? undefined,
+      };
+    }
+    if (mode === "create" && categoryPrefill) {
+      return {
+        ...defaultFormValues,
+        category: categoryPrefill,
       };
     }
     return defaultFormValues;
-  }, [mode, initial]);
+  }, [mode, initial, categoryPrefill]);
 
   const {
     control,
@@ -79,7 +76,7 @@ export default function MasterDataFormModal({
     reset,
     watch,
     setValue,
-    formState: { isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(schema) as any,
@@ -90,75 +87,56 @@ export default function MasterDataFormModal({
 
   const valueField = watch("value");
 
-  // Determine if creating root or child item
-  const isCreatingRoot = mode === "create" && !propParentId;
-  const isCreatingChild = mode === "create" && !!propParentId;
+  // Fetch existing categories for autocomplete
+  const { data: categories = [] } = useMasterDataCategories();
+
+  // Generate slug helper
+  const generateSlug = (text: string) => {
+    return slugify(text, {
+      lower: true,
+      locale: "vi",
+      strict: true,
+    });
+  };
+
+  // Handle category blur: convert to slug
+  const handleCategoryBlur = (value: string) => {
+    if (mode === "create" && value && !categoryPrefill) {
+      const slug = generateSlug(value);
+      setValue("category", slug, { shouldValidate: true });
+    }
+  };
 
   // Auto-generate key from value (only in create mode)
   useEffect(() => {
     if (mode === "create" && valueField) {
-      const generatedKey = slugify(valueField, {
-        lower: true,
-        locale: "vi",
-        strict: true,
-      });
+      const generatedKey = generateSlug(valueField);
       setValue("key", generatedKey, { shouldValidate: false });
     }
   }, [mode, valueField, setValue]);
 
-  // Fetch ALL master data items (for finding parent when creating child)
-  const { data: allItems = [] } = useMasterData(undefined, false);
-
-  // Reset form when modal opens or when propParentId changes
+  // Reset form when modal opens
   useEffect(() => {
-    if (!open) return;
-
-    // If creating a child item, set parentId from prop and auto-set rootId
-    if (mode === "create" && propParentId) {
-      // Find parent to get its rootId
-      const parent = allItems.find((item) => item.id === propParentId);
-
-      if (parent) {
-        const childRootId = parent.rootId ?? parent.id; // Parent's rootId or parent itself is root
-
-        reset({
-          key: "",
-          value: "",
-          description: undefined,
-          allowHierarchy: false,
-          isActive: true,
-          parentId: propParentId,
-          rootId: childRootId,
-        });
-      }
-    } else {
+    if (open) {
       reset(defaultValues);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, propParentId, reset]);
+  }, [open]);
 
   const onValid = (values: CreateMasterDataRequest & { id?: string }) => {
     if (mode === "edit") {
       const payload: UpdateMasterDataRequest = {
         id: values.id || (initial?.id as string),
+        category: values.category,
         key: values.key,
         value: values.value,
-        description: values.description,
-        allowHierarchy: values.allowHierarchy,
-        isActive: values.isActive,
-        parentId: values.parentId,
-        rootId: values.rootId,
       };
       onSubmit(payload);
     } else {
       const payload: CreateMasterDataRequest = {
+        category: values.category,
         key: values.key,
         value: values.value,
-        description: values.description,
-        allowHierarchy: values.allowHierarchy,
-        isActive: values.isActive,
-        parentId: values.parentId,
-        rootId: values.rootId,
       };
       onSubmit(payload);
     }
@@ -166,359 +144,153 @@ export default function MasterDataFormModal({
 
   return (
     <Modal
+      title={mode === "create" ? "Thêm Master Data" : "Sửa Master Data"}
       open={open}
-      title={mode === "create" ? "Thêm dữ liệu chủ" : "Cập nhật dữ liệu chủ"}
-      okText={mode === "create" ? "Tạo" : "Lưu"}
+      onOk={handleSubmit(onValid)}
       onCancel={onCancel}
-      onOk={handleSubmit(onValid as never)}
-      confirmLoading={!!confirmLoading || isSubmitting}
-      width={{ xs: "85%", lg: "65%" }}
-      styles={{
-        content: { maxHeight: "85vh" },
-        body: { maxHeight: "60vh", overflowY: "auto", paddingInline: 16 },
-      }}
+      confirmLoading={confirmLoading || isSubmitting}
+      okText={mode === "create" ? "Tạo" : "Cập nhật"}
+      cancelText="Hủy"
+      width="85%"
+      style={{ maxWidth: "800px" }}
       destroyOnHidden
-      maskClosable={false}
     >
-      <Form layout="vertical" requiredMark>
-        {/* Conditional: Root Item or Child Item */}
-        {isCreatingRoot && (
-          // Creating Root Category
-          <>
-            {/* Row 1: Tên danh mục, Mã */}
-            <Row gutter={12}>
-              <Col xs={24} lg={12}>
-                <Controller
-                  name="value"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Tên danh mục"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Input {...field} placeholder="VD: Nhóm Nhà Cung Cấp" />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-
-              <Col xs={24} lg={12}>
-                <Controller
-                  name="key"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Mã"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={
-                        fieldState.error?.message ||
-                        "Tự động tạo từ tên. Có thể sửa."
-                      }
-                    >
-                      <Input {...field} placeholder="VD: nhom-ncc" />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 2: Cho phép phân cấp, Kích hoạt */}
-            <Row gutter={12}>
-              <Col xs={12}>
-                <Controller
-                  name="allowHierarchy"
-                  control={control}
-                  render={({ field }) => (
-                    <Form.Item label="Cho phép phân cấp">
-                      <Switch checked={field.value} onChange={field.onChange} />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-
-              <Col xs={12}>
-                <Controller
-                  name="isActive"
-                  control={control}
-                  render={({ field }) => (
-                    <Form.Item label="Kích hoạt">
-                      <Switch checked={field.value} onChange={field.onChange} />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 3: Mô tả */}
-            <Row gutter={12}>
-              <Col xs={24}>
-                <Controller
-                  name="description"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Mô tả"
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Input.TextArea
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit(onValid)(e);
+        }}
+      >
+        {/* Row 1: Category (full width) */}
+        <Row gutter={16}>
+          <Col span={24}>
+            <div style={{ marginBottom: 16 }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 4,
+                  fontWeight: 500,
+                }}
+              >
+                Category <span style={{ color: "red" }}>*</span>
+              </label>
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <>
+                    {mode === "create" && !categoryPrefill ? (
+                      <AutoComplete
                         {...field}
-                        value={field.value ?? ""}
-                        rows={2}
-                        placeholder="Mô tả chi tiết (tùy chọn)"
-                        maxLength={500}
-                        showCount
+                        options={categories.map((cat) => ({ value: cat }))}
+                        placeholder="Nhập category (VD: Bảo Hành Chính Hãng)"
+                        status={errors.category ? "error" : ""}
+                        disabled={isSubmitting}
+                        style={{ width: "100%" }}
+                        onBlur={() => handleCategoryBlur(field.value)}
                       />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-          </>
-        )}
-
-        {isCreatingChild && (
-          // Creating Child Item
-          <>
-            {/* Row 1: Parent (locked - from "Add Child" button) */}
-            <Row gutter={12}>
-              <Col xs={24}>
-                <Controller
-                  name="parentId"
-                  control={control}
-                  render={({ field, fieldState }) => {
-                    // Find parent item to display label
-                    const parentItem = allItems.find(
-                      (item) => item.id === field.value
-                    );
-                    const parentLabel = parentItem
-                      ? `${parentItem.value} (${parentItem.key})`
-                      : field.value ?? "";
-
-                    return (
-                      <Form.Item
-                        label="Parent"
-                        required
-                        validateStatus={fieldState.error ? "error" : ""}
-                        help={
-                          fieldState.error?.message ||
-                          "Đã chọn từ nút 'Add Child'. Dùng Edit để đổi parent."
-                        }
-                      >
-                        <Input
-                          value={parentLabel}
-                          disabled
-                          placeholder="Loading..."
-                        />
-                      </Form.Item>
-                    );
-                  }}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 2: Value, Key */}
-            <Row gutter={12}>
-              <Col xs={24} lg={12}>
-                <Controller
-                  name="value"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Tên danh mục"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Input {...field} placeholder="VD: Răng Cửa" />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-
-              <Col xs={24} lg={12}>
-                <Controller
-                  name="key"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Mã"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={
-                        fieldState.error?.message ||
-                        "Tự động tạo từ Giá trị. Có thể sửa."
-                      }
-                    >
-                      <Input {...field} placeholder="VD: rang-cua" />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 3: Cho phép phân cấp, Kích hoạt */}
-            <Row gutter={12}>
-              <Col xs={12}>
-                <Controller
-                  name="allowHierarchy"
-                  control={control}
-                  render={({ field }) => (
-                    <Form.Item label="Cho phép phân cấp">
-                      <Switch checked={field.value} onChange={field.onChange} />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-
-              <Col xs={12}>
-                <Controller
-                  name="isActive"
-                  control={control}
-                  render={({ field }) => (
-                    <Form.Item label="Kích hoạt">
-                      <Switch checked={field.value} onChange={field.onChange} />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 4: Mô tả */}
-            <Row gutter={12}>
-              <Col xs={24}>
-                <Controller
-                  name="description"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Mô tả"
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Input.TextArea
+                    ) : (
+                      <Input
                         {...field}
-                        value={field.value ?? ""}
-                        rows={2}
-                        placeholder="Mô tả chi tiết (tùy chọn)"
-                        maxLength={500}
-                        showCount
+                        placeholder="Category"
+                        disabled
+                        style={{
+                          backgroundColor: "#f5f5f5",
+                          cursor: "not-allowed",
+                        }}
                       />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-          </>
-        )}
+                    )}
+                  </>
+                )}
+              />
+              {errors.category && (
+                <span style={{ color: "red", fontSize: 12 }}>
+                  {errors.category.message as string}
+                </span>
+              )}
+              {mode === "create" && !categoryPrefill && (
+                <span style={{ color: "#8c8c8c", fontSize: 12 }}>
+                  Category sẽ tự động chuyển sang dạng slug (chữ thường, không
+                  dấu)
+                </span>
+              )}
+            </div>
+          </Col>
+        </Row>
 
-        {mode === "edit" && (
-          // Editing Existing Item
-          <>
-            {/* Row 1: Tên danh mục, Mã */}
-            <Row gutter={12}>
-              <Col xs={24} lg={12}>
-                <Controller
-                  name="value"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Tên danh mục"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Input {...field} placeholder="VD: Nhà cung cấp A" />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
+        {/* Row 2: Value (50%) + Key (50%) */}
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <div style={{ marginBottom: 16 }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 4,
+                  fontWeight: 500,
+                }}
+              >
+                Tên hiển thị <span style={{ color: "red" }}>*</span>
+              </label>
+              <Controller
+                name="value"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="VD: 1 năm, Cái, Răng"
+                    status={errors.value ? "error" : ""}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+              {errors.value && (
+                <span style={{ color: "red", fontSize: 12 }}>
+                  {errors.value.message as string}
+                </span>
+              )}
+            </div>
+          </Col>
 
-              <Col xs={24} lg={12}>
-                <Controller
-                  name="key"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Mã"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={
-                        fieldState.error?.message || "Không thể sửa sau khi tạo"
-                      }
-                    >
-                      <Input {...field} placeholder="VD: ncc-a" disabled />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 2: Cho phép phân cấp, Kích hoạt */}
-            <Row gutter={12}>
-              <Col xs={12}>
-                <Controller
-                  name="allowHierarchy"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Cho phép phân cấp"
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={
-                        fieldState.error?.message ||
-                        "Không thể tắt nếu đã có mục con"
-                      }
-                    >
-                      <Switch checked={field.value} onChange={field.onChange} />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-
-              <Col xs={12}>
-                <Controller
-                  name="isActive"
-                  control={control}
-                  render={({ field }) => (
-                    <Form.Item label="Kích hoạt">
-                      <Switch checked={field.value} onChange={field.onChange} />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-
-            {/* Row 3: Mô tả */}
-            <Row gutter={12}>
-              <Col xs={24}>
-                <Controller
-                  name="description"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Mô tả"
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Input.TextArea
-                        {...field}
-                        value={field.value ?? ""}
-                        rows={2}
-                        placeholder="Mô tả chi tiết (tùy chọn)"
-                        maxLength={500}
-                        showCount
-                      />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </Row>
-          </>
-        )}
-      </Form>
+          <Col xs={24} md={12}>
+            <div style={{ marginBottom: 16 }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 4,
+                  fontWeight: 500,
+                }}
+              >
+                Key <span style={{ color: "red" }}>*</span>
+              </label>
+              <Controller
+                name="key"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Auto-generated (có thể sửa)"
+                    status={errors.key ? "error" : ""}
+                    disabled={mode === "edit" || isSubmitting}
+                    style={
+                      mode === "edit"
+                        ? {
+                            backgroundColor: "#f5f5f5",
+                            cursor: "not-allowed",
+                          }
+                        : {}
+                    }
+                  />
+                )}
+              />
+              {errors.key && (
+                <span style={{ color: "red", fontSize: 12 }}>
+                  {errors.key.message as string}
+                </span>
+              )}
+            </div>
+          </Col>
+        </Row>
+      </form>
     </Modal>
   );
 }

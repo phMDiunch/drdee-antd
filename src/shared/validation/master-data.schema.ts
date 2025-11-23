@@ -5,6 +5,16 @@ import { z } from "zod";
  * Base Schema - Shared fields
  */
 export const MasterDataBaseSchema = z.object({
+  category: z
+    .string()
+    .trim()
+    .min(2, "Category phải có ít nhất 2 ký tự")
+    .max(50, "Category không được quá 50 ký tự")
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Category chỉ chứa chữ thường, số và dấu gạch ngang"
+    ),
+
   key: z
     .string()
     .trim()
@@ -17,16 +27,6 @@ export const MasterDataBaseSchema = z.object({
     .trim()
     .min(2, "Tên hiển thị phải có ít nhất 2 ký tự")
     .max(100, "Tên không được quá 100 ký tự"),
-
-  description: z.string().trim().max(500).optional().nullable(),
-
-  allowHierarchy: z.boolean().default(false), // Chỉ cho root items
-
-  parentId: z.string().uuid().optional().nullable(),
-
-  rootId: z.string().uuid().optional().nullable(), // Auto-set based on parentId
-
-  isActive: z.boolean().default(true),
 });
 
 /**
@@ -46,13 +46,9 @@ export const UpdateMasterDataRequestSchema = MasterDataBaseSchema.extend({
  */
 export const MasterDataResponseSchema = z.object({
   id: z.string().uuid(),
+  category: z.string(),
   key: z.string(),
   value: z.string(),
-  description: z.string().nullable().optional(),
-  allowHierarchy: z.boolean(),
-  isActive: z.boolean(),
-  parentId: z.string().uuid().nullable().optional(),
-  rootId: z.string().uuid().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -61,14 +57,6 @@ export const MasterDataResponseSchema = z.object({
  * Response Schema (List)
  */
 export const MasterDataListResponseSchema = z.array(MasterDataResponseSchema);
-
-/**
- * Query Schema (for GET /api/v1/master-data)
- */
-export const GetMasterDataQuerySchema = z.object({
-  rootId: z.string().uuid().optional().nullable(), // Filter by root category
-  includeInactive: z.boolean().optional(),
-});
 
 /**
  * Types
@@ -80,4 +68,3 @@ export type UpdateMasterDataRequest = z.infer<
   typeof UpdateMasterDataRequestSchema
 >;
 export type MasterDataResponse = z.infer<typeof MasterDataResponseSchema>;
-export type GetMasterDataQuery = z.infer<typeof GetMasterDataQuerySchema>;

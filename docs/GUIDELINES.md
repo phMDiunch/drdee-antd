@@ -426,9 +426,6 @@ export async function GET(req: Request) {
 // Chỉ fetch lại khi user F5 hoặc vào app lại
 staleTime: Infinity,              // Dữ liệu không bao giờ bị coi là "cũ"
 gcTime: 1000 * 60 * 60 * 24,     // Giữ trong memory 24h
-refetchOnWindowFocus: false,      // Chuyển tab không fetch lại
-refetchOnMount: false,            // Component mount lại không fetch lại
-refetchOnReconnect: false,        // Mất mạng có lại không fetch lại
 
 // ✅ Transactional Data (customers, appointments, payments, etc.)
 // Fetch lại thường xuyên hơn để đảm bảo data fresh
@@ -531,9 +528,6 @@ export function useClinics(includeArchived?: boolean) {
     queryFn: () => getClinicsApi(includeArchived),
     staleTime: Infinity, // Dữ liệu không bao giờ bị coi là "cũ"
     gcTime: 1000 * 60 * 60 * 24, // Giữ trong memory 24h
-    refetchOnWindowFocus: false, // Chuyển tab không fetch lại
-    refetchOnMount: false, // Component mount lại không fetch lại
-    refetchOnReconnect: false, // Mất mạng có lại không fetch lại
   });
 }
 ```
@@ -561,10 +555,7 @@ export function useCreateCustomer() {
     mutationFn: createCustomerAction,
     onSuccess: () => {
       notify.success(CUSTOMER_MESSAGES.CREATE_SUCCESS);
-      qc.invalidateQueries({
-        queryKey: ["customers"],
-        refetchType: "active", // ✅ Force refetch ngay lập tức
-      });
+      qc.invalidateQueries({ queryKey: ["customers"] });
     },
     onError: (e) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
@@ -572,20 +563,11 @@ export function useCreateCustomer() {
 }
 
 // Update: invalidate detail + list
-qc.invalidateQueries({
-  queryKey: CUSTOMER_QUERY_KEYS.byId(id),
-  refetchType: "active",
-});
-qc.invalidateQueries({
-  queryKey: ["customers"],
-  refetchType: "active",
-});
+qc.invalidateQueries({ queryKey: CUSTOMER_QUERY_KEYS.byId(id) });
+qc.invalidateQueries({ queryKey: ["customers"] });
 
 // Delete: invalidate list only
-qc.invalidateQueries({
-  queryKey: ["customers"],
-  refetchType: "active",
-});
+qc.invalidateQueries({ queryKey: ["customers"] });
 ```
 
 **Caching Strategy Summary:**

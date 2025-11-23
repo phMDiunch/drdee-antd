@@ -12,33 +12,22 @@ import type {
  * Server Action: Create Master Data (Admin only)
  */
 export async function createMasterDataAction(body: CreateMasterDataRequest) {
-  const currentUser = await getSessionUser();
-  return masterDataService.create(currentUser, body);
+  const user = await getSessionUser();
+  return masterDataService.create(user, body);
 }
 
 /**
  * Server Action: Update Master Data (Admin only)
  */
 export async function updateMasterDataAction(body: UpdateMasterDataRequest) {
-  const currentUser = await getSessionUser();
-  return masterDataService.update(currentUser, body);
-}
-
-/**
- * Server Action: Toggle Active/Inactive (Soft delete/restore) - Admin only
- */
-export async function toggleMasterDataActiveAction(
-  id: string,
-  isActive: boolean
-) {
-  const currentUser = await getSessionUser();
-  return masterDataService.toggleActive(currentUser, id, isActive);
+  const user = await getSessionUser();
+  return masterDataService.update(user, body);
 }
 
 /**
  * Server Action: Delete Master Data (Hard delete - permanent) - Admin only
  */
 export async function deleteMasterDataAction(id: string) {
-  const currentUser = await getSessionUser();
-  return masterDataService.remove(currentUser, id);
+  const user = await getSessionUser();
+  return masterDataService.remove(user, id);
 }
