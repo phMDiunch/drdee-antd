@@ -218,7 +218,7 @@ export default function CreatePaymentVoucherModal({
       notes: (cleanValues.notes as string) || null,
       details: selectedServices.map((service) => ({
         consultedServiceId: service.consultedServiceId,
-        amount: service.amount,
+        amount: values[`amount_${service.consultedServiceId}`] as number,
         paymentMethod: service.paymentMethod as
           | "Tiền mặt"
           | "Quẹt thẻ thường"

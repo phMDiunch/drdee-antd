@@ -335,11 +335,11 @@ export const consultedServiceService = {
       }
     }
 
-    // 5. Validate tooth positions if unit is "Răng" and toothPositions changed
+    // 5. Validate tooth positions if unit is "Răng" and toothPositions is being changed
     if (data.toothPositions !== undefined) {
       if (
         existing.consultedServiceUnit === "Răng" &&
-        (!data.toothPositions || data.toothPositions.length === 0)
+        data.toothPositions.length === 0
       ) {
         throw new ServiceError(
           "VALIDATION_ERROR",

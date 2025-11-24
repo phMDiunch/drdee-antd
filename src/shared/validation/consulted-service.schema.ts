@@ -33,13 +33,12 @@ const ConsultedServiceCommonFieldsSchema = z.object({
   quantity: z
     .number({ message: "Số lượng phải là số" })
     .int("Số lượng phải là số nguyên")
-    .min(1, "Số lượng tối thiểu là 1")
-    .default(1),
+    .min(1, "Số lượng tối thiểu là 1"),
   preferentialPrice: z
     .number({ message: "Giá ưu đãi phải là số" })
     .int("Giá ưu đãi phải là số nguyên")
     .min(0, "Giá ưu đãi không thể âm"),
-  toothPositions: z.array(z.string()).default([]),
+  toothPositions: z.array(z.string()).optional(),
   consultingDoctorId: z.string().uuid().optional().nullable(),
   consultingSaleId: z.string().uuid().optional().nullable(),
   treatingDoctorId: z.string().uuid().optional().nullable(),
@@ -173,7 +172,10 @@ const ConsultedServiceRequestBaseSchema =
  * Dùng ở: Server Action createConsultedServiceAction
  */
 export const CreateConsultedServiceRequestSchema =
-  ConsultedServiceRequestBaseSchema;
+  ConsultedServiceRequestBaseSchema.extend({
+    quantity: z.number().int().min(1).default(1),
+    toothPositions: z.array(z.string()).default([]),
+  });
 
 export type CreateConsultedServiceRequest = z.infer<
   typeof CreateConsultedServiceRequestSchema
