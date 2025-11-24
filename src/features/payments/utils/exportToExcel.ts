@@ -19,10 +19,10 @@ export async function exportPaymentVouchersToExcel(
   worksheet.columns = [
     { key: "stt", width: 5 },
     { key: "paymentNumber", width: 15 },
-    { key: "customerCode", width: 10 },
+    { key: "customerCode", width: 15 },
     { key: "customerName", width: 25 },
     { key: "paymentDate", width: 18 },
-    { key: "consultedServiceName", width: 30 },
+    { key: "consultedServiceName", width: 50 },
     { key: "consultedServiceFinalPrice", width: 15 },
     { key: "paymentAmount", width: 15 },
     { key: "paymentMethod", width: 18 },

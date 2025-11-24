@@ -159,7 +159,6 @@ export default function PaymentDailyView() {
     }
 
     try {
-      notify.info("Đang xuất Excel...");
       await exportPaymentVouchersToExcel(vouchers, selectedDate);
       notify.success("Xuất Excel thành công");
     } catch (error) {
