@@ -86,8 +86,11 @@ export default function AppLayout({ children, currentUser }: Props) {
   const [openKeys, setOpenKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    setOpenKeys(getOpenKeys(selectedKey, parentOf));
-  }, [selectedKey, parentOf]);
+    // Chỉ update openKeys khi sidebar KHÔNG collapsed
+    if (!collapsed) {
+      setOpenKeys(getOpenKeys(selectedKey, parentOf));
+    }
+  }, [selectedKey, parentOf, collapsed]);
 
   const onMenuClick: MenuProps["onClick"] = (info) => {
     if (info.key.startsWith("/")) router.push(info.key);
