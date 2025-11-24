@@ -7,6 +7,7 @@ import { formatCurrency, formatDateTimeVN } from "../../../shared/utils/date";
 import type { PaymentVoucherResponse } from "@/shared/validation/payment-voucher.schema";
 import { getPaymentMethodConfig } from "../constants";
 import ClinicLogo from "../../../shared/components/ClinicLogo";
+import QRPayment from "@/shared/components/QRPayment";
 
 const { Title, Text } = Typography;
 
@@ -66,16 +67,30 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
               )}
             </div>
           </div>
-          <div style={{ textAlign: "right", minWidth: 160 }}>
-            <Text style={{ color: "#666", fontSize: 14 }}>Số phiếu thu:</Text>
-            <br />
-            <Text strong style={{ color: "#1890ff", fontSize: 14 }}>
-              {voucher.paymentNumber}
-            </Text>
-            <div>
-              <Text type="secondary" style={{ fontSize: 14 }}>
-                {copyLabel}
+
+          <div style={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
+            {/* QR Code - Only on Copy 2 */}
+            {copyLabel === "LIÊN 2" && (
+              <div>
+                <QRPayment
+                  amount={voucher.totalAmount || 0}
+                  voucherCode={voucher.paymentNumber}
+                  size={60}
+                />
+              </div>
+            )}
+
+            <div style={{ textAlign: "right", minWidth: 100 }}>
+              <Text style={{ color: "#666", fontSize: 14 }}>Số phiếu thu:</Text>
+              <br />
+              <Text strong style={{ color: "#1890ff", fontSize: 14 }}>
+                {voucher.paymentNumber}
               </Text>
+              <div>
+                <Text type="secondary" style={{ fontSize: 14 }}>
+                  {copyLabel}
+                </Text>
+              </div>
             </div>
           </div>
         </div>
@@ -231,19 +246,24 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
           .printable-receipt .ant-table-container table { width: 100% !important; table-layout: fixed; border-collapse: collapse; }
           @media print {
             .printable-receipt { position: relative; }
-            /* Each copy height equals half of A4 height minus top/bottom margins (10mm each) => 138.5mm */
-            .printable-receipt .receipt-copy { 
-              height: 138.5mm; 
+            /* Custom heights: Copy 1 = 148.5mm, Copy 2 = 128.5mm (total = 277mm) */
+            .printable-receipt .receipt-copy-1 { 
+              height: 148.5mm; 
+              overflow: hidden; 
+              page-break-inside: avoid; 
+            }
+            .printable-receipt .receipt-copy-2 { 
+              height: 128.5mm; 
               overflow: hidden; 
               page-break-inside: avoid; 
             }
           }
         `}</style>
         {/* Two copies per A4 page */}
-        <div className="receipt-copy">
+        <div className="receipt-copy receipt-copy-1">
           <ReceiptBody copyLabel="LIÊN 1" />
         </div>
-        <div className="receipt-copy">
+        <div className="receipt-copy receipt-copy-2">
           <ReceiptBody copyLabel="LIÊN 2" />
         </div>
 
