@@ -33,6 +33,7 @@ const defaultFormValues: CreateMasterDataRequest = {
   category: "",
   key: "",
   value: "",
+  description: "",
 };
 
 export default function MasterDataFormModal({
@@ -59,6 +60,7 @@ export default function MasterDataFormModal({
         category: initial.category,
         key: initial.key,
         value: initial.value,
+        description: initial.description ?? "",
       };
     }
     if (mode === "create" && categoryPrefill) {
@@ -130,6 +132,7 @@ export default function MasterDataFormModal({
         category: values.category,
         key: values.key,
         value: values.value,
+        description: values.description || null,
       };
       onSubmit(payload);
     } else {
@@ -137,6 +140,7 @@ export default function MasterDataFormModal({
         category: values.category,
         key: values.key,
         value: values.value,
+        description: values.description || null,
       };
       onSubmit(payload);
     }
@@ -285,6 +289,44 @@ export default function MasterDataFormModal({
               {errors.key && (
                 <span style={{ color: "red", fontSize: 12 }}>
                   {errors.key.message as string}
+                </span>
+              )}
+            </div>
+          </Col>
+        </Row>
+
+        {/* Row 3: Description (full width) */}
+        <Row gutter={16}>
+          <Col span={24}>
+            <div style={{ marginBottom: 16 }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 4,
+                  fontWeight: 500,
+                }}
+              >
+                Mô tả
+              </label>
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <Input.TextArea
+                    {...field}
+                    value={field.value || ""}
+                    placeholder="Mô tả chi tiết (không bắt buộc)"
+                    status={errors.description ? "error" : ""}
+                    disabled={isSubmitting}
+                    rows={3}
+                    maxLength={500}
+                    showCount
+                  />
+                )}
+              />
+              {errors.description && (
+                <span style={{ color: "red", fontSize: 12 }}>
+                  {errors.description.message as string}
                 </span>
               )}
             </div>

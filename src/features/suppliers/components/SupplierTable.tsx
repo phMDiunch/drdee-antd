@@ -39,12 +39,13 @@ export default function SupplierTable({
 
   const columns: ColumnsType<SupplierResponse> = [
     {
-      title: "Tên NCC",
+      title: "Tên nhà cung cấp",
       dataIndex: "name",
+      width: 200,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: "Tên viết tắt",
+      title: "Tên ngắn gọn",
       dataIndex: "shortName",
       width: 140,
       render: (v: string | null) => v || "-",
@@ -66,12 +67,6 @@ export default function SupplierTable({
       title: "SĐT",
       dataIndex: "phone",
       width: 140,
-      render: (v: string | null) => v || "-",
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      width: 200,
       render: (v: string | null) => v || "-",
     },
     {

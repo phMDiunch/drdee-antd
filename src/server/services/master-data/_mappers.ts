@@ -8,6 +8,7 @@ export function mapMasterDataToResponse(row: MasterData): MasterDataResponse {
     category: row.category,
     key: row.key,
     value: row.value,
+    description: row.description ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

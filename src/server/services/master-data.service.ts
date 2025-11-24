@@ -82,6 +82,7 @@ export const masterDataService = {
     // Don't allow changing category or key
     const data = {
       value: parsed.data.value,
+      description: parsed.data.description ?? null,
     };
 
     const updated = await masterDataRepo.update(id, data);

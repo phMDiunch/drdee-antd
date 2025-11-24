@@ -562,18 +562,14 @@ model MasterData {
   id String @id @default(uuid())
 
   // Phân loại & Định danh
-  category String // Nhóm phân loại (slug: 'bao-hanh-chinh-hang')
-  key      String // Mã định danh (slug: '1-nam') - IMMUTABLE
-  value    String // Tên hiển thị ('1 năm') - MUTABLE
+  category    String // Nhóm phân loại (slug: 'bao-hanh-chinh-hang')
+  key         String // Mã định danh (slug: '1-nam') - IMMUTABLE
+  value       String // Tên hiển thị ('1 năm') - MUTABLE
+  description String? // Mô tả chi tiết (optional)
 
   // Audit
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
-
-  // Relations (placeholder - sẽ được thêm khi implement Supplier/Material)
-  // suppliers              Supplier[]   @relation("SupplierGroup")
-  // materialsAsDepartment  Material[]   @relation("MaterialDepartment")
-  // materialsAsCategory    Material[]   @relation("MaterialCategory")
 
   // Indexes
   @@unique([category, key]) // Unique constraint: key chỉ unique trong category

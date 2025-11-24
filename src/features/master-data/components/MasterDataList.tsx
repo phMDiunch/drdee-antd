@@ -48,6 +48,22 @@ export default function MasterDataList({ isAdmin, onAdd, onEdit }: Props) {
       width: "20%",
       render: (key: string) => <code style={{ color: "#666" }}>{key}</code>,
     },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      key: "description",
+      width: "30%",
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (description: string | null) => (
+        <Tooltip placement="topLeft" title={description || ""}>
+          <span style={{ color: description ? "inherit" : "#ccc" }}>
+            {description || "—"}
+          </span>
+        </Tooltip>
+      ),
+    },
     ...(isAdmin
       ? [
           {

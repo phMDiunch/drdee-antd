@@ -27,6 +27,13 @@ export const MasterDataBaseSchema = z.object({
     .trim()
     .min(2, "Tên hiển thị phải có ít nhất 2 ký tự")
     .max(100, "Tên không được quá 100 ký tự"),
+
+  description: z
+    .string()
+    .trim()
+    .max(500, "Mô tả không được quá 500 ký tự")
+    .optional()
+    .nullable(),
 });
 
 /**
@@ -49,6 +56,7 @@ export const MasterDataResponseSchema = z.object({
   category: z.string(),
   key: z.string(),
   value: z.string(),
+  description: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
