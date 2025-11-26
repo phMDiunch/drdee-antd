@@ -574,7 +574,6 @@ model MasterData {
   // Indexes
   @@unique([category, key]) // Unique constraint: key chỉ unique trong category
   @@index([category]) // Fast filter by category
-  @@map("master_data")
 }
 
 //---------------------------
@@ -613,7 +612,6 @@ model Supplier {
   // Indexes
   @@index([name])
   @@index([supplierGroup, archivedAt])
-  @@map("suppliers")
 }
 
 //---------------------------
@@ -659,5 +657,4 @@ model Material {
   @@index([name])
   @@index([materialType, department, category, archivedAt])
   @@index([tags]) // GIN index for array search in PostgreSQL
-  @@map("materials")
 }

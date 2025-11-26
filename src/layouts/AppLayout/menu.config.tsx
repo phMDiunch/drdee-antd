@@ -29,10 +29,7 @@ export const menuItems: MenuItem[] = [
     key: "customers",
     icon: <UserOutlined />,
     label: "Khách hàng",
-    children: [
-      { key: "/customers/daily", label: "Theo ngày" },
-      { key: "/customers", label: "Danh sách" },
-    ],
+    children: [{ key: "/customers/daily", label: "Theo ngày" }],
   },
   {
     key: "appointments",

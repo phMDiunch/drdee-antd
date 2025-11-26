@@ -60,6 +60,11 @@ export const CUSTOMER_SOURCES: CustomerSource[] = [
     label: "Khách cũ giới thiệu",
     noteType: "customer_search",
   },
+  {
+    value: "acquaintance_referral",
+    label: "Người quen giới thiệu",
+    noteType: "text_input_optional",
+  },
 
   // Nhóm Online
   { value: "facebook", label: "Facebook", noteType: "text_input_optional" },

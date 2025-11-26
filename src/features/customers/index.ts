@@ -3,7 +3,6 @@
 
 // ===== VIEWS (for app router) =====
 export { default as CustomerDailyView } from "./views/CustomerDailyView";
-export { default as CustomerListView } from "./views/CustomerListView";
 export { default as CustomerDetailView } from "./views/CustomerDetailView";
 
 // ===== COMPONENTS (for external use) =====
@@ -24,7 +23,6 @@ export { default as TreatmentCareTab } from "./components/detail-tabs/TreatmentC
 export { default as PaymentsTab } from "./components/detail-tabs/PaymentsTab";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useCustomers";
 export * from "./hooks/useCustomersDaily";
 export * from "./hooks/useCreateCustomer";
 export * from "./hooks/useCustomerSearch";
