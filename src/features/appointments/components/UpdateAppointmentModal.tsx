@@ -239,11 +239,25 @@ export default function UpdateAppointmentModal({
       secondaryDentistId: data.secondaryDentistId,
       appointmentDateTime: new Date(data.appointmentDateTime),
       duration: data.duration,
-      status: data.status,
       notes: data.notes,
-      checkInTime: data.checkInTime ? new Date(data.checkInTime) : null,
-      checkOutTime: data.checkOutTime ? new Date(data.checkOutTime) : null,
     };
+
+    // Only include status if user has permission to edit it
+    if (canEditStatus) {
+      payload.status = data.status;
+    }
+
+    // Only include checkIn/checkOut times if user has permission (Admin only)
+    if (canEditCheckInTime) {
+      payload.checkInTime = data.checkInTime
+        ? new Date(data.checkInTime)
+        : null;
+    }
+    if (canEditCheckOutTime) {
+      payload.checkOutTime = data.checkOutTime
+        ? new Date(data.checkOutTime)
+        : null;
+    }
 
     onSubmit(payload, appointment.id);
   };
