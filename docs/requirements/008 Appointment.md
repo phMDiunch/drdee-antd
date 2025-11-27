@@ -255,12 +255,12 @@ Hàng 3: [status                  ] [notes                                 ]
 
 #### Dentist Selection
 
-- **Hook**: `useWorkingEmployees({ clinicId })`
-- **Cache**: 30 phút
-- **Filter**: Client-side (AntD Select filterOption)
-- **Scope**: Lọc theo clinicId (employee: clinic của mình; admin: clinic đang chọn)
+- **Hook**: `useWorkingEmployees()`
+- **Cache**: 8 giờ
+- **Filter**: Không filter (hiển thị tất cả working employees)
+- **Scope**: Global - Tất cả bác sĩ đang làm việc (cross-clinic)
 - **Display**: `"{fullName}"` (có thể thêm employeeCode)
-- **Frontend Filter** (optional): Filter thêm theo role/jobTitle nếu cần strict hơn
+- **Rationale**: Cross-clinic collaboration, không giới hạn theo clinic
 
 ### ⚠️ Dentist Availability Warning (Soft)
 

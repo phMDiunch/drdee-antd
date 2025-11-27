@@ -162,17 +162,15 @@ export default function UpdateAppointmentModal({
       : [currentCustomerOption, ...searchResults];
   }, [customerOptions, debouncedCustomerQuery, appointment.customer]);
 
-  // Working employees for selected clinic
+  // Working employees - Show all (no clinic filter)
   const { data: employeesData } = useWorkingEmployees();
   const dentistOptions = useMemo(() => {
-    if (!employeesData || !clinicId) return [];
-    return employeesData
-      .filter((emp) => emp.clinicId === clinicId)
-      .map((emp) => ({
-        label: emp.fullName,
-        value: emp.id,
-      }));
-  }, [employeesData, clinicId]);
+    if (!employeesData) return [];
+    return employeesData.map((emp) => ({
+      label: emp.fullName,
+      value: emp.id,
+    }));
+  }, [employeesData]);
 
   // Clinics
   const { data: clinicsData } = useClinics();
