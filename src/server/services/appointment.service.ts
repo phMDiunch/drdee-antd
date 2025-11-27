@@ -297,19 +297,68 @@ export const appointmentService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy lịch hẹn", 404);
     }
 
-    // ✅ Use shared permission logic
-    try {
-      appointmentPermissions.validateUpdateFields(
-        currentUser,
-        existing,
-        fields
-      );
-    } catch (error) {
-      throw new ServiceError(
-        "PERMISSION_DENIED",
-        error instanceof Error ? error.message : "Không có quyền chỉnh sửa",
-        403
-      );
+    // Detect quick actions (these bypass normal field validation)
+    const isCheckIn = parsed.checkInTime && !existing.checkInTime;
+    const isCheckOut = parsed.checkOutTime && !existing.checkOutTime;
+    const isConfirm =
+      parsed.status === "Đã xác nhận" && existing.status === "Chờ xác nhận";
+    const isNoShow =
+      parsed.status === "Không đến" && existing.status !== "Không đến";
+
+    const isQuickAction = isCheckIn || isCheckOut || isConfirm || isNoShow;
+
+    // Validate quick actions separately (includes clinic ownership check)
+    if (isQuickAction) {
+      try {
+        if (isCheckIn) {
+          appointmentPermissions.validateQuickAction(
+            currentUser,
+            existing,
+            "checkIn"
+          );
+        } else if (isCheckOut) {
+          appointmentPermissions.validateQuickAction(
+            currentUser,
+            existing,
+            "checkOut"
+          );
+        } else if (isConfirm) {
+          appointmentPermissions.validateQuickAction(
+            currentUser,
+            existing,
+            "confirm"
+          );
+        } else if (isNoShow) {
+          appointmentPermissions.validateQuickAction(
+            currentUser,
+            existing,
+            "noShow"
+          );
+        }
+      } catch (error) {
+        throw new ServiceError(
+          "PERMISSION_DENIED",
+          error instanceof Error
+            ? error.message
+            : "Không có quyền thực hiện hành động này",
+          403
+        );
+      }
+    } else {
+      // For normal updates, validate field-level permissions
+      try {
+        appointmentPermissions.validateUpdateFields(
+          currentUser,
+          existing,
+          fields
+        );
+      } catch (error) {
+        throw new ServiceError(
+          "PERMISSION_DENIED",
+          error instanceof Error ? error.message : "Không có quyền chỉnh sửa",
+          403
+        );
+      }
     }
 
     // Check customer conflict if changing date/customer

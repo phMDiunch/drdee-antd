@@ -547,4 +547,38 @@ export const appointmentPermissions = {
       throw new Error(check.reason || "Không có quyền xóa");
     }
   },
+
+  /**
+   * Validate quick action (for backend service layer)
+   * Validates clinic ownership and action-specific permissions
+   *
+   * @param action - Type of quick action being performed
+   * @throws Error with user-friendly message
+   */
+  validateQuickAction(
+    user: PermissionUser | null | undefined,
+    appointment: AppointmentForPermission,
+    action: "checkIn" | "checkOut" | "confirm" | "noShow"
+  ): void {
+    let check: PermissionResult;
+
+    switch (action) {
+      case "checkIn":
+        check = this.canCheckIn(user, appointment);
+        break;
+      case "checkOut":
+        check = this.canCheckOut(user, appointment);
+        break;
+      case "confirm":
+        check = this.canConfirm(user, appointment);
+        break;
+      case "noShow":
+        check = this.canMarkNoShow(user, appointment);
+        break;
+    }
+
+    if (!check.allowed) {
+      throw new Error(check.reason || `Không có quyền ${action}`);
+    }
+  },
 };
