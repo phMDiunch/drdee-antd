@@ -12,7 +12,6 @@ import {
   MedicineBoxOutlined,
   ExperimentOutlined,
   InboxOutlined,
-  BoxPlotOutlined,
 } from "@ant-design/icons";
 
 type MenuItem = Required<MenuProps>["items"][number];

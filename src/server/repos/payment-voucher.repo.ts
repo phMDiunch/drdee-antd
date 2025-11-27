@@ -5,7 +5,6 @@ import type {
   CreatePaymentVoucherRequest,
   UpdatePaymentVoucherRequest,
 } from "@/shared/validation/payment-voucher.schema";
-import { clinicRepo } from "@/server/repos/clinic.repo";
 import dayjs from "dayjs";
 
 /**

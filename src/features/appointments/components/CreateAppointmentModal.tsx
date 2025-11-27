@@ -99,7 +99,6 @@ export default function CreateAppointmentModal({
   const appointmentDateTime = watch("appointmentDateTime");
   const duration = watch("duration") as number;
   const primaryDentistId = watch("primaryDentistId") as string;
-  const clinicId = watch("clinicId") as string;
 
   // Customer search with debounce
   const [customerQuery, setCustomerQuery] = React.useState("");

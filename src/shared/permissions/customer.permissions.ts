@@ -191,6 +191,7 @@ export const customerPermissions = {
    */
   canView(
     user: PermissionUser | null | undefined,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     customer: CustomerForPermission
   ): PermissionResult {
     if (!user) {

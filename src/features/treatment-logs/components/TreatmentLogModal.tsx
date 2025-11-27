@@ -280,7 +280,9 @@ export default function TreatmentLogModal({
                 render={({ field }) => (
                   <Select
                     {...field}
+                    showSearch
                     placeholder="Chọn bác sĩ điều trị"
+                    optionFilterProp="label"
                     disabled={!canEdit}
                     options={employees.map((emp) => ({
                       label: emp.fullName,
@@ -303,7 +305,9 @@ export default function TreatmentLogModal({
                 render={({ field }) => (
                   <Select
                     {...field}
+                    showSearch
                     placeholder="Chọn điều dưỡng 1"
+                    optionFilterProp="label"
                     disabled={!canEdit}
                     allowClear
                     options={employees.map((emp) => ({
@@ -327,7 +331,9 @@ export default function TreatmentLogModal({
                 render={({ field }) => (
                   <Select
                     {...field}
+                    showSearch
                     placeholder="Chọn điều dưỡng 2"
+                    optionFilterProp="label"
                     disabled={!canEdit}
                     allowClear
                     options={employees.map((emp) => ({
