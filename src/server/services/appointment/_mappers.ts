@@ -7,14 +7,8 @@ type AppointmentWithRelations = Appointment & {
     Customer,
     "id" | "customerCode" | "fullName" | "phone" | "dob"
   >;
-  primaryDentist: Pick<
-    Employee,
-    "id" | "fullName" | "employeeCode" | "favoriteColor"
-  >;
-  secondaryDentist: Pick<
-    Employee,
-    "id" | "fullName" | "employeeCode" | "favoriteColor"
-  > | null;
+  primaryDentist: Pick<Employee, "id" | "fullName" | "employeeCode" | "favoriteColor">;
+  secondaryDentist: Pick<Employee, "id" | "fullName" | "employeeCode" | "favoriteColor"> | null;
   clinic: Pick<Clinic, "id" | "clinicCode" | "name" | "colorCode">;
   createdBy: Pick<Employee, "id" | "fullName">;
   updatedBy: Pick<Employee, "id" | "fullName">;

@@ -119,20 +119,10 @@ export const appointmentRepo = {
             },
           },
           primaryDentist: {
-            select: {
-              id: true,
-              fullName: true,
-              employeeCode: true,
-              favoriteColor: true,
-            },
+            select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
           },
           secondaryDentist: {
-            select: {
-              id: true,
-              fullName: true,
-              employeeCode: true,
-              favoriteColor: true,
-            },
+            select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
           },
           clinic: {
             select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -178,20 +168,10 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: {
-            id: true,
-            fullName: true,
-            employeeCode: true,
-            favoriteColor: true,
-          },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         secondaryDentist: {
-          select: {
-            id: true,
-            fullName: true,
-            employeeCode: true,
-            favoriteColor: true,
-          },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -221,10 +201,10 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -253,10 +233,10 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -284,10 +264,10 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true },
+          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
