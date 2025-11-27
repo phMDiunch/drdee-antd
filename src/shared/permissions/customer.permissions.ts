@@ -185,7 +185,7 @@ export const customerPermissions = {
    *
    * Rules:
    * - Admin: Can view all customers
-   * - Employee: Can only view customers from their clinic
+   * - Employee: Can view all customers (cross-clinic)
    *
    * @returns { allowed, reason }
    */
@@ -204,19 +204,7 @@ export const customerPermissions = {
       };
     }
 
-    // Admin can view all customers
-    if (isAdmin(user)) {
-      return { allowed: true };
-    }
-
-    // Employee can only view customers from their clinic
-    if (user.clinicId !== customer.clinicId) {
-      return {
-        allowed: false,
-        reason: "Bạn chỉ có thể xem khách hàng thuộc chi nhánh của mình",
-      };
-    }
-
+    // Both admin and employee can view all customers (cross-clinic)
     return { allowed: true };
   },
 

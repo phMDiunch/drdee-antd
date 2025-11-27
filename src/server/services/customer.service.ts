@@ -454,17 +454,6 @@ export const customerService = {
       );
     }
 
-    // Enforce clinic-based access control (non-admin)
-    if (currentUser?.role !== "admin") {
-      if (existing.clinicId !== currentUser?.clinicId) {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "Không có quyền cập nhật khách hàng này",
-          403
-        );
-      }
-    }
-
     // Validate unique phone if changed
     if (data.phone && data.phone !== existing.phone) {
       const existingPhone = await customerRepo.findByPhone(data.phone);
