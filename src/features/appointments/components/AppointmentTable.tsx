@@ -150,17 +150,20 @@ export default function AppointmentTable({
       },
       {
         title: "Bác sĩ chính",
-        dataIndex: ["primaryDentist", "fullName"],
+        dataIndex: "primaryDentist",
         key: "primaryDentist",
         width: 120,
         sorter: (a, b) =>
           a.primaryDentist.fullName.localeCompare(b.primaryDentist.fullName),
         filters: uniqueDentists.map((name) => ({ text: name, value: name })),
         onFilter: (value, record) => record.primaryDentist.fullName === value,
+        render: (dentist) => (
+          <Tag color={dentist.favoriteColor}>{dentist.fullName}</Tag>
+        ),
       },
       {
         title: "Bác sĩ phụ",
-        dataIndex: ["secondaryDentist", "fullName"],
+        dataIndex: "secondaryDentist",
         key: "secondaryDentist",
         width: 120,
         sorter: (a, b) => {
@@ -176,7 +179,14 @@ export default function AppointmentTable({
           if (value === "NONE") return !record.secondaryDentist;
           return record.secondaryDentist?.fullName === value;
         },
-        render: (name) => name || "—",
+        render: (dentist) => {
+          if (!dentist) return "—";
+          return (
+            <Tag color={dentist.favoriteColor || "default"}>
+              {dentist.fullName}
+            </Tag>
+          );
+        },
       },
       {
         title: "Ghi chú",

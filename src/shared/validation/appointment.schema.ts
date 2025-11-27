@@ -280,6 +280,7 @@ export const AppointmentResponseSchema = z.object({
     id: z.string().uuid(),
     fullName: z.string(),
     employeeCode: z.string().nullable(),
+    favoriteColor: z.string().nullable(),
   }),
 
   secondaryDentist: z
@@ -287,6 +288,7 @@ export const AppointmentResponseSchema = z.object({
       id: z.string().uuid(),
       fullName: z.string(),
       employeeCode: z.string().nullable(),
+      favoriteColor: z.string().nullable(),
     })
     .nullable(),
 

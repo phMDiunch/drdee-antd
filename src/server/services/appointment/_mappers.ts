@@ -7,8 +7,14 @@ type AppointmentWithRelations = Appointment & {
     Customer,
     "id" | "customerCode" | "fullName" | "phone" | "dob"
   >;
-  primaryDentist: Pick<Employee, "id" | "fullName" | "employeeCode">;
-  secondaryDentist: Pick<Employee, "id" | "fullName" | "employeeCode"> | null;
+  primaryDentist: Pick<
+    Employee,
+    "id" | "fullName" | "employeeCode" | "favoriteColor"
+  >;
+  secondaryDentist: Pick<
+    Employee,
+    "id" | "fullName" | "employeeCode" | "favoriteColor"
+  > | null;
   clinic: Pick<Clinic, "id" | "clinicCode" | "name" | "colorCode">;
   createdBy: Pick<Employee, "id" | "fullName">;
   updatedBy: Pick<Employee, "id" | "fullName">;
@@ -47,6 +53,7 @@ export function mapAppointmentToResponse(row: AppointmentWithRelations) {
       id: row.primaryDentist.id,
       fullName: row.primaryDentist.fullName,
       employeeCode: row.primaryDentist.employeeCode,
+      favoriteColor: row.primaryDentist.favoriteColor,
     },
 
     secondaryDentist: row.secondaryDentist
@@ -54,6 +61,7 @@ export function mapAppointmentToResponse(row: AppointmentWithRelations) {
           id: row.secondaryDentist.id,
           fullName: row.secondaryDentist.fullName,
           employeeCode: row.secondaryDentist.employeeCode,
+          favoriteColor: row.secondaryDentist.favoriteColor,
         }
       : null,
 

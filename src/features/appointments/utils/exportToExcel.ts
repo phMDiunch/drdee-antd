@@ -18,18 +18,15 @@ export async function exportAppointmentsToExcel(
   // Set column widths
   worksheet.columns = [
     { key: "stt", width: 8 },
-    { key: "customerCode", width: 12 },
+    { key: "customerCode", width: 15 },
     { key: "customerName", width: 25 },
-    { key: "phone", width: 15 },
     { key: "appointmentDateTime", width: 18 },
-    { key: "duration", width: 12 },
     { key: "primaryDentist", width: 20 },
     { key: "secondaryDentist", width: 20 },
-    { key: "clinic", width: 20 },
-    { key: "status", width: 15 },
-    { key: "checkInTime", width: 18 },
-    { key: "checkOutTime", width: 18 },
     { key: "notes", width: 30 },
+    { key: "status", width: 15 },
+    { key: "duration", width: 20 },
+    { key: "clinic", width: 50 },
   ];
 
   // Add header row
@@ -37,16 +34,13 @@ export async function exportAppointmentsToExcel(
     "STT",
     "Mã KH",
     "Tên khách hàng",
-    "SĐT",
     "Thời gian hẹn",
-    "Thời lượng (phút)",
     "Bác sĩ chính",
     "Bác sĩ phụ",
-    "Chi nhánh",
-    "Trạng thái",
-    "Check-in",
-    "Check-out",
     "Ghi chú",
+    "Trạng thái",
+    "Thời lượng (phút)",
+    "Chi nhánh",
   ]);
 
   // Style header row
@@ -64,22 +58,15 @@ export async function exportAppointmentsToExcel(
       stt: index + 1,
       customerCode: appointment.customer.customerCode || "",
       customerName: appointment.customer.fullName,
-      phone: appointment.customer.phone || "",
       appointmentDateTime: dayjs(appointment.appointmentDateTime).format(
-        "DD/MM/YYYY HH:mm"
+        "HH:mm"
       ),
-      duration: appointment.duration,
       primaryDentist: appointment.primaryDentist.fullName,
       secondaryDentist: appointment.secondaryDentist?.fullName || "",
-      clinic: appointment.clinic.name,
-      status: appointment.status,
-      checkInTime: appointment.checkInTime
-        ? dayjs(appointment.checkInTime).format("DD/MM/YYYY HH:mm")
-        : "",
-      checkOutTime: appointment.checkOutTime
-        ? dayjs(appointment.checkOutTime).format("DD/MM/YYYY HH:mm")
-        : "",
       notes: appointment.notes || "",
+      status: appointment.status,
+      duration: appointment.duration,
+      clinic: appointment.clinic.name,
     });
   });
 
