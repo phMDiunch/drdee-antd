@@ -112,10 +112,6 @@ export default function CreateConsultedServiceModal({
     return dentalServices;
   }, [dentalServices]);
 
-  const clinicEmployees = useMemo(() => {
-    return employees.filter((e) => e.clinicId === clinicId);
-  }, [employees, clinicId]);
-
   // Service options for Select
   const serviceOptions = useMemo(() => {
     return clinicDentalServices.map((s) => ({
@@ -124,13 +120,13 @@ export default function CreateConsultedServiceModal({
     }));
   }, [clinicDentalServices]);
 
-  // Employee options for Select
+  // Employee options for Select - Tất cả nhân viên, không filter theo cơ sở
   const employeeOptions = useMemo(() => {
-    return clinicEmployees.map((e) => ({
+    return employees.map((e) => ({
       label: e.fullName,
       value: e.id,
     }));
-  }, [clinicEmployees]);
+  }, [employees]);
 
   // Selected service data
   const selectedService = useMemo(() => {

@@ -129,8 +129,12 @@ export const paymentVoucherRepo = {
   ): Promise<string> {
     const db = tx || prisma;
 
-    // Fetch clinic to get clinicCode
-    const clinic = await clinicRepo.getById(clinicId);
+    // Fetch clinic to get clinicCode - Use tx if provided
+    const clinic = await db.clinic.findUnique({
+      where: { id: clinicId },
+      select: { clinicCode: true },
+    });
+
     if (!clinic?.clinicCode) {
       throw new Error("Chi nhánh không hợp lệ");
     }
@@ -138,44 +142,33 @@ export const paymentVoucherRepo = {
     const prefix = deriveClinicPrefix(clinic.clinicCode);
     const yymm = dayjs().format("YYMM");
 
-    let retryCount = 0;
-    while (retryCount < 10) {
-      try {
-        // Count existing vouchers with same prefix-month
-        const count = await db.paymentVoucher.count({
-          where: {
-            paymentNumber: {
-              startsWith: `${prefix}-${yymm}-`,
-            },
-          },
-        });
+    // Find the latest payment number with same prefix-month to get next sequence
+    const latest = await db.paymentVoucher.findFirst({
+      where: {
+        paymentNumber: {
+          startsWith: `${prefix}-${yymm}-`,
+        },
+      },
+      select: { paymentNumber: true },
+      orderBy: { paymentNumber: "desc" },
+    });
 
-        const sequence = (count + 1).toString().padStart(4, "0");
-        const paymentNumber = `${prefix}-${yymm}-${sequence}`;
-
-        // Test uniqueness
-        const existing = await db.paymentVoucher.findUnique({
-          where: { paymentNumber },
-        });
-
-        if (!existing) {
-          return paymentNumber;
-        }
-
-        retryCount++;
-      } catch {
-        retryCount++;
-        if (retryCount >= 10) {
-          throw new Error(
-            "Không thể tạo số phiếu thu sau 10 lần thử. Vui lòng thử lại."
-          );
+    let nextSequence = 1;
+    if (latest) {
+      // Extract sequence from payment number: PREFIX-YYMM-XXXX
+      const parts = latest.paymentNumber.split("-");
+      if (parts.length === 3) {
+        const lastSequence = parseInt(parts[2], 10);
+        if (!isNaN(lastSequence)) {
+          nextSequence = lastSequence + 1;
         }
       }
     }
 
-    throw new Error(
-      "Không thể tạo số phiếu thu sau 10 lần thử. Vui lòng thử lại."
-    );
+    const sequence = nextSequence.toString().padStart(4, "0");
+    const paymentNumber = `${prefix}-${yymm}-${sequence}`;
+
+    return paymentNumber;
   },
 
   /**
@@ -214,14 +207,27 @@ export const paymentVoucherRepo = {
           },
         });
 
-        // Update consulted service debt
-        await tx.consultedService.update({
+        // Update consulted service - Fetch current state to recalculate debt correctly
+        const currentService = await tx.consultedService.findUnique({
           where: { id: detail.consultedServiceId },
-          data: {
-            amountPaid: { increment: detail.amount },
-            debt: { decrement: detail.amount },
-          },
+          select: { finalPrice: true, amountPaid: true },
         });
+
+        if (currentService) {
+          const newAmountPaid = currentService.amountPaid + detail.amount;
+          const newDebt = Math.max(
+            0,
+            currentService.finalPrice - newAmountPaid
+          );
+
+          await tx.consultedService.update({
+            where: { id: detail.consultedServiceId },
+            data: {
+              amountPaid: newAmountPaid,
+              debt: newDebt,
+            },
+          });
+        }
       }
 
       // Fetch full voucher with relations
@@ -253,13 +259,27 @@ export const paymentVoucherRepo = {
       // Rollback old amounts if details are being updated
       if (data.details) {
         for (const detail of existing.details) {
-          await tx.consultedService.update({
+          // Fetch current state to recalculate debt correctly
+          const currentService = await tx.consultedService.findUnique({
             where: { id: detail.consultedServiceId },
-            data: {
-              amountPaid: { decrement: detail.amount },
-              debt: { increment: detail.amount },
-            },
+            select: { finalPrice: true, amountPaid: true },
           });
+
+          if (currentService) {
+            const newAmountPaid = currentService.amountPaid - detail.amount;
+            const newDebt = Math.max(
+              0,
+              currentService.finalPrice - newAmountPaid
+            );
+
+            await tx.consultedService.update({
+              where: { id: detail.consultedServiceId },
+              data: {
+                amountPaid: newAmountPaid,
+                debt: newDebt,
+              },
+            });
+          }
         }
 
         // Delete old details
@@ -293,14 +313,27 @@ export const paymentVoucherRepo = {
             },
           });
 
-          // Update consulted service debt
-          await tx.consultedService.update({
+          // Fetch current state to recalculate debt correctly
+          const currentService = await tx.consultedService.findUnique({
             where: { id: detail.consultedServiceId },
-            data: {
-              amountPaid: { increment: detail.amount },
-              debt: { decrement: detail.amount },
-            },
+            select: { finalPrice: true, amountPaid: true },
           });
+
+          if (currentService) {
+            const newAmountPaid = currentService.amountPaid + detail.amount;
+            const newDebt = Math.max(
+              0,
+              currentService.finalPrice - newAmountPaid
+            );
+
+            await tx.consultedService.update({
+              where: { id: detail.consultedServiceId },
+              data: {
+                amountPaid: newAmountPaid,
+                debt: newDebt,
+              },
+            });
+          }
         }
       }
 
@@ -332,13 +365,27 @@ export const paymentVoucherRepo = {
 
       // Rollback all amounts
       for (const detail of existing.details) {
-        await tx.consultedService.update({
+        // Fetch current state to recalculate debt correctly
+        const currentService = await tx.consultedService.findUnique({
           where: { id: detail.consultedServiceId },
-          data: {
-            amountPaid: { decrement: detail.amount },
-            debt: { increment: detail.amount },
-          },
+          select: { finalPrice: true, amountPaid: true },
         });
+
+        if (currentService) {
+          const newAmountPaid = currentService.amountPaid - detail.amount;
+          const newDebt = Math.max(
+            0,
+            currentService.finalPrice - newAmountPaid
+          );
+
+          await tx.consultedService.update({
+            where: { id: detail.consultedServiceId },
+            data: {
+              amountPaid: newAmountPaid,
+              debt: newDebt,
+            },
+          });
+        }
       }
 
       // Delete details

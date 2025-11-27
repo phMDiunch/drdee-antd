@@ -118,16 +118,13 @@ export default function UpdateConsultedServiceModal({
   // Fetch data
   const { data: employees = [] } = useWorkingEmployees();
 
-  const clinicEmployees = useMemo(() => {
-    return employees.filter((e) => e.clinicId === service.clinicId);
-  }, [employees, service.clinicId]);
-
+  // Employee options for Select - Tất cả nhân viên, không filter theo cơ sở
   const employeeOptions = useMemo(() => {
-    return clinicEmployees.map((e) => ({
+    return employees.map((e) => ({
       label: e.fullName,
       value: e.id,
     }));
-  }, [clinicEmployees]);
+  }, [employees]);
 
   // Auto-calculate quantity when tooth positions change (if unit is Răng)
   useEffect(() => {
