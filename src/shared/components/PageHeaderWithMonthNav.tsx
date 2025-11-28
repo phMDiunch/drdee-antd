@@ -40,7 +40,7 @@ export default function PageHeaderWithMonthNav({
 
     if (isCurrentMonth) return "Tháng này";
     if (isPreviousMonth) return "Tháng trước";
-    return selectedMonth.format("Tháng MM/YYYY");
+    return `Tháng ${selectedMonth.format("MM/YYYY")}`;
   };
 
   return (

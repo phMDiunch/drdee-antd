@@ -46,6 +46,19 @@ export default function DailyRevenueTable({
         render: (value) => <span style={{ fontWeight: "bold" }}>{value}</span>,
       },
       {
+        title: "Doanh thu",
+        dataIndex: "totalRevenue",
+        key: "totalRevenue",
+        width: 160,
+        align: "right",
+        sorter: (a, b) => a.totalRevenue - b.totalRevenue,
+        render: (value) => (
+          <span style={{ color: "#1890ff", fontWeight: "bold" }}>
+            {value.toLocaleString()} ₫
+          </span>
+        ),
+      },
+      {
         title: "Tiền mặt",
         dataIndex: "cash",
         key: "cash",
@@ -86,19 +99,6 @@ export default function DailyRevenueTable({
         ),
       },
       {
-        title: "Doanh thu",
-        dataIndex: "totalRevenue",
-        key: "totalRevenue",
-        width: 160,
-        align: "right",
-        sorter: (a, b) => a.totalRevenue - b.totalRevenue,
-        render: (value) => (
-          <span style={{ color: "#1890ff", fontWeight: "bold" }}>
-            {value.toLocaleString()} ₫
-          </span>
-        ),
-      },
-      {
         title: "%",
         dataIndex: "percentage",
         key: "percentage",
@@ -135,28 +135,28 @@ export default function DailyRevenueTable({
               <strong>TỔNG</strong>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={1} align="right">
+              <strong style={{ color: "#1890ff", fontSize: 16 }}>
+                {totals.totalRevenue.toLocaleString()} ₫
+              </strong>
+            </Table.Summary.Cell>
+            <Table.Summary.Cell index={2} align="right">
               <strong style={{ color: "#52c41a" }}>
                 {totals.cash.toLocaleString()} ₫
               </strong>
             </Table.Summary.Cell>
-            <Table.Summary.Cell index={2} align="right">
+            <Table.Summary.Cell index={3} align="right">
               <strong style={{ color: "#fa8c16" }}>
                 {totals.cardRegular.toLocaleString()} ₫
               </strong>
             </Table.Summary.Cell>
-            <Table.Summary.Cell index={3} align="right">
+            <Table.Summary.Cell index={4} align="right">
               <strong style={{ color: "#722ed1" }}>
                 {totals.cardVisa.toLocaleString()} ₫
               </strong>
             </Table.Summary.Cell>
-            <Table.Summary.Cell index={4} align="right">
+            <Table.Summary.Cell index={5} align="right">
               <strong style={{ color: "#13c2c2" }}>
                 {totals.transfer.toLocaleString()} ₫
-              </strong>
-            </Table.Summary.Cell>
-            <Table.Summary.Cell index={5} align="right">
-              <strong style={{ color: "#1890ff", fontSize: 16 }}>
-                {totals.totalRevenue.toLocaleString()} ₫
               </strong>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={6} align="center">

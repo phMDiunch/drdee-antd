@@ -25,7 +25,7 @@ export default function SummaryTabs({
           <SummaryTable
             data={data.byDate}
             loading={loading}
-            nameColumn={{ title: "Ngày chốt", dataIndex: "date", width: 120 }}
+            nameColumn={{ title: "Ngày tư vấn", dataIndex: "date", width: 120 }}
             onRowClick={(record) => onRowSelect("daily", record.id)}
           />
         ),

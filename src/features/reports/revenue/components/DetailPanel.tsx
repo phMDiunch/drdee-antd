@@ -74,16 +74,13 @@ export default function DetailPanel({
       {
         title: "% thanh toán",
         key: "paymentPercentage",
-        width: 180,
+        width: 120,
+        align: "center",
         render: (_, record) => {
           const isComplete = record.paymentPercentage >= 100;
           const color = isComplete ? "green" : "blue";
           return (
-            <Tag color={color}>
-              {record.paymentPercentage.toFixed(1)}% (
-              {record.totalPaid.toLocaleString()}/
-              {record.finalPrice.toLocaleString()})
-            </Tag>
+            <Tag color={color}>{record.paymentPercentage.toFixed(1)}%</Tag>
           );
         },
       },
