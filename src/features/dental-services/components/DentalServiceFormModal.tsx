@@ -263,7 +263,7 @@ export default function DentalServiceFormModal({
               control={control}
               render={({ field, fieldState }) => (
                 <Form.Item
-                  label="Bộ phận"
+                  label="Bộ môn"
                   validateStatus={fieldState.error ? "error" : ""}
                   help={fieldState.error?.message}
                 >
@@ -271,7 +271,7 @@ export default function DentalServiceFormModal({
                     {...field}
                     allowClear
                     showSearch
-                    placeholder="Chọn bộ phận"
+                    placeholder="Chọn bộ môn"
                     options={(DENTAL_DEPARTMENTS as string[]).map((d) => ({
                       label: d,
                       value: d,

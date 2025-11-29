@@ -68,7 +68,7 @@ export default function DentalServiceTable({
       onFilter: (value, record) => (record.serviceGroup || "") === value,
     },
     {
-      title: "Bộ phận",
+      title: "Bộ môn",
       dataIndex: "department",
       sorter: (a, b) => (a.department || "").localeCompare(b.department || ""),
       filters: departmentFilters,

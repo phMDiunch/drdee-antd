@@ -62,7 +62,7 @@ Ghi chú:
 
 - Không phân trang (dataset nhỏ, tương tự Clinics).
 - Không search backend. Sử dụng filter/sorter sẵn có của AntD Table ở frontend.
-- Filter theo cột: Bộ phận (`department`), Nhóm dịch vụ (`serviceGroup`).
+- Filter theo cột: Bộ môn (`department`), Nhóm dịch vụ (`serviceGroup`).
 - Sorter theo cột: Tên dịch vụ (`name`), Đơn giá (`price`).
 - Toggle “Hiển thị archived” — param `includeArchived=0|1` khi gọi API.
 - Action buttons: Edit, Archive/Unarchive, Delete (kèm tooltips + Popconfirm).
@@ -73,7 +73,7 @@ Ghi chú:
 | ------------ | ----- | ------- | --------------------------------- |
 | Tên dịch vụ  | Auto  | Text    | `name` (Sorter)                   |
 | Nhóm dịch vụ | 200px | Text    | `serviceGroup` (constant, Filter) |
-| Bộ phận      | 200px | Text    | `department` (constant, Filter)   |
+| Bộ môn       | 200px | Text    | `department` (constant, Filter)   |
 | Đơn vị       | 120px | Text    | `unit` (constant)                 |
 | Giá niêm yết | 160px | Tag     | `price` format VND (Sorter)       |
 | Trạng thái   | 140px | Tag     | Active/Archived (từ `archivedAt`) |
