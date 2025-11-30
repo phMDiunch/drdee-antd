@@ -66,12 +66,14 @@ export default function CustomerDetailView({
     return dayjs().diff(dayjs(dob), "year");
   };
 
-  // Check if customer has birthday in current month
-  const isBirthdayMonth = (dob: string | null) => {
+  // Check if customer has birthday today
+  const isBirthdayToday = (dob: string | null) => {
     if (!dob) return false;
-    const currentMonth = dayjs().month(); // 0-11
-    const birthMonth = dayjs(dob).month();
-    return currentMonth === birthMonth;
+    const today = dayjs();
+    const birthDate = dayjs(dob);
+    return (
+      today.month() === birthDate.month() && today.date() === birthDate.date()
+    );
   };
 
   // Calculate today's check-in info (memoized)
@@ -180,7 +182,7 @@ export default function CustomerDetailView({
                 <Text strong style={{ fontSize: "18px" }}>
                   {customer.fullName}
                   {age !== null && <Text type="secondary"> ({age} tuổi)</Text>}
-                  {isBirthdayMonth(customer.dob) && (
+                  {isBirthdayToday(customer.dob) && (
                     <span style={{ marginLeft: 8, fontSize: "20px" }}>🎂</span>
                   )}
                 </Text>
