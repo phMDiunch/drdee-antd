@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
+import { Collapse } from "antd";
 import PageHeaderWithDateNav from "@/shared/components/PageHeaderWithDateNav";
 import ClinicTabs from "@/shared/components/ClinicTabs";
 import {
@@ -18,6 +19,7 @@ import {
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
 import { useNotify } from "@/shared/hooks/useNotify";
+import dayjs from "dayjs";
 import type {
   AppointmentResponse,
   CreateAppointmentRequest,
@@ -69,6 +71,33 @@ export default function AppointmentDailyView() {
       );
     });
   }, [data?.items, searchValue]);
+
+  // Group appointments by check-in status
+  const { checkedInAppointments, notCheckedInAppointments } = useMemo(() => {
+    const checkedIn = filteredAppointments
+      .filter((apt) => apt.checkInTime !== null)
+      .sort((a, b) => {
+        // Sort checked-in appointments by checkInTime (earliest first)
+        const timeA = a.checkInTime ? dayjs(a.checkInTime).valueOf() : Infinity;
+        const timeB = b.checkInTime ? dayjs(b.checkInTime).valueOf() : Infinity;
+        return timeA - timeB;
+      });
+
+    const notCheckedIn = filteredAppointments
+      .filter((apt) => apt.checkInTime === null)
+      .sort((a, b) => {
+        // Sort not-checked-in appointments by appointmentDateTime (earliest first)
+        return (
+          dayjs(a.appointmentDateTime).valueOf() -
+          dayjs(b.appointmentDateTime).valueOf()
+        );
+      });
+
+    return {
+      checkedInAppointments: checkedIn,
+      notCheckedInAppointments: notCheckedIn,
+    };
+  }, [filteredAppointments]);
 
   const [openCreate, setOpenCreate] = useState(false);
   const [editingAppointment, setEditingAppointment] =
@@ -173,6 +202,66 @@ export default function AppointmentDailyView() {
 
   const totalCount = appointments.length;
 
+  // Memoize collapse items to prevent unnecessary re-renders
+  const collapseItems = useMemo(
+    () => [
+      {
+        key: "checked-in",
+        label: (
+          <span style={{ fontSize: "15px", fontWeight: 500 }}>
+            ✅ Đã đến ({checkedInAppointments.length})
+          </span>
+        ),
+        children: (
+          <AppointmentTable
+            data={checkedInAppointments}
+            loading={isLoading}
+            onCheckIn={handleCheckIn}
+            onCheckOut={handleCheckOut}
+            onConfirm={handleConfirm}
+            onMarkNoShow={handleMarkNoShow}
+            onEdit={setEditingAppointment}
+            onDelete={handleDelete}
+            actionLoading={updateMutation.isPending || deleteMutation.isPending}
+          />
+        ),
+      },
+      {
+        key: "not-checked-in",
+        label: (
+          <span style={{ fontSize: "15px", fontWeight: 500 }}>
+            ⏰ Chưa đến ({notCheckedInAppointments.length})
+          </span>
+        ),
+        children: (
+          <AppointmentTable
+            data={notCheckedInAppointments}
+            loading={isLoading}
+            onCheckIn={handleCheckIn}
+            onCheckOut={handleCheckOut}
+            onConfirm={handleConfirm}
+            onMarkNoShow={handleMarkNoShow}
+            onEdit={setEditingAppointment}
+            onDelete={handleDelete}
+            actionLoading={updateMutation.isPending || deleteMutation.isPending}
+          />
+        ),
+      },
+    ],
+    [
+      notCheckedInAppointments,
+      checkedInAppointments,
+      isLoading,
+      handleCheckIn,
+      handleCheckOut,
+      handleConfirm,
+      handleMarkNoShow,
+      handleDelete,
+      updateMutation.isPending,
+      deleteMutation.isPending,
+    ]
+  );
+
   return (
     <div>
       <PageHeaderWithDateNav
@@ -201,16 +290,11 @@ export default function AppointmentDailyView() {
         onSearchChange={handleSearchChange}
       />
 
-      <AppointmentTable
-        data={filteredAppointments}
-        loading={isLoading}
-        onCheckIn={handleCheckIn}
-        onCheckOut={handleCheckOut}
-        onConfirm={handleConfirm}
-        onMarkNoShow={handleMarkNoShow}
-        onEdit={setEditingAppointment}
-        onDelete={handleDelete}
-        actionLoading={updateMutation.isPending || deleteMutation.isPending}
+      {/* Grouped Appointments by Check-in Status */}
+      <Collapse
+        defaultActiveKey={["checked-in", "not-checked-in"]}
+        items={collapseItems}
+        style={{ marginBottom: 16 }}
       />
 
       <CreateAppointmentModal
