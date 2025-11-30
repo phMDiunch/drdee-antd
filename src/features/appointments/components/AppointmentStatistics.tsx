@@ -20,9 +20,9 @@ export default function AppointmentStatistics({ data, loading }: Props) {
     const inProgress = data.filter(
       (a) => a.checkInTime && !a.checkOutTime
     ).length;
-    const noShow = data.filter((a) => a.status === "Không đến").length;
+    const notCheckedIn = total - checkedIn;
 
-    return { total, checkedIn, inProgress, noShow };
+    return { total, checkedIn, inProgress, notCheckedIn };
   }, [data]);
 
   return (
@@ -53,9 +53,9 @@ export default function AppointmentStatistics({ data, loading }: Props) {
       <Col span={6}>
         <Card loading={loading}>
           <Statistic
-            title="Không đến"
-            value={stats.noShow}
-            valueStyle={{ color: "#cf1322" }}
+            title="Chưa đến"
+            value={stats.notCheckedIn}
+            valueStyle={{ color: "#faad14" }}
           />
         </Card>
       </Col>

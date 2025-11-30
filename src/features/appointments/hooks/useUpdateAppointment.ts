@@ -30,8 +30,6 @@ export function useUpdateAppointment() {
         notify.success(APPOINTMENT_MESSAGES.CHECKOUT_SUCCESS);
       } else if (body.status === "Đã xác nhận") {
         notify.success(APPOINTMENT_MESSAGES.CONFIRM_SUCCESS);
-      } else if (body.status === "Không đến") {
-        notify.success(APPOINTMENT_MESSAGES.MARK_NO_SHOW_SUCCESS);
       } else {
         notify.success(APPOINTMENT_MESSAGES.UPDATE_SUCCESS);
       }

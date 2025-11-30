@@ -168,16 +168,6 @@ export default function AppointmentDailyView() {
     [updateMutation]
   );
 
-  const handleMarkNoShow = useCallback(
-    (id: string) => {
-      updateMutation.mutate({
-        id,
-        body: { status: "Không đến" },
-      });
-    },
-    [updateMutation]
-  );
-
   const handleDelete = useCallback(
     (id: string) => {
       deleteMutation.mutate(id);
@@ -219,7 +209,6 @@ export default function AppointmentDailyView() {
             onCheckIn={handleCheckIn}
             onCheckOut={handleCheckOut}
             onConfirm={handleConfirm}
-            onMarkNoShow={handleMarkNoShow}
             onEdit={setEditingAppointment}
             onDelete={handleDelete}
             actionLoading={updateMutation.isPending || deleteMutation.isPending}
@@ -240,7 +229,6 @@ export default function AppointmentDailyView() {
             onCheckIn={handleCheckIn}
             onCheckOut={handleCheckOut}
             onConfirm={handleConfirm}
-            onMarkNoShow={handleMarkNoShow}
             onEdit={setEditingAppointment}
             onDelete={handleDelete}
             actionLoading={updateMutation.isPending || deleteMutation.isPending}
@@ -255,7 +243,6 @@ export default function AppointmentDailyView() {
       handleCheckIn,
       handleCheckOut,
       handleConfirm,
-      handleMarkNoShow,
       handleDelete,
       updateMutation.isPending,
       deleteMutation.isPending,

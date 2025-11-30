@@ -2,7 +2,8 @@
 
 > **📋 STATUS: ✅ IMPLEMENTED** - Backend + Frontend complete  
 > **📄 Feature Documentation**: `docs/features/008_Appointment.md` (placeholder)  
-> **🔗 Implementation**: `src/features/appointments/`, `src/app/(private)/appointments/`, `src/app/api/v1/appointments/` > **🔧 Last Updated**: 2025-11-03 - Added walk-in logic clarification
+> **🔗 Implementation**: `src/features/appointments/`, `src/app/(private)/appointments/`, `src/app/api/v1/appointments/`  
+> **🔧 Last Updated**: 2025-11-30 - **COMPLETE REMOVAL** of "Không đến" status (schema, permissions, constants) + Migration script created
 
 ## 📊 Tham khảo
 
@@ -62,6 +63,7 @@
 
 - Check-out **không** thay đổi status, chỉ set `checkOutTime`
 - Status "Đã đến" là trạng thái cuối của appointment thành công (có thể có hoặc không có checkOutTime)
+- **Status "Không đến" đã bị xoá khỏi schema** (2025-11-30) - All existing data migrated to "Chờ xác nhận"
 
 #### **CREATE (Tạo lịch):**
 
@@ -102,7 +104,7 @@
 - `Check-in`: Đánh dấu khách đã đến
 - `Check-out`: Đánh dấu khách đã xong
 - `Confirm`: Xác nhận lịch hẹn
-- `Mark No-show`: Đánh dấu không đến
+- ~~`Mark No-show`: Đánh dấu không đến~~ **[❌ REMOVED 2025-11-30]** - Hoàn toàn xoá khỏi schema/permissions/constants
 
 ### Multi-Clinic Collaboration
 
@@ -125,10 +127,14 @@
 ### Quick Actions Implementation
 
 - ✅ **Gộp chung vào PUT endpoint**:
-  - Check-in/checkout/confirm/mark-no-show đều dùng PUT /appointments/:id
+  - Check-in/checkout/confirm ~~mark-no-show~~ đều dùng PUT /appointments/:id
   - Frontend: Các button gọi `useUpdateAppointment()` với payload nhỏ
   - Backend: Service layer tự detect action và apply business logic
   - Không tạo endpoints riêng (giảm complexity)
+- ⚠️ **Mark No-show Removed**: Action "Không đến" đã bị xóa khỏi UI (2025-11-30)
+  - UI không còn button "Không đến"
+  - Backend vẫn support status "Không đến" (legacy data)
+  - Admin có thể set status thủ công qua Edit form
 
 ### Status Field Control
 
@@ -138,10 +144,10 @@
   - Check-in → chuyển sang "Đã đến" (set checkInTime + status)
   - Check-out → vẫn giữ "Đã đến" (chỉ set checkOutTime, không đổi status)
   - Confirm → chuyển sang "Đã xác nhận"
-  - Mark No-show → chuyển sang "Không đến"
+  - ~~Mark No-show → chuyển sang "Không đến"~~ **[REMOVED]**
   - Cancel → chuyển sang "Đã hủy"
 - ✅ **Admin**: Status field **enabled** trong tất cả forms
-  - Có thể thay đổi status thủ công để sửa lỗi
+  - Có thể thay đổi status thủ công để sửa lỗi (bao gồm "Không đến")
   - Có quyền override bất kỳ status nào
 
 ### Status "Đến đột xuất" (Walk-in)
@@ -485,7 +491,9 @@ Component: `AppointmentStatistics` - 4 cards hiển thị:
 | Tổng lịch hẹn | Count tất cả items                                    | Number  |
 | Đã check-in   | Count `checkInTime !== null`                          | Number  |
 | Đang khám     | Count `checkInTime !== null && checkOutTime === null` | Number  |
-| Không đến     | Count `status === "Không đến"`                        | Number  |
+| Chưa đến      | Count `total - checkedIn` (không phải status count)   | Number  |
+
+**Note**: Statistic "Chưa đến" thay thế "Không đến" (2025-11-30) - tính toán tự động từ tổng trừ đi số đã check-in, không dựa vào status "Không đến".
 
 #### Filters & Actions
 
@@ -547,7 +555,7 @@ Component: `AppointmentStatistics` - 4 cards hiển thị:
 #### Status Actions
 
 - **Button "Xác nhận"**: Hiển thị khi `date > TODAY && status = "Chờ xác nhận"`
-- **Button "Không đến"**: Hiển thị khi `datetime <= NOW && checkInTime = null && status ≠ "Không đến"`
+- ~~**Button "Không đến"**~~: **[REMOVED 2025-11-30]** - UI không còn action này
 - Tất cả actions dùng chung `useUpdateAppointment()` hook
 
 ### 🔄 Status Transitions
@@ -576,16 +584,22 @@ stateDiagram-v2
 
 **Allowed Transitions:**
 
-| From         | To          | Trigger            | Who            |
-| ------------ | ----------- | ------------------ | -------------- |
-| Chờ xác nhận | Đã xác nhận | Button "Xác nhận"  | Employee/Admin |
-| Chờ xác nhận | Đã hủy      | Update status      | Employee/Admin |
-| Đã xác nhận  | Đã đến      | Button "Check-in"  | Employee/Admin |
-| Đã xác nhận  | Không đến   | Button "Không đến" | Employee/Admin |
-| Đã xác nhận  | Đã hủy      | Update status      | Employee/Admin |
-| Không đến    | Đã đến      | Admin Edit         | Admin only     |
-| Không đến    | Đã xác nhận | Admin Edit         | Admin only     |
-| Không đến    | Đã hủy      | Update status      | Employee/Admin |
+| From         | To            | Trigger                          | Who                |
+| ------------ | ------------- | -------------------------------- | ------------------ |
+| Chờ xác nhận | Đã xác nhận   | Button "Xác nhận"                | Employee/Admin     |
+| Chờ xác nhận | Đã hủy        | Update status                    | Employee/Admin     |
+| Đã xác nhận  | Đã đến        | Button "Check-in"                | Employee/Admin     |
+| Đã xác nhận  | ~~Không đến~~ | ~~Button "Không đến"~~ [REMOVED] | ~~Employee/Admin~~ |
+| Đã xác nhận  | Đã hủy        | Update status                    | Employee/Admin     |
+| Không đến    | Đã đến        | Admin Edit                       | Admin only         |
+| Không đến    | Đã xác nhận   | Admin Edit                       | Admin only         |
+| Không đến    | Đã hủy        | Update status                    | Employee/Admin     |
+
+**Note**:
+
+- Status "Không đến" đã bị **hoàn toàn xoá** khỏi hệ thống (2025-11-30)
+- Tất cả data cũ đã được migrate sang "Chờ xác nhận" qua script `scripts/migrate-no-show-status.ts`
+- Schema validation, permissions, và constants không còn references đến status này
 
 ### 🎯 Acceptance Criteria (Daily View)
 
@@ -595,7 +609,8 @@ stateDiagram-v2
 ✅ Click "Check-in" → Set checkInTime, status = "Đã đến", show time  
 ✅ Đã check-in chưa check-out → Show "Check-out" button  
 ✅ Future appointment với status "Chờ xác nhận" → Show "Xác nhận" button  
-✅ Past appointment chưa check-in → Show "Không đến" button
+~~✅ Past appointment chưa check-in → Show "Không đến" button~~ **[REMOVED 2025-11-30]**
+✅ KPI "Chưa đến" = total - checkedIn (không dựa vào status "Không đến")
 
 ---
 
@@ -611,15 +626,36 @@ PUT    /api/v1/appointments/:id            # Update (full edit + quick actions)
 DELETE /api/v1/appointments/:id            # Delete
 ```
 
-**Note:** Quick actions (check-in, checkout, confirm, mark-no-show) đều dùng PUT endpoint. Frontend gửi payload tương ứng:
+**Note:** Quick actions (check-in, checkout, confirm) đều dùng PUT endpoint. Frontend gửi payload tương ứng:
 
 - Check-in: `{ checkInTime: new Date() }` → Server auto set `status = "Đã đến"`
 - Check-out: `{ checkOutTime: new Date() }`
 - Confirm: `{ status: "Đã xác nhận" }`
-- Mark no-show: `{ status: "Không đến" }` → Server auto clear checkIn/checkOut
+- ~~Mark no-show: `{ status: "Không đến" }`~~ **[REMOVED]** - UI không còn action này
 
-### 🏗️ Architecture
+**Legacy Support**: Backend vẫn hỗ trợ status "Không đến" cho data cũ, nhưng UI không tạo mới.
+
+### 🔧 Architecture
 
 ```
 UI Components → Custom Hooks → API Client → Routes → Services → Repository → Database
 ```
+
+### 📦 Migration Scripts
+
+**Remove "Không đến" Status (2025-11-30)**
+
+- **Script**: `scripts/migrate-no-show-status.ts`
+- **Purpose**: Convert all "Không đến" → "Chờ xác nhận"
+- **Usage**: `npx tsx scripts/migrate-no-show-status.ts`
+- **Safety**:
+  - Runs in transaction (auto rollback on error)
+  - Shows preview before execution
+  - Requires user confirmation
+  - Verifies results after migration
+- **Impact**:
+  - Schema: Removed from `APPOINTMENT_STATUSES` enum
+  - Permissions: Removed `canMarkNoShow()` function
+  - Constants: Removed from status options and colors
+  - UI: All action buttons already removed
+  - Data: All existing records migrated

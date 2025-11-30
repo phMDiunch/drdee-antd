@@ -93,7 +93,7 @@ function isAdmin(user: PermissionUser | null | undefined): boolean {
 /**
  * Locked statuses that cannot be edited/deleted
  */
-const LOCKED_STATUSES = ["Đã đến", "Đến đột xuất", "Không đến", "Đã hủy"];
+const LOCKED_STATUSES = ["Đã đến", "Đến đột xuất", "Đã hủy"];
 
 /**
  * ============================================================================
@@ -143,7 +143,7 @@ export const appointmentPermissions = {
       if (LOCKED_STATUSES.includes(status)) {
         return {
           allowed: false,
-          reason: "Không thể sửa lịch hẹn đã check-in, đã hủy hoặc không đến",
+          reason: "Không thể sửa lịch hẹn đã check-in hoặc đã hủy",
         };
       }
 
@@ -210,8 +210,7 @@ export const appointmentPermissions = {
       if (LOCKED_STATUSES.includes(status)) {
         return {
           allowed: false,
-          reason:
-            "Không thể xóa lịch hẹn đã có khách đến, đã hủy hoặc không đến",
+          reason: "Không thể xoá lịch hẹn đã có khách đến hoặc đã hủy",
         };
       }
     }
@@ -380,65 +379,6 @@ export const appointmentPermissions = {
   },
 
   /**
-   * Check if user can mark an appointment as no-show
-   *
-   * Rules:
-   * - Must be authenticated
-   * - Admin: Can mark no-show at any clinic
-   * - Employee: Only at their own clinic (on-site requirement)
-   * - Must be today or past appointment
-   * - Must not have check-in time
-   * - Must not already be marked as "Không đến"
-   *
-   * @returns { allowed, reason }
-   */
-  canMarkNoShow(
-    user: PermissionUser | null | undefined,
-    appointment: AppointmentForPermission
-  ): PermissionResult {
-    if (!user) {
-      return { allowed: false, reason: "Bạn chưa đăng nhập" };
-    }
-
-    // Check clinic ownership (Employee only)
-    if (!isAdmin(user)) {
-      if (appointment.clinicId !== user.clinicId) {
-        return {
-          allowed: false,
-          reason: "Chỉ thực hiện được tại clinic của bạn",
-        };
-      }
-    }
-
-    // Must be today or past
-    const timeline = getTimeline(appointment.appointmentDateTime);
-    if (timeline === "future") {
-      return {
-        allowed: false,
-        reason: "Không thể đánh dấu không đến cho lịch hẹn trong tương lai",
-      };
-    }
-
-    // Must not have check-in time
-    if (appointment.checkInTime) {
-      return {
-        allowed: false,
-        reason: "Không thể đánh dấu không đến khi đã check-in",
-      };
-    }
-
-    // Must not already be marked as "Không đến"
-    if (appointment.status === "Không đến") {
-      return {
-        allowed: false,
-        reason: "Lịch hẹn đã được đánh dấu không đến",
-      };
-    }
-
-    return { allowed: true };
-  },
-
-  /**
    * Get field-level permissions for forms
    * Returns which fields can be edited based on user role and appointment state
    *
@@ -558,7 +498,7 @@ export const appointmentPermissions = {
   validateQuickAction(
     user: PermissionUser | null | undefined,
     appointment: AppointmentForPermission,
-    action: "checkIn" | "checkOut" | "confirm" | "noShow"
+    action: "checkIn" | "checkOut" | "confirm"
   ): void {
     let check: PermissionResult;
 
@@ -571,9 +511,6 @@ export const appointmentPermissions = {
         break;
       case "confirm":
         check = this.canConfirm(user, appointment);
-        break;
-      case "noShow":
-        check = this.canMarkNoShow(user, appointment);
         break;
     }
 

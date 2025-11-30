@@ -24,7 +24,6 @@ export const APPOINTMENT_MESSAGES = {
   CHECKIN_SUCCESS: "Check-in thành công",
   CHECKOUT_SUCCESS: "Check-out thành công",
   CONFIRM_SUCCESS: "Xác nhận lịch hẹn thành công",
-  MARK_NO_SHOW_SUCCESS: "Đánh dấu không đến thành công",
   CUSTOMER_CONFLICT: "Khách hàng đã có lịch hẹn vào ngày này",
   PAST_APPOINTMENT_NOT_ALLOWED: "Không thể tạo lịch hẹn trong quá khứ",
 } as const;
@@ -32,13 +31,13 @@ export const APPOINTMENT_MESSAGES = {
 /**
  * Appointment Status Options
  * For Select/Radio components
+ * Note: "Không đến" removed 2025-11-30 - no longer created
  */
 export const APPOINTMENT_STATUS_OPTIONS = [
   { label: "Chờ xác nhận", value: "Chờ xác nhận" },
   { label: "Đã xác nhận", value: "Đã xác nhận" },
   { label: "Đã đến", value: "Đã đến" },
   { label: "Đến đột xuất", value: "Đến đột xuất" },
-  { label: "Không đến", value: "Không đến" },
   { label: "Đã hủy", value: "Đã hủy" },
 ] as const;
 
@@ -51,6 +50,5 @@ export const APPOINTMENT_STATUS_COLORS: Record<string, string> = {
   "Đã xác nhận": "blue",
   "Đã đến": "green",
   "Đến đột xuất": "cyan",
-  "Không đến": "red",
   "Đã hủy": "grey",
 } as const;

@@ -302,10 +302,8 @@ export const appointmentService = {
     const isCheckOut = parsed.checkOutTime && !existing.checkOutTime;
     const isConfirm =
       parsed.status === "Đã xác nhận" && existing.status === "Chờ xác nhận";
-    const isNoShow =
-      parsed.status === "Không đến" && existing.status !== "Không đến";
 
-    const isQuickAction = isCheckIn || isCheckOut || isConfirm || isNoShow;
+    const isQuickAction = isCheckIn || isCheckOut || isConfirm;
 
     // Validate quick actions separately (includes clinic ownership check)
     if (isQuickAction) {
@@ -327,12 +325,6 @@ export const appointmentService = {
             currentUser,
             existing,
             "confirm"
-          );
-        } else if (isNoShow) {
-          appointmentPermissions.validateQuickAction(
-            currentUser,
-            existing,
-            "noShow"
           );
         }
       } catch (error) {
@@ -389,12 +381,6 @@ export const appointmentService = {
     let statusUpdate: { status?: typeof parsed.status } = {};
     if (parsed.checkInTime && !parsed.status) {
       statusUpdate = { status: "Đã đến" as const };
-    }
-
-    // Clear check-in/out if status is "Không đến"
-    if (parsed.status === "Không đến") {
-      parsed.checkInTime = null;
-      parsed.checkOutTime = null;
     }
 
     // Validate check-in/out time relationship with existing data

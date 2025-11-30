@@ -9,13 +9,13 @@ import { z } from "zod";
 
 /**
  * Appointment Statuses
+ * Note: "Không đến" removed 2025-11-30 - migrated to "Chờ xác nhận"
  */
 export const APPOINTMENT_STATUSES = [
   "Chờ xác nhận",
   "Đã xác nhận",
   "Đã đến",
   "Đến đột xuất",
-  "Không đến",
   "Đã hủy",
 ] as const;
 

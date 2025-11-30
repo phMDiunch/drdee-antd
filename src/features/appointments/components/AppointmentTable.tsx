@@ -37,7 +37,6 @@ type Props = {
   onCheckIn: (id: string) => void;
   onCheckOut: (id: string) => void;
   onConfirm: (id: string) => void;
-  onMarkNoShow: (id: string) => void;
   onEdit: (appointment: AppointmentResponse) => void;
   onDelete: (id: string) => void;
   actionLoading?: boolean;
@@ -50,7 +49,6 @@ export default function AppointmentTable({
   onCheckIn,
   onCheckOut,
   onConfirm,
-  onMarkNoShow,
   onEdit,
   onDelete,
   actionLoading,
@@ -316,13 +314,6 @@ export default function AppointmentTable({
               ? appointmentPermissions.canConfirm(currentUser, record)
               : null;
 
-          const noShowPermission =
-            !record.checkInTime &&
-            record.status !== "Không đến" &&
-            dayjs(record.appointmentDateTime) <= dayjs()
-              ? appointmentPermissions.canMarkNoShow(currentUser, record)
-              : null;
-
           const editPermission = appointmentPermissions.canEdit(
             currentUser,
             record
@@ -355,28 +346,6 @@ export default function AppointmentTable({
                       disabled={!confirmPermission.allowed}
                     >
                       Xác nhận
-                    </Button>
-                  </Tooltip>
-                )}
-
-                {/* Mark no-show button - conditional */}
-                {noShowPermission && (
-                  <Tooltip
-                    title={
-                      !noShowPermission.allowed
-                        ? noShowPermission.reason
-                        : undefined
-                    }
-                  >
-                    <Button
-                      type="default"
-                      size="small"
-                      icon={<UserDeleteOutlined />}
-                      onClick={() => onMarkNoShow(record.id)}
-                      loading={actionLoading}
-                      disabled={!noShowPermission.allowed}
-                    >
-                      Không đến
                     </Button>
                   </Tooltip>
                 )}
@@ -429,7 +398,6 @@ export default function AppointmentTable({
     onCheckIn,
     onCheckOut,
     onConfirm,
-    onMarkNoShow,
     onEdit,
     onDelete,
     actionLoading,

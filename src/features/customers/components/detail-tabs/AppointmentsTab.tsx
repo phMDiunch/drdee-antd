@@ -111,13 +111,6 @@ export default function AppointmentsTab({
     });
   };
 
-  const handleMarkNoShow = (id: string) => {
-    updateMutation.mutate({
-      id,
-      body: { status: "Không đến" },
-    });
-  };
-
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
   };
@@ -198,7 +191,6 @@ export default function AppointmentsTab({
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
           onConfirm={handleConfirm}
-          onMarkNoShow={handleMarkNoShow}
           actionLoading={updateMutation.isPending || deleteMutation.isPending}
         />
       )}
