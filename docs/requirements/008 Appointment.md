@@ -3,7 +3,7 @@
 > **📋 STATUS: ✅ IMPLEMENTED** - Backend + Frontend complete  
 > **📄 Feature Documentation**: `docs/features/008_Appointment.md` (placeholder)  
 > **🔗 Implementation**: `src/features/appointments/`, `src/app/(private)/appointments/`, `src/app/api/v1/appointments/`  
-> **🔧 Last Updated**: 2025-11-30 - **COMPLETE REMOVAL** of "Không đến" status (schema, permissions, constants) + Migration script created
+> **🔧 Last Updated**: 2025-12-01 - Added "Next Appointment" column in Daily View
 
 ## 📊 Tham khảo
 
@@ -55,7 +55,7 @@
 **Quyền hạn dựa trên:**
 
 1. ⏰ **Timeline**: Quá khứ/Hôm nay/Tương lai
-2. 📊 **Status**: Chờ xác nhận → Đã xác nhận → Đã đến (check-in) → Đã đến (check-out) | Không đến | Đã hủy
+2. 📊 **Status**: Chờ xác nhận → Đã xác nhận → Đã đến (check-in) → Đã đến (check-out) | Đã hủy
 3. 👤 **Role**: Admin vs Employee
 4. ❌ **KHÔNG** dựa trên clinic (cross-clinic collaboration)
 
@@ -63,7 +63,6 @@
 
 - Check-out **không** thay đổi status, chỉ set `checkOutTime`
 - Status "Đã đến" là trạng thái cuối của appointment thành công (có thể có hoặc không có checkOutTime)
-- **Status "Không đến" đã bị xoá khỏi schema** (2025-11-30) - All existing data migrated to "Chờ xác nhận"
 
 #### **CREATE (Tạo lịch):**
 
@@ -72,22 +71,21 @@
 
 #### **UPDATE (Sửa lịch):**
 
-| Timeline      | Status                      | Employee Permissions                                                                                    | Admin         |
-| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- | ------------- |
-| **Quá khứ**   | Any                         | ❌ Không sửa                                                                                            | ✅ Sửa tất cả |
-| **Hôm nay**   | Chờ xác nhận<br>Đã xác nhận | ✅ Sửa: duration, dentist, clinic, status, notes, checkIn, checkOut<br>❌ Không sửa: customer, dateTime | ✅ Sửa tất cả |
-| **Hôm nay**   | Đã đến<br>Đến đột xuất      | ❌ Không sửa (khóa sau khi check-in)                                                                    | ✅ Sửa tất cả |
-| **Hôm nay**   | Không đến<br>Đã hủy         | ❌ Không sửa                                                                                            | ✅ Sửa tất cả |
-| **Tương lai** | Any                         | ✅ Sửa tất cả (trừ checkIn/Out)                                                                         | ✅ Sửa tất cả |
+| Timeline      | Status                           | Employee Permissions                                                                                    | Admin         |
+| ------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------- |
+| **Quá khứ**   | Any                              | ❌ Không sửa                                                                                            | ✅ Sửa tất cả |
+| **Hôm nay**   | Chờ xác nhận<br>Đã xác nhận      | ✅ Sửa: duration, dentist, clinic, status, notes, checkIn, checkOut<br>❌ Không sửa: customer, dateTime | ✅ Sửa tất cả |
+| **Hôm nay**   | Đã đến<br>Đến đột xuất<br>Đã hủy | ❌ Không sửa                                                                                            | ✅ Sửa tất cả |
+| **Tương lai** | Any                              | ✅ Sửa tất cả (trừ checkIn/Out)                                                                         | ✅ Sửa tất cả |
 
 #### **DELETE (Xóa lịch):**
 
-| Timeline      | Status                                   | Employee     | Admin       |
-| ------------- | ---------------------------------------- | ------------ | ----------- |
-| **Quá khứ**   | Any                                      | ❌ Không xóa | ✅ Xóa được |
-| **Hôm nay**   | Chờ xác nhận<br>Đã xác nhận              | ✅ Xóa được  | ✅ Xóa được |
-| **Hôm nay**   | Đã đến/Đến đột xuất/<br>Không đến/Đã hủy | ❌ Không xóa | ✅ Xóa được |
-| **Tương lai** | Any                                      | ✅ Xóa được  | ✅ Xóa được |
+| Timeline      | Status                      | Employee     | Admin       |
+| ------------- | --------------------------- | ------------ | ----------- |
+| **Quá khứ**   | Any                         | ❌ Không xóa | ✅ Xóa được |
+| **Hôm nay**   | Chờ xác nhận<br>Đã xác nhận | ✅ Xóa được  | ✅ Xóa được |
+| **Hôm nay**   | Đã đến/Đến đột xuất/Đã hủy  | ❌ Không xóa | ✅ Xóa được |
+| **Tương lai** | Any                         | ✅ Xóa được  | ✅ Xóa được |
 
 #### **QUICK ACTIONS (Check-in, Check-out, Confirm, No-show):**
 
@@ -104,7 +102,6 @@
 - `Check-in`: Đánh dấu khách đã đến
 - `Check-out`: Đánh dấu khách đã xong
 - `Confirm`: Xác nhận lịch hẹn
-- ~~`Mark No-show`: Đánh dấu không đến~~ **[❌ REMOVED 2025-11-30]** - Hoàn toàn xoá khỏi schema/permissions/constants
 
 ### Multi-Clinic Collaboration
 
@@ -127,14 +124,10 @@
 ### Quick Actions Implementation
 
 - ✅ **Gộp chung vào PUT endpoint**:
-  - Check-in/checkout/confirm ~~mark-no-show~~ đều dùng PUT /appointments/:id
+  - Check-in/checkout/confirm đều dùng PUT /appointments/:id
   - Frontend: Các button gọi `useUpdateAppointment()` với payload nhỏ
   - Backend: Service layer tự detect action và apply business logic
   - Không tạo endpoints riêng (giảm complexity)
-- ⚠️ **Mark No-show Removed**: Action "Không đến" đã bị xóa khỏi UI (2025-11-30)
-  - UI không còn button "Không đến"
-  - Backend vẫn support status "Không đến" (legacy data)
-  - Admin có thể set status thủ công qua Edit form
 
 ### Status Field Control
 
@@ -144,10 +137,9 @@
   - Check-in → chuyển sang "Đã đến" (set checkInTime + status)
   - Check-out → vẫn giữ "Đã đến" (chỉ set checkOutTime, không đổi status)
   - Confirm → chuyển sang "Đã xác nhận"
-  - ~~Mark No-show → chuyển sang "Không đến"~~ **[REMOVED]**
   - Cancel → chuyển sang "Đã hủy"
 - ✅ **Admin**: Status field **enabled** trong tất cả forms
-  - Có thể thay đổi status thủ công để sửa lỗi (bao gồm "Không đến")
+  - Có thể thay đổi status thủ công để sửa lỗi
   - Có quyền override bất kỳ status nào
 
 ### Status "Đến đột xuất" (Walk-in)
@@ -385,16 +377,7 @@ Hàng 6: [Metadata Descriptions: createdBy, createdAt, updatedBy, updatedAt]
 3. Chọn lại `status` phù hợp (VD: "Đã xác nhận")
 4. Save
 
-#### Use Case 2: Sửa lỗi "Không đến"
-
-**Steps:**
-
-1. Admin mở Edit modal
-2. Đổi `status` sang "Đã xác nhận" hoặc "Đã đến"
-3. Nếu chọn "Đã đến" → nhập `checkInTime`
-4. Save
-
-#### Use Case 3: Ghi nhận lại thời gian đúng
+#### Use Case 2: Ghi nhận lại thời gian đúng
 
 **Steps:**
 
@@ -491,9 +474,7 @@ Component: `AppointmentStatistics` - 4 cards hiển thị:
 | Tổng lịch hẹn | Count tất cả items                                    | Number  |
 | Đã check-in   | Count `checkInTime !== null`                          | Number  |
 | Đang khám     | Count `checkInTime !== null && checkOutTime === null` | Number  |
-| Chưa đến      | Count `total - checkedIn` (không phải status count)   | Number  |
-
-**Note**: Statistic "Chưa đến" thay thế "Không đến" (2025-11-30) - tính toán tự động từ tổng trừ đi số đã check-in, không dựa vào status "Không đến".
+| Chưa đến      | Count `total - checkedIn`                             | Number  |
 
 #### Filters & Actions
 
@@ -515,26 +496,55 @@ Component: `AppointmentStatistics` - 4 cards hiển thị:
 
 ### 📊 Table Columns
 
-| Column        | Width | Type    | Sort/Filter              | Description                                                                         |
-| ------------- | ----- | ------- | ------------------------ | ----------------------------------------------------------------------------------- |
-| Khách hàng    | 180px | Mixed   | -                        | Line 1: `{fullName}` **clickable link** → navigate to `/customers/{customerId}`<br> |
-|               |       |         | -                        | Line 2: Tag `{customerCode}` + PhoneOutlined (tooltip: `{phone}`)                   |
-| Tuổi          | 70px  | Text    | -                        | Tính từ `dob`: `{age} tuổi`                                                         |
-| Thời gian hẹn | 100px | Text    | ✅ Sortable (asc/desc)   | Format: `"HH:mm"` (giờ phút), default sort asc từ backend, có UI sorter             |
-| Bác sĩ chính  | 140px | Text    | ✅ Sortable + Filterable | `{primaryDentist.fullName}`, filter theo list dentists                              |
-| Bác sĩ phụ    | 140px | Text    | ✅ Sortable + Filterable | `{secondaryDentist?.fullName \|\| "—"}`, filter theo list dentists + "Không có"     |
-| Ghi chú       | 160px | Text    | -                        | `notes` (ellipsis + full text in column)                                            |
-| Trạng thái    | 120px | Tag     | ✅ Filterable            | Color-coded tag theo status, filter theo APPOINTMENT_STATUSES                       |
-| Check-in      | 120px | Mixed   | ✅ Sortable              | Button hoặc Time display, sort theo checkInTime (null values last)                  |
-| Check-out     | 120px | Mixed   | ✅ Sortable              | Button hoặc Time display, sort theo checkOutTime (null values last)                 |
-| Thao tác      | 280px | Actions | -                        | Quick actions (Xác nhận, Không đến) + Edit + Delete (fixed="right")                 |
+**Daily View:**
+
+| Column             | Width | Type    | Sort/Filter              | Description                                                                                                                                                               |
+| ------------------ | ----- | ------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Khách hàng         | 170px | Mixed   | -                        | Line 1: `{fullName}` **clickable link** → navigate to `/customers/{customerId}`<br>Line 2: Tag `{customerCode}` + PhoneOutlined (tooltip: `{phone}`) + Age `({age} tuổi)` |
+| Thời gian hẹn      | 90px  | Text    | ✅ Sortable (asc/desc)   | Format: `"HH:mm"` (giờ phút), default sort **asc**, có UI sorter                                                                                                          |
+| Bác sĩ chính       | 120px | Text    | ✅ Sortable + Filterable | `{primaryDentist.fullName}`, filter theo list dentists                                                                                                                    |
+| Bác sĩ phụ         | 120px | Text    | ✅ Sortable + Filterable | `{secondaryDentist?.fullName \|\| "—"}`, filter theo list dentists + "Không có"                                                                                           |
+| Ghi chú            | 140px | Text    | -                        | `notes` (ellipsis + full text in column)                                                                                                                                  |
+| Trạng thái         | 110px | Tag     | ✅ Filterable            | Color-coded tag theo status, filter theo APPOINTMENT_STATUSES                                                                                                             |
+| Check-in           | 110px | Mixed   | ✅ Sortable              | Button hoặc Time display, sort theo checkInTime (null values last)                                                                                                        |
+| Check-out          | 110px | Mixed   | ✅ Sortable              | Button hoặc Time display, sort theo checkOutTime (null values last)                                                                                                       |
+| Lịch hẹn tiếp theo | 135px | Text    | -                        | Hiển thị lịch hẹn gần nhất của customer (sau ngày query), format: `"DD/MM/YYYY HH:mm"`, hiển thị "Chưa có" nếu không có                                                   |
+| Thao tác           | 160px | Actions | -                        | Quick actions (Xác nhận) + Edit + Delete                                                                                                                                  |
+
+**Customer Detail View:**
+
+| Column        | Width | Type    | Sort/Filter              | Description                                                                                                 |
+| ------------- | ----- | ------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Chi nhánh     | 80px  | Tag     | -                        | Tag `{clinicCode}` với màu `{colorCode}`                                                                    |
+| Thời gian hẹn | 135px | Text    | ✅ Sortable (asc/desc)   | Format: `"DD/MM/YYYY HH:mm"`, default sort **descend**. **Lịch tương lai**: text màu đỏ (`#ff4d4f`), in đậm |
+| Bác sĩ chính  | 120px | Text    | ✅ Sortable + Filterable | `{primaryDentist.fullName}`, filter theo list dentists                                                      |
+| Bác sĩ phụ    | 120px | Text    | ✅ Sortable + Filterable | `{secondaryDentist?.fullName \|\| "—"}`, filter theo list dentists + "Không có"                             |
+| Ghi chú       | 140px | Text    | -                        | `notes` (ellipsis + full text in column)                                                                    |
+| Trạng thái    | 110px | Tag     | ✅ Filterable            | Color-coded tag theo status, filter theo APPOINTMENT_STATUSES                                               |
+| Check-in      | 110px | Mixed   | ✅ Sortable              | Button hoặc Time display, sort theo checkInTime (null values last)                                          |
+| Check-out     | 110px | Mixed   | ✅ Sortable              | Button hoặc Time display, sort theo checkOutTime (null values last)                                         |
+| Thao tác      | 160px | Actions | -                        | Quick actions (Xác nhận) + Edit + Delete                                                                    |
+
+**Note:**
+
+- Cột "Khách hàng" chỉ hiển thị ở Daily View (ẩn ở Customer Detail)
+- Cột "Chi nhánh" chỉ hiển thị ở Customer Detail (ẩn ở Daily View)
+- Cột "Lịch hẹn tiếp theo" chỉ hiển thị ở Daily View (ẩn ở Customer Detail)
+- Scroll width: 1385px (Daily View), adjusted cho table responsiveness
 
 **Sort/Filter Implementation:**
 
 - **Client-side sorting/filtering**: Dữ liệu daily ít (< 50 records), sort/filter trên client
-- **Default sort**: appointmentDateTime asc (từ backend), user có thể thay đổi
+- **Default sort**:
+  - Daily View: `appointmentDateTime asc` (sớm nhất trước)
+  - Customer Detail: `appointmentDateTime descend` (mới nhất trước)
 - **Filter UI**: Dropdown với checkboxes (AntD Table built-in)
 - **Sort arrows**: Show trên header khi hover
+
+**Visual Highlights (Customer Detail):**
+
+- **Future appointments**: Text màu đỏ (`#ff4d4f`) và in đậm trong cột "Thời gian hẹn"
+- **Logic**: `dayjs(datetime).isAfter(dayjs(), "day")`
 
 ### 🔘 Button States & Actions
 
@@ -555,8 +565,17 @@ Component: `AppointmentStatistics` - 4 cards hiển thị:
 #### Status Actions
 
 - **Button "Xác nhận"**: Hiển thị khi `date > TODAY && status = "Chờ xác nhận"`
-- ~~**Button "Không đến"**~~: **[REMOVED 2025-11-30]** - UI không còn action này
 - Tất cả actions dùng chung `useUpdateAppointment()` hook
+
+#### Next Appointment Column (Daily View Only)
+
+- **Logic**: Query next appointment của customer (sau ngày query, về phía tương lai)
+- **Backend**: Fetch trong `listDaily()` method với Prisma nested query
+- **Performance**: Single query, sử dụng indexes hiện có (`@@index([customerId])`, `@@index([clinicId, appointmentDateTime])`)
+- **Display**:
+  - Có lịch: Text format `"DD/MM/YYYY HH:mm"`
+  - Không có: "Chưa có" (secondary text)
+- **Visibility**: Chỉ hiển thị ở Daily View, ẩn ở Customer Detail View
 
 ### 🔄 Status Transitions
 
@@ -584,22 +603,12 @@ stateDiagram-v2
 
 **Allowed Transitions:**
 
-| From         | To            | Trigger                          | Who                |
-| ------------ | ------------- | -------------------------------- | ------------------ |
-| Chờ xác nhận | Đã xác nhận   | Button "Xác nhận"                | Employee/Admin     |
-| Chờ xác nhận | Đã hủy        | Update status                    | Employee/Admin     |
-| Đã xác nhận  | Đã đến        | Button "Check-in"                | Employee/Admin     |
-| Đã xác nhận  | ~~Không đến~~ | ~~Button "Không đến"~~ [REMOVED] | ~~Employee/Admin~~ |
-| Đã xác nhận  | Đã hủy        | Update status                    | Employee/Admin     |
-| Không đến    | Đã đến        | Admin Edit                       | Admin only         |
-| Không đến    | Đã xác nhận   | Admin Edit                       | Admin only         |
-| Không đến    | Đã hủy        | Update status                    | Employee/Admin     |
-
-**Note**:
-
-- Status "Không đến" đã bị **hoàn toàn xoá** khỏi hệ thống (2025-11-30)
-- Tất cả data cũ đã được migrate sang "Chờ xác nhận" qua script `scripts/migrate-no-show-status.ts`
-- Schema validation, permissions, và constants không còn references đến status này
+| From         | To          | Trigger           | Who            |
+| ------------ | ----------- | ----------------- | -------------- |
+| Chờ xác nhận | Đã xác nhận | Button "Xác nhận" | Employee/Admin |
+| Chờ xác nhận | Đã hủy      | Update status     | Employee/Admin |
+| Đã xác nhận  | Đã đến      | Button "Check-in" | Employee/Admin |
+| Đã xác nhận  | Đã hủy      | Update status     | Employee/Admin |
 
 ### 🎯 Acceptance Criteria (Daily View)
 
@@ -609,8 +618,7 @@ stateDiagram-v2
 ✅ Click "Check-in" → Set checkInTime, status = "Đã đến", show time  
 ✅ Đã check-in chưa check-out → Show "Check-out" button  
 ✅ Future appointment với status "Chờ xác nhận" → Show "Xác nhận" button  
-~~✅ Past appointment chưa check-in → Show "Không đến" button~~ **[REMOVED 2025-11-30]**
-✅ KPI "Chưa đến" = total - checkedIn (không dựa vào status "Không đến")
+✅ KPI "Chưa đến" = total - checkedIn
 
 ---
 
@@ -631,31 +639,9 @@ DELETE /api/v1/appointments/:id            # Delete
 - Check-in: `{ checkInTime: new Date() }` → Server auto set `status = "Đã đến"`
 - Check-out: `{ checkOutTime: new Date() }`
 - Confirm: `{ status: "Đã xác nhận" }`
-- ~~Mark no-show: `{ status: "Không đến" }`~~ **[REMOVED]** - UI không còn action này
-
-**Legacy Support**: Backend vẫn hỗ trợ status "Không đến" cho data cũ, nhưng UI không tạo mới.
 
 ### 🔧 Architecture
 
 ```
 UI Components → Custom Hooks → API Client → Routes → Services → Repository → Database
 ```
-
-### 📦 Migration Scripts
-
-**Remove "Không đến" Status (2025-11-30)**
-
-- **Script**: `scripts/migrate-no-show-status.ts`
-- **Purpose**: Convert all "Không đến" → "Chờ xác nhận"
-- **Usage**: `npx tsx scripts/migrate-no-show-status.ts`
-- **Safety**:
-  - Runs in transaction (auto rollback on error)
-  - Shows preview before execution
-  - Requires user confirmation
-  - Verifies results after migration
-- **Impact**:
-  - Schema: Removed from `APPOINTMENT_STATUSES` enum
-  - Permissions: Removed `canMarkNoShow()` function
-  - Constants: Removed from status options and colors
-  - UI: All action buttons already removed
-  - Data: All existing records migrated

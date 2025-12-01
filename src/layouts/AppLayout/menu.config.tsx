@@ -46,13 +46,13 @@ export const menuItems: MenuItem[] = [
     key: "treatment-logs",
     icon: <ExperimentOutlined />,
     label: "Lịch sử điều trị",
-    children: [{ key: "/treatment-logs", label: "Theo ngày" }],
+    children: [{ key: "/treatment-logs/daily", label: "Theo ngày" }],
   },
   {
     key: "payments",
     icon: <DollarOutlined />,
-    label: "Thanh toán",
-    children: [{ key: "/payments", label: "Phiếu thu" }],
+    label: "Phiếu thu",
+    children: [{ key: "/payments/daily", label: "Theo ngày" }],
   },
   {
     key: "reports",
