@@ -17,7 +17,6 @@ import {
   CheckOutlined,
   DeleteOutlined,
   EditOutlined,
-  UserDeleteOutlined,
   PhoneOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";

@@ -52,24 +52,36 @@ export default function EmployeeTable({
   onToggleStatus,
   onResendInvite,
 }: Props) {
+  // Memoize filter values separately to prevent columns regeneration
+  const clinicCodes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          data
+            .map((item) => item.clinic?.clinicCode)
+            .filter((code): code is string => !!code)
+        )
+      ).sort(),
+    [data]
+  );
+
+  const departments = useMemo(
+    () =>
+      Array.from(
+        new Set(data.map((item) => item.department).filter(Boolean))
+      ).sort(),
+    [data]
+  );
+
+  const jobTitles = useMemo(
+    () =>
+      Array.from(
+        new Set(data.map((item) => item.jobTitle).filter(Boolean))
+      ).sort(),
+    [data]
+  );
+
   const columns = useMemo<ColumnsType<EmployeeResponse>>(() => {
-    // Calculate unique values for filters from data
-    const clinicCodes = Array.from(
-      new Set(
-        data
-          .map((item) => item.clinic?.clinicCode)
-          .filter((code): code is string => !!code)
-      )
-    ).sort();
-
-    const departments = Array.from(
-      new Set(data.map((item) => item.department).filter(Boolean))
-    ).sort();
-
-    const jobTitles = Array.from(
-      new Set(data.map((item) => item.jobTitle).filter(Boolean))
-    ).sort();
-
     return [
       {
         title: "Tên nhân viên",
@@ -246,7 +258,9 @@ export default function EmployeeTable({
       },
     ];
   }, [
-    data,
+    clinicCodes,
+    departments,
+    jobTitles,
     disabled,
     statusLoadingId,
     inviteLoadingId,
