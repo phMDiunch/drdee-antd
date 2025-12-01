@@ -119,10 +119,20 @@ export const appointmentRepo = {
             },
           },
           primaryDentist: {
-            select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+            select: {
+              id: true,
+              fullName: true,
+              employeeCode: true,
+              favoriteColor: true,
+            },
           },
           secondaryDentist: {
-            select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+            select: {
+              id: true,
+              fullName: true,
+              employeeCode: true,
+              favoriteColor: true,
+            },
           },
           clinic: {
             select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -140,6 +150,7 @@ export const appointmentRepo = {
   /**
    * Get appointments for a specific date and clinic (Daily View)
    * Following customer.repo.ts gold standard
+   * Includes next appointment for each customer (future appointments after query date)
    */
   async listDaily(params: {
     clinicId: string;
@@ -165,13 +176,39 @@ export const appointmentRepo = {
             fullName: true,
             phone: true,
             dob: true,
+            // ⭐ Fetch next appointment (future appointments after query date)
+            appointments: {
+              where: {
+                appointmentDateTime: {
+                  gte: dateEnd, // After query date (future)
+                },
+              },
+              orderBy: {
+                appointmentDateTime: "asc",
+              },
+              take: 1, // Only get the nearest one
+              select: {
+                id: true,
+                appointmentDateTime: true,
+              },
+            },
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -201,10 +238,20 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -233,10 +280,20 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -264,10 +321,20 @@ export const appointmentRepo = {
           },
         },
         primaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         secondaryDentist: {
-          select: { id: true, fullName: true, employeeCode: true, favoriteColor: true },
+          select: {
+            id: true,
+            fullName: true,
+            employeeCode: true,
+            favoriteColor: true,
+          },
         },
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },

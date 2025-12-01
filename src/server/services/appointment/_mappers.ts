@@ -6,9 +6,20 @@ type AppointmentWithRelations = Appointment & {
   customer: Pick<
     Customer,
     "id" | "customerCode" | "fullName" | "phone" | "dob"
+  > & {
+    appointments?: Array<{
+      id: string;
+      appointmentDateTime: Date;
+    }>;
+  };
+  primaryDentist: Pick<
+    Employee,
+    "id" | "fullName" | "employeeCode" | "favoriteColor"
   >;
-  primaryDentist: Pick<Employee, "id" | "fullName" | "employeeCode" | "favoriteColor">;
-  secondaryDentist: Pick<Employee, "id" | "fullName" | "employeeCode" | "favoriteColor"> | null;
+  secondaryDentist: Pick<
+    Employee,
+    "id" | "fullName" | "employeeCode" | "favoriteColor"
+  > | null;
   clinic: Pick<Clinic, "id" | "clinicCode" | "name" | "colorCode">;
   createdBy: Pick<Employee, "id" | "fullName">;
   updatedBy: Pick<Employee, "id" | "fullName">;
@@ -81,5 +92,15 @@ export function mapAppointmentToResponse(row: AppointmentWithRelations) {
       id: row.updatedBy.id,
       fullName: row.updatedBy.fullName,
     },
+
+    // Next appointment (from nested customer.appointments)
+    nextAppointment:
+      row.customer.appointments && row.customer.appointments.length > 0
+        ? {
+            id: row.customer.appointments[0].id,
+            appointmentDateTime:
+              row.customer.appointments[0].appointmentDateTime.toISOString(),
+          }
+        : null,
   };
 }

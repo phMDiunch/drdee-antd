@@ -136,14 +136,24 @@ export default function AppointmentTable({
         sorter: (a, b) =>
           dayjs(a.appointmentDateTime).valueOf() -
           dayjs(b.appointmentDateTime).valueOf(),
-        defaultSortOrder: "ascend",
-        render: (datetime) => (
-          <Text>
-            {dayjs(datetime).format(
-              isCustomerDetailView ? "DD/MM/YYYY HH:mm" : "HH:mm"
-            )}
-          </Text>
-        ),
+        defaultSortOrder: isCustomerDetailView ? "descend" : "ascend", // Customer Detail: descend, Daily View: ascend
+        render: (datetime) => {
+          const isFuture = dayjs(datetime).isAfter(dayjs(), "day");
+          const displayText = dayjs(datetime).format(
+            isCustomerDetailView ? "DD/MM/YYYY HH:mm" : "HH:mm"
+          );
+
+          // Customer Detail: Future appointments in red bold
+          if (isCustomerDetailView && isFuture) {
+            return (
+              <Text strong style={{ color: "#ff4d4f" }}>
+                {displayText}
+              </Text>
+            );
+          }
+
+          return <Text>{displayText}</Text>;
+        },
       },
       {
         title: "Bác sĩ chính",
@@ -301,6 +311,22 @@ export default function AppointmentTable({
         },
       },
       {
+        title: "Lịch hẹn tiếp theo",
+        dataIndex: "nextAppointment",
+        key: "nextAppointment",
+        width: 135,
+        render: (nextAppointment) => {
+          if (!nextAppointment) {
+            return <Text type="secondary">Chưa có</Text>;
+          }
+          // ✅ Calculate once at function start (avoid CSS-in-JS warning)
+          const displayText = dayjs(nextAppointment.appointmentDateTime).format(
+            "DD/MM/YYYY HH:mm"
+          );
+          return <Text>{displayText}</Text>;
+        },
+      },
+      {
         title: "Thao tác",
         key: "actions",
         width: 160,
@@ -405,10 +431,12 @@ export default function AppointmentTable({
   // Filter columns based on context
   const visibleColumns = React.useMemo(() => {
     if (isCustomerDetailView) {
-      // Customer Detail view: Hide "Khách hàng", Show "Chi nhánh"
-      return columns.filter((col) => col.key !== "customer");
+      // Customer Detail view: Hide "Khách hàng", "Lịch hẹn tiếp theo", Show "Chi nhánh"
+      return columns.filter(
+        (col) => col.key !== "customer" && col.key !== "nextAppointment"
+      );
     } else {
-      // Daily/List view: Show "Khách hàng", Hide "Chi nhánh"
+      // Daily/List view: Show "Khách hàng", "Lịch hẹn tiếp theo", Hide "Chi nhánh"
       return columns.filter((col) => col.key !== "clinic");
     }
   }, [columns, isCustomerDetailView]);
@@ -420,7 +448,7 @@ export default function AppointmentTable({
       rowKey="id"
       loading={loading}
       pagination={false}
-      scroll={{ x: 1250 }}
+      scroll={{ x: 1385 }} // Updated: 1250 + 135 (next appointment column)
       locale={{
         emptyText: "Không có lịch hẹn nào",
       }}

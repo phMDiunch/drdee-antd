@@ -314,6 +314,14 @@ export const AppointmentResponseSchema = z.object({
     id: z.string().uuid(),
     fullName: z.string(),
   }),
+
+  // Next appointment (for Daily View only)
+  nextAppointment: z
+    .object({
+      id: z.string().uuid(),
+      appointmentDateTime: z.string().datetime(),
+    })
+    .nullable(),
 });
 
 /**
