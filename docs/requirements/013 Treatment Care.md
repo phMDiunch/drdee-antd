@@ -1,570 +1,559 @@
-# 🩺 User Stories: Treatment Care (Chăm sóc sau điều trị)
+# 🩺 Requirements: Treatment Care (Aftercare) System
 
-> **📋 STATUS: 📝 DRAFT** - User stories for Treatment Care feature  
-> **🔗 Related**: `014 Treatment Care.md` (Technical Requirements)  
-> **🔧 Last Updated**: 2025-01-13
+> **📋 STATUS: 📝 DRAFT** - Requirements specified, implementation needed  
+> **🔗 Implementation**: `src/features/treatment-care/`  
+> **🔧 Last Updated**: 2025-12-01 - Refactored version
 
----
+## 📊 Tham khảo
 
-## User Story 1: Xem danh sách khách hàng cần chăm sóc
-
-**Là một:** Nhân viên chăm sóc khách hàng (Customer Care Staff)
-
-**Tôi muốn:** Xem danh sách các khách hàng đã điều trị trong một ngày cụ thể
-
-**Để:** Gọi điện thoại chăm sóc và theo dõi tình trạng sức khỏe của họ sau điều trị
-
-### Acceptance Criteria:
-
-#### Kịch bản 1: Xem danh sách khách hàng điều trị hôm qua
-
-**Given (Biết rằng):** Nhân viên đang ở màn hình "Chăm sóc sau điều trị", tab "Khách cần chăm sóc"
-
-**When (Khi):** Màn hình được mở
-
-**Then (Thì):**
-
-- Hệ thống hiển thị danh sách khách hàng đã có lịch sử điều trị (TreatmentLog) vào **hôm qua** (mặc định)
-- Mỗi khách hàng hiển thị:
-  - Mã khách hàng
-  - Họ tên (có link đến trang chi tiết khách hàng)
-  - Số điện thoại (có icon để copy)
-  - Danh sách dịch vụ đã điều trị (hiển thị dạng tags)
-  - Danh sách bác sĩ điều trị (ngăn cách bởi dấu phẩy)
-  - Badge số lần đã chăm sóc trong ngày đó
-  - Button "Chăm sóc"
-
-**And (Và):** Danh sách được sắp xếp theo tên khách hàng từ A-Z
-
-#### Kịch bản 2: Chọn ngày khác để xem
-
-**Given (Biết rằng):** Nhân viên đang xem danh sách khách cần chăm sóc
-
-**When (Khi):** Nhân viên chọn ngày khác từ DatePicker hoặc nhấn nút "< Prev Day" / "Next Day >"
-
-**Then (Thì):**
-
-- Hệ thống cập nhật danh sách khách hàng theo ngày mới được chọn
-- Badge "Số lần CS" được cập nhật theo số lần chăm sóc trong ngày đó
-
-**And (Và):** URL được cập nhật với tham số ngày mới (để có thể bookmark)
-
-#### Kịch bản 3: Tìm kiếm khách hàng
-
-**Given (Biết rằng):** Nhân viên đang xem danh sách khách cần chăm sóc với nhiều khách hàng
-
-**When (Khi):** Nhân viên nhập từ khóa vào ô tìm kiếm (mã KH, tên, hoặc số điện thoại)
-
-**Then (Thì):**
-
-- Hệ thống lọc danh sách real-time, chỉ hiển thị khách hàng có thông tin khớp với từ khóa
-- Tìm kiếm không phân biệt hoa thường
-- Các thông tin khác (dịch vụ, bác sĩ, số lần CS) vẫn hiển thị chính xác
-
-**And (Và):** Nếu không có kết quả, hiển thị thông báo "Không tìm thấy khách hàng"
-
-#### Kịch bản 4: Không có khách hàng điều trị trong ngày
-
-**Given (Biết rằng):** Nhân viên chọn một ngày không có lịch sử điều trị
-
-**When (Khi):** Hệ thống truy vấn dữ liệu
-
-**Then (Thì):**
-
-- Hiển thị Empty State với icon và message "Không có khách hàng điều trị trong ngày này"
-- Gợi ý: "Thử chọn ngày khác hoặc kiểm tra lại dữ liệu điều trị"
+- Prisma Model: `prisma/schema.prisma` → TreatmentCare
+- Call Scripts: `docs/templates/treatment-care-call-scripts.md`
+- Related: `012 Treatment Log.md`, `007 Customer.md`
 
 ---
 
-## User Story 2: Ghi nhận chăm sóc khách hàng
+## 🎯 Mục Tiêu
 
-**Là một:** Nhân viên chăm sóc khách hàng
-
-**Tôi muốn:** Ghi lại nội dung cuộc gọi chăm sóc và trạng thái sức khỏe của khách hàng
-
-**Để:** Theo dõi quá trình hồi phục và có cơ sở để chăm sóc tiếp theo nếu cần
-
-### Acceptance Criteria:
-
-#### Kịch bản 1: Tạo bản ghi chăm sóc thành công
-
-**Given (Biết rằng):**
-
-- Nhân viên đang xem danh sách khách cần chăm sóc
-- Khách hàng Nguyễn Văn A có lịch sử điều trị ngày 12/01/2025
-
-**When (Khi):**
-
-- Nhân viên click button "Chăm sóc" của khách hàng Nguyễn Văn A
-- Modal "Tạo bản ghi chăm sóc" hiển thị
-
-**Then (Thì):**
-
-- Form hiển thị các thông tin:
-  - Khách hàng: "KH001 - Nguyễn Văn A - 0901234567" (readonly)
-  - Ngày điều trị: "12/01/2025" (readonly)
-  - Thời gian chăm sóc: "13/01/2025 14:30" (mặc định = hiện tại, disabled)
-  - Trạng thái: Radio group với 3 options (required)
-    - ⚪ Ổn định
-    - ⚪ Không liên lạc được
-    - ⚪ Cần theo dõi
-  - Nội dung chăm sóc: Textarea (required, placeholder: "Ghi chú tình trạng khách hàng sau điều trị...")
-
-**And (Và):** Nhân viên điền form:
-
-- Chọn trạng thái: "Ổn định"
-- Nhập nội dung: "Khách phản hồi không đau, không sưng, ăn uống bình thường"
-
-**When (Khi):** Nhân viên click button "Lưu"
-
-**Then (Thì):**
-
-- Hệ thống validate thành công
-- Tạo bản ghi TreatmentCare mới với:
-  - `careStaffId` = ID nhân viên hiện tại
-  - `clinicId` = Chi nhánh của nhân viên
-  - Snapshot các dịch vụ và bác sĩ từ TreatmentLog ngày 12/01/2025
-- Modal đóng lại
-- Hiển thị message success: "Tạo bản ghi chăm sóc thành công"
-- Badge "Số lần CS" của khách Nguyễn Văn A tăng lên 1
-
-**And (Và):** Bản ghi mới xuất hiện trong tab "Lịch sử chăm sóc"
-
-#### Kịch bản 2: Validation - Thiếu thông tin bắt buộc
-
-**Given (Biết rằng):** Nhân viên đang ở modal "Tạo bản ghi chăm sóc"
-
-**When (Khi):**
-
-- Nhân viên KHÔNG chọn trạng thái
-- Hoặc KHÔNG nhập nội dung chăm sóc
-- Click button "Lưu"
-
-**Then (Thì):**
-
-- Hệ thống hiển thị lỗi validation bên dưới field bị thiếu:
-  - "Vui lòng chọn trạng thái chăm sóc"
-  - "Nội dung chăm sóc không được để trống"
-- Form không submit
-- Modal vẫn mở
-
-**And (Và):** Focus vào field đầu tiên bị lỗi
-
-#### Kịch bản 3: Backend validation - Khách không có lịch sử điều trị
-
-**Given (Biết rằng):**
-
-- Nhân viên mở modal chăm sóc cho khách hàng X với ngày điều trị 10/01/2025
-- Tất cả TreatmentLog của khách X trong ngày 10/01/2025 bị xóa (do admin) TRONG KHI modal đang mở
-
-**When (Khi):** Nhân viên điền form đầy đủ và click "Lưu"
-
-**Then (Thì):**
-
-- Backend validate và phát hiện không có TreatmentLog
-- Trả về error 422: "Không tìm thấy TreatmentLog cho ngày điều trị"
-- Frontend hiển thị modal error với message rõ ràng
-- Gợi ý: "Vui lòng kiểm tra lại dữ liệu hoặc chọn ngày khác"
-
-**And (Và):** Modal form vẫn mở, data được giữ nguyên
-
-#### Kịch bản 4: Chăm sóc nhiều lần trong ngày
-
-**Given (Biết rằng):**
-
-- Khách hàng B đã được chăm sóc 1 lần vào 09:00 sáng
-- Badge hiển thị "1"
-
-**When (Khi):**
-
-- Nhân viên gọi lại khách B lúc 15:00 chiều
-- Tạo thêm 1 bản ghi chăm sóc mới
-
-**Then (Thì):**
-
-- Hệ thống cho phép tạo bản ghi thứ 2 thành công
-- Badge "Số lần CS" tăng lên "2"
-- Cả 2 bản ghi đều xuất hiện trong lịch sử, sắp xếp theo thời gian gọi (mới nhất trước)
+- Ghi nhận chăm sóc khách hàng sau điều trị (gọi điện, theo dõi tình trạng)
+- Snapshot thông tin điều trị trong ngày (dịch vụ, bác sĩ) để tránh join queries
+- Daily workflow: xem danh sách khách cần chăm sóc → gọi điện → ghi lại nội dung + trạng thái
+- View lịch sử: grouped by day (35 ngày) hoặc per customer
 
 ---
 
-## User Story 3: Xem lịch sử chăm sóc (35 ngày gần nhất)
-
-**Là một:** Quản lý/Nhân viên chăm sóc
-
-**Tôi muốn:** Xem tổng quan lịch sử chăm sóc khách hàng trong 35 ngày gần nhất
-
-**Để:** Đánh giá hiệu quả công việc chăm sóc và theo dõi xu hướng
-
-### Acceptance Criteria:
-
-#### Kịch bản 1: Xem lịch sử mặc định (35 ngày)
-
-**Given (Biết rằng):** Nhân viên đang ở tab "Lịch sử chăm sóc"
-
-**When (Khi):** Tab được mở
-
-**Then (Thì):**
-
-- Hệ thống hiển thị lịch sử chăm sóc từ (hôm nay - 34 ngày) đến hôm nay
-- Dữ liệu được group theo ngày, hiển thị dạng Collapse panels
-- Mỗi panel hiển thị:
-  - Header: Ngày (DD/MM/YYYY) - Số bản ghi
-  - Ví dụ: "13/01/2025 - 8 bản ghi"
-- Panel hôm nay mở sẵn (expanded), các ngày cũ hơn đóng lại (collapsed)
-
-**And (Và):** Mỗi bản ghi trong panel hiển thị columns:
-
-- Ngày chăm sóc (thời gian chính xác: DD/MM/YYYY HH:mm)
-- Khách hàng (mã - tên, có link)
-- Điện thoại (với icon phone)
-- Dịch vụ điều trị (tags từ snapshot)
-- Bác sĩ điều trị (comma-separated từ snapshot)
-- Nhân viên CS
-- Trạng thái (Tag màu: Xanh/Đỏ/Cam)
-- Nội dung (truncate 50 ký tự, có tooltip full text)
-- Actions: View, Delete
-
-#### Kịch bản 2: Lọc "Chỉ của tôi"
-
-**Given (Biết rằng):** Nhân viên Nguyễn Văn C đang xem lịch sử chăm sóc của tất cả mọi người
-
-**When (Khi):** Nhân viên check vào checkbox "✓ Chỉ của tôi"
-
-**Then (Thì):**
-
-- Hệ thống lọc và chỉ hiển thị bản ghi có `careStaffId` = ID của Nguyễn Văn C
-- Các panel không có bản ghi nào sẽ bị ẩn
-- URL được cập nhật với param `?onlyMine=true`
-
-**And (Và):** Khi uncheck, hiển thị lại tất cả bản ghi
-
-#### Kịch bản 3: Chọn ngày kết thúc khác
-
-**Given (Biết rằng):** Nhân viên muốn xem lịch sử chăm sóc đến ngày 10/01/2025 (thay vì hôm nay)
-
-**When (Khi):** Nhân viên chọn ngày "10/01/2025" từ DatePicker "Đến ngày"
-
-**Then (Thì):**
-
-- Hệ thống tự động tính `from = 10/01/2025 - 34 ngày`
-- Hiển thị lịch sử chăm sóc từ 07/12/2024 đến 10/01/2025
-- Panel ngày 10/01/2025 được mở sẵn
-
-#### Kịch bản 4: Không có dữ liệu trong khoảng thời gian
-
-**Given (Biết rằng):** Nhân viên chọn khoảng thời gian không có bản ghi chăm sóc nào
-
-**When (Khi):** Hệ thống query dữ liệu
-
-**Then (Thì):**
-
-- Hiển thị Empty State: "Không có bản ghi chăm sóc trong khoảng thời gian này"
-- Gợi ý: "Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác"
-
----
-
-## User Story 4: Xem chi tiết bản ghi chăm sóc
-
-**Là một:** Nhân viên/Quản lý
-
-**Tôi muốn:** Xem đầy đủ thông tin của một bản ghi chăm sóc
-
-**Để:** Hiểu rõ nội dung cuộc gọi và tình trạng khách hàng
-
-### Acceptance Criteria:
-
-#### Kịch bản 1: Xem chi tiết từ lịch sử
-
-**Given (Biết rằng):** Nhân viên đang ở tab "Lịch sử chăm sóc"
-
-**When (Khi):** Nhân viên click icon "View" (mắt) ở cột Actions
-
-**Then (Thì):** Modal "Chi tiết bản ghi chăm sóc" hiển thị với layout:
-
-**Thông tin chăm sóc:**
-
-- Khách hàng: KH001 - Nguyễn Văn A - 0901234567
-- Ngày điều trị: 12/01/2025
-- Thời gian chăm sóc: 13/01/2025 14:30
-- Nhân viên CS: Trần Thị B
-- Trạng thái: Tag "Ổn định" (màu xanh)
-
-**Chi tiết điều trị:**
-
-- Dịch vụ điều trị: [Tag: Nhổ răng khôn] [Tag: Làm sạch vết thương]
-- Bác sĩ điều trị: BS. Lê Văn C, BS. Phạm Thị D
-
-**Nội dung chăm sóc:**
-
-- "Khách phản hồi không đau, không sưng, ăn uống bình thường. Đã tuân thủ hướng dẫn của bác sĩ về chế độ ăn uống và vệ sinh răng miệng."
-
-**Metadata:**
-
-- Tạo bởi: Trần Thị B
-- Tạo lúc: 13/01/2025 14:30
-- Sửa bởi: Trần Thị B
-- Sửa lúc: 13/01/2025 14:30
-
-**And (Và):** Footer có button "Đóng"
-
-**And (Và):** Modal chỉ READ-ONLY, không có chức năng edit
-
----
-
-## User Story 5: Xóa bản ghi chăm sóc
-
-**Là một:** Nhân viên chăm sóc
-
-**Tôi muốn:** Xóa bản ghi chăm sóc nếu nhập nhầm hoặc trùng lặp
-
-**Để:** Đảm bảo dữ liệu chính xác
-
-### Acceptance Criteria:
-
-#### Kịch bản 1: Nhân viên xóa bản ghi của mình trong ngày
-
-**Given (Biết rằng):**
-
-- Nhân viên Nguyễn Văn A tạo bản ghi chăm sóc lúc 14:00 hôm nay
-- Nhân viên phát hiện nhập sai nội dung
-
-**When (Khi):**
-
-- Nhân viên click icon "Delete" (thùng rác) ở cột Actions
-- Popconfirm hiển thị: "Xác nhận xoá?"
-
-**And (Và):** Nhân viên click "OK"
-
-**Then (Thì):**
-
-- Hệ thống xóa bản ghi thành công (hard delete)
-- Hiển thị message: "Xóa bản ghi chăm sóc thành công"
-- Bản ghi biến mất khỏi danh sách
-- Badge "Số lần CS" giảm đi 1
-
-#### Kịch bản 2: Nhân viên không thể xóa bản ghi của người khác
-
-**Given (Biết rằng):**
-
-- Nhân viên Nguyễn Văn A đang xem lịch sử
-- Có bản ghi do nhân viên Trần Thị B tạo
-
-**When (Khi):** Nhân viên A di chuột vào icon "Delete" của bản ghi của B
-
-**Then (Thì):**
-
-- Icon Delete bị disable (màu xám)
-- Tooltip hiển thị: "Chỉ xóa được bản ghi của mình trong ngày"
-
-**And (Và):** Click vào icon không có tác dụng
-
-#### Kịch bản 3: Nhân viên không thể xóa bản ghi cũ (ngày khác)
-
-**Given (Biết rằng):**
-
-- Hôm nay là 15/01/2025
-- Nhân viên Nguyễn Văn A có bản ghi chăm sóc ngày 14/01/2025
-
-**When (Khi):** Nhân viên A muốn xóa bản ghi ngày 14/01
-
-**Then (Thì):**
-
-- Icon Delete bị disable
-- Tooltip: "Chỉ xóa được bản ghi trong ngày tạo"
-- Backend trả về 403 nếu attempt xóa: "Chỉ có thể xóa bản ghi trong ngày tạo"
-
-#### Kịch bản 4: Admin xóa bất kỳ bản ghi nào
-
-**Given (Biết rằng):** Admin đang xem lịch sử chăm sóc
-
-**When (Khi):** Admin click "Delete" bất kỳ bản ghi nào (của ai, ngày nào)
-
-**Then (Thì):**
-
-- Popconfirm hiển thị: "Xác nhận xoá bản ghi chăm sóc?"
-- Khi confirm, hệ thống xóa thành công
-- Không có giới hạn về ownership hay timeline
-
----
-
-## User Story 6: Xem lịch sử chăm sóc của một khách hàng cụ thể
-
-**Là một:** Nhân viên/Bác sĩ
-
-**Tôi muốn:** Xem toàn bộ lịch sử chăm sóc của một khách hàng cụ thể
-
-**Để:** Nắm rõ quá trình hồi phục và phản hồi của khách hàng qua các lần chăm sóc
-
-### Acceptance Criteria:
-
-#### Kịch bản 1: Xem lịch sử từ trang chi tiết khách hàng
-
-**Given (Biết rằng):**
-
-- Nhân viên đang ở trang "Chi tiết khách hàng" của Nguyễn Văn A
-- Khách hàng này có 5 bản ghi chăm sóc trong quá khứ
-
-**When (Khi):** Nhân viên chọn tab "Lịch sử chăm sóc"
-
-**Then (Thì):**
-
-- Hiển thị bảng với 5 bản ghi, không có grouping theo ngày
-- Sắp xếp theo thời gian chăm sóc giảm dần (mới nhất trước)
-- Columns:
-  - Ngày điều trị
-  - Ngày chăm sóc (thời gian chính xác)
-  - Dịch vụ điều trị (tags)
-  - Bác sĩ điều trị
-  - Nhân viên CS
-  - Trạng thái (Tag màu)
-  - Nội dung (full text, không truncate)
-  - Actions: View, Delete
-
-**And (Và):** KHÔNG có cột "Khách hàng" (vì đã biết rõ khách hàng)
-
-#### Kịch bản 2: Không có lịch sử chăm sóc
-
-**Given (Biết rằng):** Khách hàng mới, chưa được chăm sóc lần nào
-
-**When (Khi):** Nhân viên mở tab "Lịch sử chăm sóc"
-
-**Then (Thì):**
-
-- Empty State: "Khách hàng chưa có lịch sử chăm sóc"
-- Gợi ý: "Bản ghi chăm sóc sẽ hiển thị sau khi khách hàng được điều trị và chăm sóc"
-
-#### Kịch bản 3: Theo dõi xu hướng trạng thái
-
-**Given (Biết rằng):** Khách hàng có nhiều bản ghi chăm sóc với các trạng thái khác nhau
-
-**When (Khi):** Nhân viên xem lịch sử
-
-**Then (Thì):**
-
-- Có thể thấy rõ xu hướng cải thiện:
-  - 15/01: "Cần theo dõi" (Cam)
-  - 14/01: "Không liên lạc được" (Đỏ)
-  - 13/01: "Ổn định" (Xanh)
-- Giúp đánh giá hiệu quả điều trị và chăm sóc
-
----
-
-## Business Rules Summary
-
-### Timeline & Date Rules
-
-1. **Default Date for "Customers Needing Care"**: Yesterday (hôm qua)
-
-   - Logic: Khách điều trị hôm qua → Gọi chăm sóc hôm nay
-
-2. **Default Range for History**: 35 days (from today - 34 days to today)
-
-3. **Care Time Validation**: `careAt >= treatmentDate` (cùng ngày hoặc sau)
-
-4. **Timezone**: All dates use Vietnam timezone (Asia/Ho_Chi_Minh)
+## 🎲 Decision Log
+
+### Database & Business Rules
+
+- ✅ **TreatmentLog Dependency**: Tạo care record yêu cầu khách có TreatmentLog trong `treatmentDate`
+- ✅ **Date Fields**:
+  - `treatmentDate`: Ngày điều trị (Date-only) - ngày customer có TreatmentLog
+  - `careDateTime`: Thời điểm chăm sóc thực tế (DateTime with TZ) - khi staff gọi điện
+  - Validate: `careDateTime >= treatmentDate` (cùng ngày hoặc sau)
+- ✅ **Snapshot Arrays**: Copy từ TreatmentLogs trong `treatmentDate`
+  - `treatmentServiceNames`: Unique service names
+  - `treatingDoctorNames`: Unique doctor names (for display)
+  - `treatingDoctorIds`: Unique doctor IDs (for filtering)
+  - `treatmentClinicIds`: Unique clinic IDs
+  - Trade-off: Data có thể stale nếu TreatmentLog bị sửa/xóa sau
+- ✅ **Clinic Scope**: `clinicId` determined by priority
+  1. `x-clinic-id` header (nếu có)
+  2. `careStaff.clinicId`
+  3. Error nếu không xác định được
+- ✅ **Multiple Records**: 1 customer có thể được chăm sóc nhiều lần trong 1 ngày điều trị
+- ✅ **Status Enum**: `TreatmentCareStatus`
+  - `STABLE`: Bệnh nhân đã ổn
+  - `UNREACHABLE`: Không liên lạc được
+  - `NEEDS_FOLLOW_UP`: Cần chăm sóc thêm
 
 ### Permission Rules
 
-| Action | Employee                                  | Admin          |
-| ------ | ----------------------------------------- | -------------- |
-| CREATE | ✅ Own clinic + customer has TreatmentLog | ✅ Any clinic  |
-| VIEW   | ✅ Own clinic (with onlyMine filter)      | ✅ All clinics |
-| DELETE | ⚠️ Own records + same VN day only         | ✅ Any record  |
+**Quyền dựa trên: Role + Ownership + Timeline (same VN day) + Clinic**
 
-### Data Rules
+**Roles**: Employee, Admin (2 roles only)
 
-1. **TreatmentLog Dependency**: Must have TreatmentLog on `treatmentDate` to create care record
+#### CREATE
 
-2. **Multiple Records**: Same customer can have multiple care records on same treatment date
+| Role     | Permission                  |
+| -------- | --------------------------- |
+| Employee | ✅ Tạo cho clinic của mình  |
+| Admin    | ✅ Tạo cho clinic đang chọn |
 
-3. **Immutable**: No update endpoint (current implementation)
+**Ràng buộc**: Customer phải có TreatmentLog trong `treatmentDate` (backend 422)
 
-4. **Snapshot Data**: Service names, doctor names/IDs, clinic IDs copied from TreatmentLogs
+#### UPDATE
 
-   - Trade-off: Data may be stale if TreatmentLog edited/deleted after
+- ❌ **NO UPDATE ENDPOINT** (Current implementation - immutable records)
+- 💡 **Recommendation**: Add update for `careContent` và `careStatus`
+  - Permission: Same as DELETE (own record + same day)
 
-5. **Care Count Badge**: Real-time count of care records per customer per treatment date
+#### DELETE
 
-### Status Options
+| Role     | Permission                                                               |
+| -------- | ------------------------------------------------------------------------ |
+| Admin    | ✅ Xóa tất cả                                                            |
+| Employee | ⚠️ Chỉ xóa bản ghi của mình (`careStaffId = employeeId`) trong cùng ngày |
+|          | Same VN day check: `careDateTime.date === today.date` (VN TZ)            |
 
-- **STABLE** (Ổn định): Green tag
-- **UNREACHABLE** (Không liên lạc được): Red tag
-- **NEEDS_FOLLOW_UP** (Cần theo dõi): Orange tag
+#### VIEW
 
----
+| Role     | Permission                                  |
+| -------- | ------------------------------------------- |
+| Employee | ✅ Xem tất cả records trong clinic của mình |
+| Admin    | ✅ Xem tất cả records (cross-clinic)        |
 
-## UI/UX Notes
+### Architecture
 
-### Tab Structure
-
-**2 Main Tabs:**
-
-1. **"Khách cần chăm sóc"** (Customers Needing Care)
-
-   - Default date: Yesterday
-   - Focus: Action-oriented (call customers)
-   - Shows care count badge
-
-2. **"Lịch sử chăm sóc"** (Care History)
-   - Default range: 35 days
-   - Focus: Review & tracking
-   - Grouped by day with collapse panels
-
-### Modal Patterns
-
-1. **CreateTreatmentCareModal**:
-
-   - Simple form
-   - Context from customer table
-   - Read-only customer info + treatment date
-
-2. **TreatmentCareDetailModal**:
-   - Read-only view
-   - Full information display
-   - Structured sections
-
-### Empty States
-
-- No customers on selected date
-- No care history in date range
-- No care history for specific customer
-
-All with helpful messages and suggestions.
+- ✅ **Hybrid**: GET qua API Routes + Mutations qua Server Actions
+- ✅ **4 Query Modes**:
+  1. By Customer: History view (customerId filter)
+  2. By Date Range: Grouped by day (default 35 days)
+  3. Customers Needing Care: TreatmentLog → TreatmentCare count (by specific date)
+  4. Follow-Up Customers: Latest care status = UNREACHABLE or NEEDS_FOLLOW_UP
+- ✅ **Filters**: `from`, `to`, `groupBy`, `onlyMine`, `clinicId`, `customerId`
+- ✅ **Scope Logic**: Non-admin auto-scope to own clinic
 
 ---
 
-## Technical Notes
+## 🖥️ View Structure
+
+### Route & Layout
+
+**Route**: `/treatment-care` (TreatmentCareDailyView)
+
+**Pattern**: Single page với tabs (giống Appointments, Consulted Services)
+
+**Layout**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📞 CHĂM SÓC SAU ĐIỀU TRỊ                                  │
+│  [< Prev] [📅 Ngày điều trị: DD/MM/YYYY] [Next >]          │
+├─────────────────────────────────────────────────────────────┤
+│  [Dashboard Stats Widget - 5 KPIs]                         │
+├─────────────────────────────────────────────────────────────┤
+│  [Tab: Cần gọi hôm nay] [Tab: Lịch sử chăm sóc]            │
+├─────────────────────────────────────────────────────────────┤
+│  [Filters: Search, Status...] (tab-specific)               │
+│  [Table with actions]                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Dashboard Widget (5 KPIs)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📞 CHĂM SÓC SAU ĐIỀU TRỊ - Hôm Nay                        │
+├─────────────────────────────────────────────────────────────┤
+│  Cần gọi: 45 khách                                         │
+│  ├─ Điều trị [ngày chọn]: 32 khách (Table 1)              │
+│  └─ Cần follow-up: 13 khách (Table 2 - UNREACHABLE/NEEDS) │
+│                                                            │
+│  Đã gọi hôm nay: 28 cuộc (62%)                            │
+│  ├─ ✅ Ổn định: 22 (78%)                                  │
+│  ├─ ⚠️ Cần theo dõi: 4 (14%)                              │
+│  └─ ❌ Không liên lạc: 2 (7%)                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**5 KPIs** (Calculated from today's calls only):
+
+1. **Total Needing Care**: Count khách trong Table 1 (ngày chọn) + Table 2 (follow-up)
+2. **Called Today Progress**: (Số cuộc gọi hôm nay / Tổng cần gọi) × 100%
+3. **STABLE Rate**: (STABLE hôm nay / Tổng gọi hôm nay) × 100%
+4. **NEEDS_FOLLOW_UP Rate**: (NEEDS_FOLLOW_UP hôm nay / Tổng gọi hôm nay) × 100%
+5. **UNREACHABLE Rate**: (UNREACHABLE hôm nay / Tổng gọi hôm nay) × 100%
+
+**Notes**:
+
+- "Đã gọi hôm nay": Count TreatmentCare records với `careDateTime` = today (VN TZ)
+- "Tổng cần gọi": Table 1 customer count + Table 2 customer count (unique)
+- Rate calculations: Based on today's call results only
+
+### Tab 1: "Cần gọi hôm nay"
+
+**2 Tables trong cùng 1 tab**:
+
+#### Table 1: Khách điều trị theo ngày (TreatmentCareCustomerTable)
+
+**Behavior**:
+
+- Hiển thị khách điều trị trong ngày được chọn ở header nav (default: yesterday)
+- Load data theo ngày được chọn (date navigation controls table data)
+
+**Filters**:
+
+```
+[Tìm kiếm (Search: code/name/phone)]
+```
+
+**Table Columns**:
+
+| Column           | Width | Description                       |
+| ---------------- | ----- | --------------------------------- |
+| Mã KH            | 100px | `customerCode`                    |
+| Khách hàng       | 180px | `fullName` (Link to detail)       |
+| Điện thoại       | 120px | `phone` với icon copy             |
+| Dịch vụ điều trị | 280px | `treatmentServiceNames` (tags)    |
+| Bác sĩ điều trị  | 200px | `treatingDoctorNames` (comma sep) |
+| Số lần CS        | 80px  | `careCount` (Badge số)            |
+| Actions          | 100px | Button "Gọi ngay"                 |
+
+**Actions**: Button "Gọi ngay" → Mở `CreateTreatmentCareModal`
+
+#### Table 2: Khách cần follow-up (TreatmentCareFollowUpTable)
+
+**Behavior**:
+
+- Hiển thị khách có lần gọi gần nhất là UNREACHABLE hoặc NEEDS_FOLLOW_UP
+- Logic: Lấy record mới nhất per customer, chỉ hiển thị nếu status = UNREACHABLE hoặc NEEDS_FOLLOW_UP
+
+**Example scenarios**:
+
+- Khách A: 06/12 UNREACHABLE → 07/12 STABLE → **Không hiển thị** (lần gọi gần nhất đã ổn)
+- Khách B: 09/12 NEEDS_FOLLOW_UP → 13/12 NEEDS_FOLLOW_UP → **Hiển thị** (vẫn cần follow-up)
+- Khách C: 10/12 UNREACHABLE → **Hiển thị** (chưa liên lạc được)
+
+**Table Columns**:
+
+| Column           | Width | Description                        |
+| ---------------- | ----- | ---------------------------------- |
+| Ngày điều trị    | 120px | `treatmentDate` (DD/MM/YYYY)       |
+| Khách hàng       | 200px | `{code} - {name}` (Link to detail) |
+| Điện thoại       | 120px | `phone` với icon copy              |
+| Lần gọi gần nhất | 150px | `lastCareAt` (DD/MM/YYYY HH:mm)    |
+| Trạng thái       | 120px | `lastCareStatus` (Tag)             |
+| Số lần đã gọi    | 80px  | `totalCareCount` (Badge)           |
+| Dịch vụ điều trị | 250px | `treatmentServiceNames` (tags)     |
+| Actions          | 100px | Button "Gọi lại"                   |
+
+**Sorting**: `lastCareAt` ASC (cũ nhất trên cùng = ưu tiên cao nhất)
+
+**Actions**: Button "Gọi lại" → Mở `CreateTreatmentCareModal` (với treatmentDate = ngày điều trị gốc)
+
+### Tab 2: "Lịch sử chăm sóc"
+
+**Component**: `TreatmentCareTable` (grouped by day)
+
+**Filters**:
+
+```
+[Đến ngày (DatePicker, default: today)] [✓ Chỉ của tôi (Checkbox)]
+```
+
+**Table Columns**:
+
+| Column           | Width | Description                        |
+| ---------------- | ----- | ---------------------------------- |
+| Ngày chăm sóc    | 150px | `careDateTime` (DD/MM/YYYY HH:mm)  |
+| Khách hàng       | 200px | `{code} - {name}` (Link to detail) |
+| Điện thoại       | 120px | `phone` với icon                   |
+| Dịch vụ điều trị | 250px | `treatmentServiceNames` (tags)     |
+| Bác sĩ điều trị  | 180px | `treatingDoctorNames` (comma sep)  |
+| Nhân viên CS     | 150px | `careStaff.fullName`               |
+| Trạng thái       | 120px | `careStatus` (Tag color-coded)     |
+| Nội dung         | 200px | `careContent` (truncate 50 chars)  |
+| Actions          | 80px  | View, Delete                       |
+
+**Status Colors**:
+
+- STABLE: Green (success) - "Bệnh nhân đã ổn"
+- UNREACHABLE: Red (error) - "Không liên lạc được"
+- NEEDS_FOLLOW_UP: Orange (warning) - "Cần chăm sóc thêm"
+
+**Grouping**:
+
+- Response grouped by day: `{ day: "YYYY-MM-DD", items: TreatmentCareRecord[] }[]`
+- UI: Collapse panels per day
+  - Header: `{day} (DD/MM/YYYY) - {count} bản ghi`
+  - Content: Table with items
+  - Default: Hôm nay expanded, cũ hơn collapsed
+
+---
+
+## 1. ➕ Tạo Bản Ghi Chăm Sóc
+
+### Permissions
+
+- Employee: Clinic của mình + customer có TreatmentLog trong `treatmentDate`
+- Admin: Clinic đang chọn + customer có TreatmentLog
+- Backend: Validate TreatmentLog exists → 422 với message "Không tìm thấy TreatmentLog cho ngày điều trị"
+
+### UI/UX
+
+**Component**: `CreateTreatmentCareModal` (85% mobile, 65% desktop)
+
+**Context**: Modal mở từ button "Gọi ngay" / "Gọi lại" trong tables
+
+**Form Layout**:
+
+```
+Hàng 1: [* Khách hàng (readonly, display)                                      ]
+Hàng 2: [* Ngày điều trị (readonly, from table context)                        ]
+Hàng 3: [* Thời gian chăm sóc (DatePicker, default: now, disabled)             ]
+Hàng 4: [* Trạng thái (Radio Group - 3 options)                                ]
+Hàng 5: [* Nội dung chăm sóc (Textarea)                                        ]
+Hàng 6: [Kịch bản gọi (Collapse Panel) - See templates/treatment-care-call-scripts.md]
+```
+
+**Field Details**:
+
+- "\* Khách hàng": readonly display `{customerCode} - {fullName} - {phone}`
+- "\* Ngày điều trị": readonly display từ table context (YYYY-MM-DD)
+- "\* Thời gian chăm sóc": DatePicker showTime, default now(), disabled (read-only)
+- "\* Trạng thái": Radio vertical
+  - "Bệnh nhân đã ổn" (STABLE)
+  - "Không liên lạc được" (UNREACHABLE)
+  - "Cần chăm sóc thêm" (NEEDS_FOLLOW_UP)
+- "\* Nội dung chăm sóc": Textarea rows={4}, placeholder "Ghi chú tình trạng khách hàng sau điều trị..."
+- "Kịch bản gọi": Collapse panel với 4 script templates (xem `docs/templates/treatment-care-call-scripts.md`)
+
+### Validation
+
+**Required**:
+
+- `customerId`: UUID (auto-filled từ context, hidden)
+- `treatmentDate`: YYYY-MM-DD (auto-filled từ table date selector)
+- `careDateTime`: ISO DateTime (default now(), VN TZ)
+  - Validate: `careDateTime >= treatmentDate` (backend)
+- `careStatus`: Enum (STABLE | UNREACHABLE | NEEDS_FOLLOW_UP)
+  - Backend: Coerce uppercase string to enum
+- `careContent`: String, min 1 character
+
+**Auto/Hidden**:
+
+- `careStaffId`: from `x-employee-id` header
+- `clinicId`: Priority logic (header → careStaff.clinicId)
+- Snapshot arrays: Built from TreatmentLogs in `treatmentDate`
+  - Query TreatmentLogs: `where: { customerId, treatmentDate: { gte: start, lt: end } }`
+  - Collect unique: service names, doctor names/IDs, clinic IDs
+  - Empty arrays OK (nếu TreatmentLog không có relation data)
+- Audit: `createdById`, `updatedById` = `careStaffId`
+
+### Error Handling
+
+- 400: Missing required fields, `careDateTime < treatmentDate`
+- 401: Missing `x-employee-id` header
+- 422: No TreatmentLog found for `treatmentDate` - show message "Khách hàng chưa có lịch sử điều trị trong ngày này"
+
+---
+
+## 2. 🗑️ Xoá Bản Ghi
+
+### UI/UX
+
+- Button: Delete icon (actions column)
+- Popconfirm:
+  - Employee (own record, same day): "Xác nhận xoá?"
+  - Employee (not own / old record): Button disabled với tooltip "Chỉ xóa được bản ghi của mình trong ngày"
+  - Admin: "Xác nhận xoá bản ghi chăm sóc?"
+
+### Rules
+
+- Hard delete (no archive)
+- **Employee**:
+  - `careStaffId === employeeId` (ownership check)
+  - `careDateTime.date === today.date` (VN TZ same day check)
+  - Return 403 nếu vi phạm
+- **Admin**: Delete all
+
+---
+
+## 3. 🔍 Xem Chi Tiết Bản Ghi
+
+### UI/UX
+
+**Component**: `TreatmentCareDetailModal` (Read-only)
+
+**Layout**:
+
+```
+Thông tin chăm sóc
+────────────────────────────────────────
+Khách hàng:         {code} - {name} - {phone}
+Ngày điều trị:      {treatmentDate}
+Thời gian chăm sóc: {careDateTime}
+Nhân viên CS:       {careStaff.fullName}
+Trạng thái:         {careStatus Tag}
+
+Chi tiết điều trị
+────────────────────────────────────────
+Dịch vụ điều trị:   {treatmentServiceNames Tags}
+Bác sĩ điều trị:    {treatingDoctorNames comma-separated}
+
+Nội dung chăm sóc
+────────────────────────────────────────
+{careContent full text}
+
+Metadata
+────────────────────────────────────────
+Tạo bởi:    {createdBy.fullName}
+Tạo lúc:    {createdAt}
+Sửa bởi:    {updatedBy.fullName}
+Sửa lúc:    {updatedAt}
+```
+
+**Footer**: Button "Đóng"
+
+---
+
+## 4. 👤 Customer Detail Integration
+
+### Use Case
+
+Trong Customer Detail page, xem toàn bộ lịch sử chăm sóc của khách
+
+### UI/UX
+
+**Component**: `CustomerTreatmentCareHistory` (trong Customer Detail tabs)
+
+**Table Columns** (không cần cột Khách hàng):
+
+| Column           | Width | Description                       |
+| ---------------- | ----- | --------------------------------- |
+| Ngày điều trị    | 120px | `treatmentDate` (DD/MM/YYYY)      |
+| Ngày chăm sóc    | 150px | `careDateTime` (DD/MM/YYYY HH:mm) |
+| Dịch vụ điều trị | 250px | `treatmentServiceNames` (tags)    |
+| Bác sĩ điều trị  | 180px | `treatingDoctorNames`             |
+| Nhân viên CS     | 150px | `careStaff.fullName`              |
+| Trạng thái       | 120px | `careStatus` (Tag)                |
+| Nội dung         | auto  | `careContent` (full text)         |
+| Actions          | 80px  | View, Delete                      |
+
+**Sorting**: `careDateTime` DESC (mới nhất trên cùng)
+
+**No Grouping**: Flat list
+
+---
+
+## 🛠️ Technical Implementation
 
 ### API Endpoints
 
-- `GET /api/v1/treatment-cares` - List/grouped history
-- `GET /api/v1/treatment-cares/customers` - Customers needing care
-- `POST /api/v1/treatment-cares` - Create (via Server Action)
-- `DELETE /api/v1/treatment-cares/{id}` - Delete (via Server Action)
+**API Routes (GET only)**:
 
-### Query Parameters
+- `GET /api/v1/treatment-cares?from&to&groupBy&onlyMine&clinicId&customerId` - List/grouped records
+- `GET /api/v1/treatment-cares/customers?date&keyword&clinicId` - Customers needing care (Table 1)
+- `GET /api/v1/treatment-cares/follow-ups?clinicId` - Customers needing follow-up (Table 2)
 
-- `date`: YYYY-MM-DD (for customers endpoint)
-- `from`, `to`: YYYY-MM-DD (for history endpoint)
-- `groupBy`: "day" (optional)
-- `onlyMine`: "true"|"false" (optional)
-- `keyword`: string (search in customers)
-- `customerId`: UUID (filter by customer)
+**Server Actions (Mutations)**:
 
-### Error Codes
+- `createTreatmentCareAction(data)` - Tạo mới
+- `deleteTreatmentCareAction(id)` - Xóa (hard delete)
 
-- **400**: Missing fields, invalid careAt
-- **401**: Missing auth headers
-- **403**: Permission denied (delete restrictions)
-- **404**: Record not found
-- **422**: No TreatmentLog found on treatmentDate
-- **500**: Server error
+### Zod Schemas
+
+**Location**: `src/shared/validation/treatment-care.validation.ts`
+
+**Key Schemas**:
+
+- `CreateTreatmentCareRequestSchema` - Form data validation
+- `GetTreatmentCaresQuerySchema` - List query params
+- `GetTreatmentCareCustomersQuerySchema` - Table 1 query params
+- `GetTreatmentCareFollowUpsQuerySchema` - Table 2 query params
+- `TreatmentCareResponseSchema` - API response type
+- `TreatmentCareCustomerResponseSchema` - Table 1 response type
+- `TreatmentCareFollowUpResponseSchema` - Table 2 response type
+
+### Repository Pattern
+
+**Location**: `src/server/repos/treatment-care.repo.ts`
+
+**Methods**:
+
+- `create(data: TreatmentCareCreateInput)` - Include customer + careStaff relations
+- `findById(id)` - Include full relations (+ createdBy, updatedBy)
+- `list(where, orderBy)` - Query with filters
+- `delete(id)` - Hard delete
+
+**Complex Input Type**:
+
+```typescript
+type TreatmentCareCreateInput = CreateTreatmentCareRequest & {
+  createdById: string;
+  updatedById: string;
+  careStaffId: string; // from session
+  clinicId: string; // from header or careStaff
+  // Snapshots from TreatmentLogs
+  treatmentServiceNames: string[];
+  treatingDoctorNames: string[];
+  treatingDoctorIds: string[];
+  treatmentClinicIds: string[];
+};
+```
+
+### Service Layer
+
+**Location**: `src/server/services/treatment-care.service.ts`
+
+**Key Methods**:
+
+- `create(user, data)` - Validate, build snapshots, create record
+- `delete(id, user)` - Permission check, delete
+- `list(query, user)` - Clinic scope, date range, groupBy day, onlyMine
+- `getCustomersNeedingCare(query, user)` - Table 1 data (aggregate TreatmentLogs)
+- `getFollowUpCustomers(query, user)` - Table 2 data (latest status = UNREACHABLE/NEEDS_FOLLOW_UP)
+- `buildTreatmentSnapshots(customerId, treatmentDate)` - Helper
+- `groupByDay(records)` - Helper
+
+### React Query Hooks
+
+**Location**: `src/features/treatment-care/hooks/`
+
+- `useTreatmentCares(params)` - List/grouped view
+- `useTreatmentCareCustomers(params)` - Table 1
+- `useTreatmentCareFollowUps(params)` - Table 2
+- `useCreateTreatmentCare()` - Create mutation
+- `useDeleteTreatmentCare()` - Delete mutation
+
+### Constants
+
+**Location**: `src/features/treatment-care/constants.ts`
+
+- `TREATMENT_CARE_STATUS_OPTIONS` - Radio group options
+- `TREATMENT_CARE_STATUS_COLORS` - Tag colors mapping
+- `TREATMENT_CARE_STATUS_LABELS` - Display labels
+- `CALL_SCRIPTS` - 4 templates (imported from constants/callScripts.ts)
 
 ---
 
-## Related Documentation
+## ✅ Implementation Checklist
 
-- **Technical Requirements**: `014 Treatment Care.md`
-- **Prisma Model**: `prisma/schema.prisma` → TreatmentCare
-- **Related Features**: `012 Treatment Log.md`, `007 Customer.md`
+### Backend
+
+- [ ] Zod schemas (validation types)
+- [ ] Repository (create, list, findById, delete)
+- [ ] Service (create, delete, list, getCustomersNeedingCare, getFollowUpCustomers, helpers)
+- [ ] Server Actions (create, delete)
+- [ ] API Routes (3 GET endpoints)
+
+### Frontend
+
+- [ ] Types & API Client
+- [ ] React Query Hooks (5 hooks)
+- [ ] Constants (status options, colors, labels, call scripts)
+- [ ] Components:
+  - [ ] CreateTreatmentCareModal (form with call scripts panel)
+  - [ ] TreatmentCareCustomerTable (Table 1: date-driven)
+  - [ ] TreatmentCareFollowUpTable (Table 2: follow-up customers)
+  - [ ] TreatmentCareTable (grouped by day, collapse panels)
+  - [ ] TreatmentCareDetailModal (read-only view)
+  - [ ] CustomerTreatmentCareHistory (Customer Detail integration)
+
+### Tests
+
+- [ ] Validate TreatmentLog dependency (422 error)
+- [ ] Validate careDateTime >= treatmentDate (400 error)
+- [ ] Snapshot generation (unique services/doctors/clinics)
+- [ ] Delete permission (admin vs employee, same day check)
+- [ ] Clinic scope (non-admin auto-scope)
+- [ ] Date range default (35 days)
+- [ ] GroupBy day logic
+- [ ] OnlyMine filter
+- [ ] Customer aggregation with careCount
+- [ ] Follow-up logic (latest status filtering)
+
+---
+
+## 📝 Notes
+
+### Key Differences from Consulted Service
+
+1. **No Appointment Dependency**: TreatmentCare links to TreatmentLog (via date), not Appointment
+2. **Multiple Records**: Same customer can have multiple care records on same treatment date
+3. **Immutable**: No update endpoint (current implementation)
+4. **Snapshot Focus**: Denormalize treatment data to avoid complex joins
+5. **Date Logic**: Two dates (`treatmentDate` vs `careDateTime`) with validation
+6. **2-Table View**: Daily view có 2 tables (date-driven + follow-up)
+
+### Future Enhancements
+
+- [ ] Add UPDATE endpoint for editing careContent + careStatus
+- [ ] Add bulk create (care for multiple customers at once)
+- [ ] Add care reminder notifications
+- [ ] Add care statistics/reports
+- [ ] Move call scripts to database for UI-based editing
+
+---
+
+**End of Requirements** 📋
