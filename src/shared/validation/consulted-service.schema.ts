@@ -253,6 +253,7 @@ export const ConsultedServiceResponseSchema = z.object({
   appointmentId: z.string(),
   dentalServiceId: z.string(),
   clinicId: z.string(),
+  customerClinicId: z.string().nullable().optional(), // Customer's current clinic for permission checks
 
   // Denormalized data
   consultedServiceName: z.string(),

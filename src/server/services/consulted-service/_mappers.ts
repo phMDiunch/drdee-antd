@@ -10,7 +10,7 @@ import type {
 type ConsultedServiceWithRelations = ConsultedService & {
   customer: Pick<
     Customer,
-    "id" | "fullName" | "customerCode" | "dob" | "phone"
+    "id" | "fullName" | "customerCode" | "dob" | "phone" | "clinicId"
   >;
   dentalService: Pick<
     DentalService,
@@ -40,6 +40,7 @@ export function mapConsultedServiceToResponse(
     appointmentId: row.appointmentId,
     dentalServiceId: row.dentalServiceId,
     clinicId: row.clinicId,
+    customerClinicId: row.customer.clinicId, // Customer's current clinic for permission checks
 
     // Denormalized data
     consultedServiceName: row.consultedServiceName,

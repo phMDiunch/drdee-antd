@@ -2,13 +2,24 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Row, Col, Card, Tabs, Empty, Space, Typography, Spin } from "antd";
+import {
+  Row,
+  Col,
+  Card,
+  Tabs,
+  Empty,
+  Space,
+  Typography,
+  Spin,
+  Tag,
+} from "antd";
 import {
   UserOutlined,
   IdcardOutlined,
   PhoneOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
+  BankOutlined,
 } from "@ant-design/icons";
 import { useCustomerDetail } from "@/features/customers";
 import { useConsultedServicesByCustomer } from "@/features/consulted-services";
@@ -193,6 +204,14 @@ export default function CustomerDetailView({
                 <Text type="secondary">
                   Mã KH: {customer.customerCode || "—"}
                 </Text>
+                {customer.clinic && (
+                  <Tag
+                    icon={<BankOutlined />}
+                    color={customer.clinic.colorCode}
+                  >
+                    {customer.clinic.clinicCode}
+                  </Tag>
+                )}
               </Space>
 
               <Space>

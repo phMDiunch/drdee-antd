@@ -53,6 +53,7 @@ export type ConsultedServiceForPermission = {
   serviceStatus: string;
   serviceConfirmDate?: Date | string | null;
   clinicId?: string | null;
+  customerClinicId?: string | null; // Customer's current clinic (for permission check after customer transfer)
 };
 
 // ============================================================================
@@ -129,7 +130,9 @@ function getDaysSinceConfirmation(
 }
 
 /**
- * Check if user can access service (same clinic)
+ * Check if user can access service
+ * Priority: Check customer's current clinic (customerClinicId) if available,
+ * fallback to service's clinic (clinicId) for backward compatibility
  */
 function canAccessClinic(
   user: PermissionUser | null | undefined,
@@ -137,7 +140,10 @@ function canAccessClinic(
 ): boolean {
   if (!user) return false;
   if (isAdmin(user)) return true; // Admin can access all
-  return user.clinicId === service.clinicId;
+
+  // Check customer's current clinic (supports customer transfer between clinics)
+  const targetClinicId = service.customerClinicId ?? service.clinicId;
+  return user.clinicId === targetClinicId;
 }
 
 /**
@@ -253,11 +259,12 @@ export const consultedServicePermissions = {
       };
     }
 
-    // Must be same clinic
+    // Must be same clinic (based on customer's current clinic)
     if (!canAccessClinic(user, service)) {
       return {
         allowed: false,
-        reason: "Không có quyền xóa dịch vụ của chi nhánh khác",
+        reason:
+          "Không có quyền xóa dịch vụ của khách hàng thuộc chi nhánh khác",
       };
     }
 
@@ -352,11 +359,12 @@ export const consultedServicePermissions = {
       };
     }
 
-    // Must be same clinic
+    // Must be same clinic (based on customer's current clinic)
     if (!canAccessClinic(user, service)) {
       return {
         allowed: false,
-        reason: "Không có quyền chốt dịch vụ của chi nhánh khác",
+        reason:
+          "Không có quyền chốt dịch vụ của khách hàng thuộc chi nhánh khác",
       };
     }
 

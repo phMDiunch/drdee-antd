@@ -43,6 +43,7 @@ const paymentVoucherInclude = {
       fullName: true,
       customerCode: true,
       phone: true,
+      clinicId: true, // For permission checks after customer clinic transfer
     },
   },
   cashier: {

@@ -209,11 +209,19 @@ export default function EmployeeTable({
                 />
               </Tooltip>
 
-              <Tooltip title="Gửi lại lời mời">
+              <Tooltip
+                title={
+                  !row.email
+                    ? "Nhân viên chưa có email"
+                    : row.uid
+                      ? "Nhân viên đã có tài khoản Supabase"
+                      : "Gửi lại lời mời"
+                }
+              >
                 <Button
                   icon={<MailOutlined />}
                   onClick={() => onResendInvite(row)}
-                  disabled={!row.email || disabled}
+                  disabled={!row.email || !!row.uid || disabled}
                   loading={inviteLoadingId === row.id}
                 />
               </Tooltip>

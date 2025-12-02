@@ -78,7 +78,9 @@ export default function CustomerFormModal({
   // Determine clinic settings based on user role
   const isAdmin = currentUser?.role === "admin";
   const defaultClinicId = selectedClinicId || currentUser?.clinicId || "";
-  const clinicIdDisabled = !isAdmin || mode === "edit"; // Disable for non-admin or in edit mode
+  // Admin can change clinicId in edit mode (customer clinic transfer)
+  // Employee cannot change clinicId at all
+  const clinicIdDisabled = !isAdmin;
 
   // Get default form values - MEMOIZED to prevent infinite loop in useEffect
   const defaultValues = useMemo(() => {
