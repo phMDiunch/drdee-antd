@@ -1,10 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Card, Table, Typography, Space, Tag, Empty } from "antd";
+import { Card, Table, Typography, Space, Tag, Empty, Button } from "antd";
+import { FileExcelOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { ConsultedServiceDetail } from "@/shared/validation/sales-report.schema";
 import type { TabType } from "../hooks/useSalesDetail";
 import { CUSTOMER_SOURCES } from "@/features/customers/constants";
+import { exportSalesDetailToExcel } from "../utils/exportToExcel";
+import { useNotify } from "@/shared/hooks/useNotify";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -18,6 +21,10 @@ interface DetailPanelProps {
     totalRevenue: number;
   } | null;
   loading?: boolean;
+  filters?: {
+    month: string;
+    clinicId?: string;
+  };
 }
 
 export default function DetailPanel({
@@ -25,7 +32,30 @@ export default function DetailPanel({
   selectedRowLabel,
   data,
   loading,
+  filters,
 }: DetailPanelProps) {
+  const notify = useNotify();
+
+  const handleExportExcel = useCallback(async () => {
+    if (!data || !data.records.length) {
+      notify.warning("Không có dữ liệu để xuất");
+      return;
+    }
+
+    try {
+      const filename = `bao-cao-doanh-so-chi-tiet-${
+        filters?.month || dayjs().format("YYYY-MM")
+      }.xlsx`;
+
+      await exportSalesDetailToExcel(data.records, filename);
+
+      notify.success("Xuất Excel thành công");
+    } catch (error) {
+      console.error("Export error:", error);
+      notify.error(error, { fallback: "Xuất Excel thất bại" });
+    }
+  }, [data, filters, notify]);
+
   // Fixed columns for detail table
   const columns = useMemo<ColumnsType<ConsultedServiceDetail>>(() => {
     return [
@@ -132,6 +162,18 @@ export default function DetailPanel({
           </Text>
         </Space>
       }
+      extra={
+        !showEmptyState && data?.records.length ? (
+          <Button
+            type="primary"
+            icon={<FileExcelOutlined />}
+            onClick={handleExportExcel}
+            loading={loading}
+          >
+            Xuất Excel
+          </Button>
+        ) : null
+      }
     >
       {!showEmptyState && (
         <div style={{ marginBottom: 16 }}>
@@ -156,7 +198,11 @@ export default function DetailPanel({
         rowKey="id"
         loading={loading}
         scroll={{ x: 1200 }}
-        pagination={{ pageSize: 20 }}
+        pagination={{
+          showSizeChanger: true,
+          showTotal: (total) => `Tổng ${total} dịch vụ`,
+          pageSizeOptions: [10, 20, 50, 100],
+        }}
         size="small"
         bordered
         locale={{

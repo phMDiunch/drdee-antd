@@ -148,6 +148,7 @@ export default function SalesReportView() {
             selectedRowLabel={selectedRow.label}
             data={detailData}
             loading={detailLoading}
+            filters={filters}
           />
         </>
       ) : null}

@@ -161,6 +161,8 @@ export const PaymentDetailRecordSchema = z.object({
   customerCode: z.string(),
   customerId: z.string(),
   treatingDoctorName: z.string().nullable(),
+  toothPositions: z.array(z.string()).nullable(),
+  quantity: z.number(),
   amount: z.number(),
   paymentPercentage: z.number(),
   totalPaid: z.number(),

@@ -144,6 +144,7 @@ export default function RevenueReportView() {
             selectedRowLabel={selectedRow.label}
             data={detailData}
             loading={detailLoading}
+            filters={filters}
           />
         </>
       ) : null}

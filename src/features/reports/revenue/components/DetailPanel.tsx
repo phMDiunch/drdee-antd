@@ -1,10 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Card, Table, Typography, Space, Tag, Empty } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
+import { Card, Table, Typography, Space, Tag, Empty, Button } from "antd";
+import { InfoCircleOutlined, FileExcelOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { PaymentDetailRecord } from "@/shared/validation/revenue-report.schema";
 import type { TabType } from "../hooks/useRevenueDetail";
+import { exportRevenueDetailToExcel } from "../utils/exportToExcel";
+import { useNotify } from "@/shared/hooks/useNotify";
+import dayjs from "dayjs";
 
 const { Text } = Typography;
 
@@ -17,6 +20,10 @@ interface DetailPanelProps {
     totalRevenue: number;
   } | null;
   loading?: boolean;
+  filters?: {
+    month: string;
+    clinicId?: string;
+  };
 }
 
 export default function DetailPanel({
@@ -24,7 +31,30 @@ export default function DetailPanel({
   selectedRowLabel,
   data,
   loading,
+  filters,
 }: DetailPanelProps) {
+  const notify = useNotify();
+
+  const handleExportExcel = useCallback(async () => {
+    if (!data || !data.records.length) {
+      notify.warning("Không có dữ liệu để xuất");
+      return;
+    }
+
+    try {
+      const filename = `bao-cao-doanh-thu-chi-tiet-${
+        filters?.month || dayjs().format("YYYY-MM")
+      }.xlsx`;
+
+      await exportRevenueDetailToExcel(data.records, filename);
+
+      notify.success("Xuất Excel thành công");
+    } catch (error) {
+      console.error("Export error:", error);
+      notify.error(error, { fallback: "Xuất Excel thất bại" });
+    }
+  }, [data, filters, notify]);
+
   const columns = useMemo<ColumnsType<PaymentDetailRecord>>(() => {
     return [
       {
@@ -39,6 +69,23 @@ export default function DetailPanel({
         dataIndex: "serviceName",
         key: "serviceName",
         width: 200,
+      },
+      {
+        title: "Vị trí răng",
+        dataIndex: "toothPositions",
+        key: "toothPositions",
+        width: 120,
+        render: (value: string[] | null) => {
+          if (!value || value.length === 0) return "-";
+          return value.join(", ");
+        },
+      },
+      {
+        title: "Số lượng",
+        dataIndex: "quantity",
+        key: "quantity",
+        width: 90,
+        align: "center",
       },
       {
         title: "Khách hàng (Mã)",
@@ -108,6 +155,18 @@ export default function DetailPanel({
           </Text>
         </Space>
       }
+      extra={
+        !showEmptyState && data?.records.length ? (
+          <Button
+            type="primary"
+            icon={<FileExcelOutlined />}
+            onClick={handleExportExcel}
+            loading={loading}
+          >
+            Xuất Excel
+          </Button>
+        ) : null
+      }
     >
       {showEmptyState ? (
         <Empty
@@ -148,11 +207,11 @@ export default function DetailPanel({
             dataSource={data?.records || []}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 1100 }}
+            scroll={{ x: 1300 }}
             pagination={{
-              pageSize: 20,
-              showSizeChanger: false,
+              showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} giao dịch`,
+              pageSizeOptions: [10, 20, 50, 100],
             }}
           />
         </>

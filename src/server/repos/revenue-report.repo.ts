@@ -28,6 +28,8 @@ export interface RawPaymentDetail {
   consultedService: {
     id: string;
     finalPrice: number;
+    toothPositions: string[] | null;
+    quantity: number;
     dentalService: {
       id: string;
       name: string;
@@ -189,7 +191,11 @@ export const revenueReportRepo = {
           },
         },
         consultedService: {
-          include: {
+          select: {
+            id: true,
+            finalPrice: true,
+            toothPositions: true,
+            quantity: true,
             customer: {
               select: {
                 id: true,
