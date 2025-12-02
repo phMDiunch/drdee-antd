@@ -73,17 +73,12 @@ export default function ServiceRevenueTable({
         title: "% thanh toán",
         dataIndex: "paymentPercentage",
         key: "paymentPercentage",
-        width: 140,
+        width: 120,
         align: "center",
-        render: (value, record) => {
+        render: (value) => {
           const isComplete = value >= 100;
           const color = isComplete ? "green" : "blue";
-          return (
-            <Tag color={color}>
-              {value.toFixed(1)}% ({record.totalPaid.toLocaleString()}/
-              {record.totalFinalPrice.toLocaleString()})
-            </Tag>
-          );
+          return <Tag color={color}>{value.toFixed(1)}%</Tag>;
         },
       },
     ],
@@ -124,11 +119,7 @@ export default function ServiceRevenueTable({
             </Table.Summary.Cell>
             <Table.Summary.Cell index={3} align="center">
               <Tag color={totalPaymentPercentage >= 100 ? "green" : "blue"}>
-                <strong>
-                  {totalPaymentPercentage.toFixed(1)}% (
-                  {totals.totalPaid.toLocaleString()}/
-                  {totals.totalFinalPrice.toLocaleString()})
-                </strong>
+                <strong>{totalPaymentPercentage.toFixed(1)}%</strong>
               </Tag>
             </Table.Summary.Cell>
           </Table.Summary.Row>

@@ -101,6 +101,10 @@ export default function EmployeesListView() {
         notify.warning("Nhân viên này chưa có email để gửi lại lời mời.");
         return;
       }
+      if (row.uid) {
+        notify.info("Nhân viên đã có tài khoản Supabase, không cần gửi lại lời mời.");
+        return;
+      }
       setInviteTargetId(row.id);
       try {
         await resendMutation.mutateAsync(row.id);

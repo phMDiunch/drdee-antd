@@ -161,16 +161,14 @@ export const CreateCustomerRequestSchema =
 /**
  * Update Customer Request Schema (BACKEND - API)
  * Dùng ở: API PATCH /api/v1/customers/[id] (server-side)
- * Partial update - all fields optional except immutable fields (customerCode, clinicId) are excluded
+ * Partial update - all fields optional
  *
- * Immutable fields:
- * - customerCode: Auto-generated, không được edit
- * - clinicId: Không cho phép transfer customer sang clinic khác
+ * Note: customerCode cannot be updated (not in CustomerRequestBaseSchema)
+ *
+ * Admin-only fields:
+ * - clinicId: Chỉ admin mới được chuyển customer sang clinic khác (validated in service layer)
  */
-export const UpdateCustomerRequestSchema = CustomerRequestBaseSchema.omit({
-  clinicId: true, // Immutable - không cho phép update
-})
-  .partial() // Make all fields optional for partial updates
+export const UpdateCustomerRequestSchema = CustomerRequestBaseSchema.partial() // Make all fields optional for partial updates
   .superRefine((data, ctx) => {
     // Only validate conditional logic if relevant fields are provided
     // Skip validation nếu không có phone/primaryContact fields trong update

@@ -199,6 +199,8 @@ export function mapDetailRecords(
       customerId: detail.consultedService.customer.id,
       treatingDoctorName:
         detail.consultedService.treatingDoctor?.fullName || null,
+      toothPositions: detail.consultedService.toothPositions,
+      quantity: detail.consultedService.quantity,
       amount: detail.amount,
       paymentPercentage: Math.round(paymentPercentage * 10) / 10,
       totalPaid,

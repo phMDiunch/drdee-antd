@@ -16,8 +16,8 @@ export function usePasswordResetSession() {
       const supabase = createClient();
 
       try {
-        // Check if user already has a valid session (from URL hash after redirect)
-        // Implicit flow: Supabase automatically extracts access_token from URL hash
+        // Supabase automatically handles the token from URL hash when page loads
+        // and creates a session. Just need to check if session exists.
         const {
           data: { session },
           error: sessionError,
@@ -25,16 +25,18 @@ export function usePasswordResetSession() {
 
         if (cancelled) return;
 
+        if (sessionError) {
+          throw sessionError;
+        }
+
         if (session) {
-          // User is authenticated, allow password reset
+          // User is authenticated via recovery token, allow password reset
           setStatus("ready");
           setErrorMessage(null);
           return;
         }
 
-        // No session found
-        if (sessionError) throw sessionError;
-
+        // No session found - could be expired token or invalid link
         setStatus("error");
         setErrorMessage(
           "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới."

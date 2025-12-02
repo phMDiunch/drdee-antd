@@ -11,6 +11,7 @@ type PaymentVoucherWithRelations = PaymentVoucher & {
     fullName: string;
     customerCode: string | null;
     phone: string | null;
+    clinicId: string | null;
   };
   cashier: {
     id: string;
@@ -66,6 +67,7 @@ export function mapPaymentVoucherToResponse(
       id: voucher.clinic.id,
       name: voucher.clinic.name,
     },
+    customerClinicId: voucher.customer.clinicId, // Customer's current clinic for permission checks
     details: voucher.details.map((detail) => ({
       id: detail.id,
       consultedServiceId: detail.consultedServiceId,

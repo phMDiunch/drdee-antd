@@ -45,6 +45,7 @@ const consultedServiceInclude = {
       customerCode: true,
       dob: true,
       phone: true,
+      clinicId: true, // For permission checks after customer clinic transfer
     },
   },
   dentalService: {

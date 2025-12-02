@@ -423,7 +423,8 @@ export const customerService = {
 
   /**
    * Update customer with validation and audit trail
-   * Immutable fields (customerCode, clinicId) are rejected if present in request
+   * - customerCode: Immutable (rejected by schema)
+   * - clinicId: Admin-only (validated here)
    */
   async update(currentUser: UserCore | null, id: string, body: unknown) {
     // Validate request body
@@ -452,6 +453,17 @@ export const customerService = {
         error instanceof Error ? error.message : "Không có quyền chỉnh sửa",
         403
       );
+    }
+
+    // ✅ Validate clinicId change: Admin-only
+    if (data.clinicId && data.clinicId !== existing.clinicId) {
+      if (currentUser?.role !== "admin") {
+        throw new ServiceError(
+          "PERMISSION_DENIED",
+          "Chỉ admin mới có thể chuyển khách hàng sang chi nhánh khác",
+          403
+        );
+      }
     }
 
     // Validate unique phone if changed

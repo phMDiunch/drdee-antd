@@ -63,6 +63,7 @@ export type PaymentVoucherForPermission = {
   paymentDate: Date | string;
   clinicId?: string | null;
   clinic?: { id: string } | null; // Support nested clinic object
+  customerClinicId?: string | null; // Customer's current clinic (for permission check after customer transfer)
   cashierId?: string | null;
   createdById?: string | null;
 };
@@ -95,19 +96,25 @@ function isAdmin(user: PermissionUser | null | undefined): boolean {
 }
 
 /**
- * Check if user belongs to same clinic
+ * Check if user belongs to same clinic as voucher
+ * Priority: Check customer's current clinic (customerClinicId) if available,
+ * fallback to voucher's clinic for backward compatibility
  */
 function isSameClinic(
   user: PermissionUser | null | undefined,
   voucher: PaymentVoucherForPermission
 ): boolean {
   if (!user) return false;
+  if (isAdmin(user)) return true; // Admin can access all clinics
 
   // Support both clinicId (string) and clinic.id (nested object)
   const voucherClinicId = voucher.clinicId || voucher.clinic?.id;
 
-  if (!voucherClinicId) return false;
-  return user.clinicId === voucherClinicId;
+  // Check customer's current clinic (supports customer transfer between clinics)
+  const targetClinicId = voucher.customerClinicId ?? voucherClinicId;
+
+  if (!targetClinicId) return false;
+  return user.clinicId === targetClinicId;
 }
 
 // ============================================================================

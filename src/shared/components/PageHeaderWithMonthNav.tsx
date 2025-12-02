@@ -1,8 +1,9 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import dayjs from "dayjs";
 import { Col, DatePicker, Row, Select, Typography } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
+import { useCurrentUser } from "@/shared/providers/user-provider";
 
 const { Title } = Typography;
 
@@ -29,6 +30,34 @@ export default function PageHeaderWithMonthNav({
   loading = false,
   subtitle,
 }: PageHeaderWithMonthNavProps) {
+  const { user } = useCurrentUser();
+
+  /**
+   * [OPTIONAL FEATURE - CAN BE REMOVED]
+   * Giới hạn chọn tháng cho employee: chỉ tháng này và tháng trước
+   *
+   * Để gỡ bỏ tính năng này:
+   * 1. Xóa hook `useCurrentUser` (dòng 33)
+   * 2. Xóa toàn bộ block `disabledDate` này (dòng 35-50)
+   * 3. Xóa prop `disabledDate={disabledDate}` trong DatePicker (dòng 116)
+   * 4. Xóa import `useCurrentUser` và `useMemo` nếu không dùng nữa
+   */
+  const disabledDate = useMemo(() => {
+    if (user?.role !== "employee") return undefined;
+
+    return (current: dayjs.Dayjs) => {
+      const now = dayjs();
+      const currentMonth = now.startOf("month");
+      const previousMonth = now.subtract(1, "month").startOf("month");
+
+      return (
+        current &&
+        (current.isBefore(previousMonth, "month") ||
+          current.isAfter(currentMonth, "month"))
+      );
+    };
+  }, [user?.role]);
+
   // Format month label
   const getMonthLabel = () => {
     const now = dayjs();
@@ -97,6 +126,7 @@ export default function PageHeaderWithMonthNav({
               picker="month"
               suffixIcon={<CalendarOutlined />}
               disabled={loading}
+              disabledDate={disabledDate}
             />
           </Col>
         </Row>

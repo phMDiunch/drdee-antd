@@ -14,3 +14,4 @@ export { default as DetailPanel } from "./components/DetailPanel";
 
 // Utils
 export * from "./utils/caching";
+export { exportSalesDetailToExcel } from "./utils/exportToExcel";
