@@ -187,8 +187,9 @@ export const ConsultedServiceDetailSchema = z.object({
     fullName: z.string(),
     phone: z.string().nullable(),
     source: z.string().nullable(),
+    sourceNotes: z.string().nullable(),
+    customerCode: z.string().nullable(),
   }),
-
   dentalService: z.object({
     id: z.string(),
     name: z.string(),

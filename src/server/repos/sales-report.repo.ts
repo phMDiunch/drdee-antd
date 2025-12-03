@@ -652,6 +652,8 @@ export const salesReportRepo = {
             fullName: true,
             phone: true,
             source: true,
+            sourceNotes: true,
+            customerCode: true,
           },
         },
         dentalService: {

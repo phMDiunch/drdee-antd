@@ -14,6 +14,7 @@ import type {
   RawEmployeeData,
 } from "@/server/repos/sales-report.repo";
 import { CUSTOMER_SOURCES } from "@/features/customers/constants";
+import { prisma } from "@/services/prisma/prisma";
 import dayjs from "dayjs";
 
 /**
@@ -45,6 +46,8 @@ type RawDetailRecord = {
     fullName: string;
     phone: string | null;
     source: string | null;
+    sourceNotes: string | null;
+    customerCode: string | null;
   };
   dentalService: {
     id: string;
@@ -257,6 +260,8 @@ export function mapDetailRecords(
       fullName: service.customer.fullName,
       phone: service.customer.phone,
       source: service.customer.source,
+      sourceNotes: service.customer.sourceNotes,
+      customerCode: service.customer.customerCode,
     },
     dentalService: {
       id: service.dentalService.id,
@@ -276,4 +281,84 @@ export function mapDetailRecords(
         }
       : null,
   }));
+}
+
+/**
+ * Enrich detail records with resolved sourceNotes names
+ * Converts IDs to display names for employee_referral and customer_referral
+ *
+ * Performance: Batch query để tránh N+1, immutable transformation
+ */
+export async function enrichDetailRecordsWithSourceNames(
+  services: RawDetailRecord[]
+): Promise<RawDetailRecord[]> {
+  // Collect unique IDs for batch lookup
+  const employeeIds = new Set<string>();
+  const customerIds = new Set<string>();
+
+  for (const service of services) {
+    const { source, sourceNotes } = service.customer;
+    if (!sourceNotes) continue;
+
+    if (source === "employee_referral") {
+      employeeIds.add(sourceNotes);
+    } else if (source === "customer_referral") {
+      customerIds.add(sourceNotes);
+    }
+  }
+
+  // Batch fetch names (optimal: 2 queries max instead of N queries)
+  const [employees, customers] = await Promise.all([
+    employeeIds.size > 0
+      ? prisma.employee.findMany({
+          where: { id: { in: Array.from(employeeIds) } },
+          select: { id: true, fullName: true },
+        })
+      : Promise.resolve([]),
+    customerIds.size > 0
+      ? prisma.customer.findMany({
+          where: { id: { in: Array.from(customerIds) } },
+          select: { id: true, fullName: true, customerCode: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  // Build lookup maps
+  const employeeNames = new Map(employees.map((emp) => [emp.id, emp.fullName]));
+  const customerNames = new Map(
+    customers.map((cust) => [
+      cust.id,
+      cust.customerCode
+        ? `${cust.fullName} (${cust.customerCode})`
+        : cust.fullName,
+    ])
+  );
+
+  // Immutable transformation: return new array with enriched data
+  return services.map((service) => {
+    const { source, sourceNotes } = service.customer;
+    if (!sourceNotes) return service;
+
+    let enrichedSourceNotes = sourceNotes;
+
+    if (source === "employee_referral" && employeeNames.has(sourceNotes)) {
+      enrichedSourceNotes = employeeNames.get(sourceNotes)!;
+    } else if (
+      source === "customer_referral" &&
+      customerNames.has(sourceNotes)
+    ) {
+      enrichedSourceNotes = customerNames.get(sourceNotes)!;
+    }
+
+    // Return new object if changed, same object if unchanged (performance)
+    if (enrichedSourceNotes === sourceNotes) return service;
+
+    return {
+      ...service,
+      customer: {
+        ...service.customer,
+        sourceNotes: enrichedSourceNotes,
+      },
+    };
+  });
 }

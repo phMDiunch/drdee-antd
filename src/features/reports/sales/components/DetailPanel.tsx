@@ -83,24 +83,35 @@ export default function DetailPanel({
       {
         title: "Khách hàng",
         key: "customer",
-        width: 150,
+        width: 160,
         render: (_, record) => (
-          <Link href={`/customers/${record.customer.id}`}>
-            <Text strong style={{ color: "#1890ff", cursor: "pointer" }}>
-              {record.customer.fullName}
-            </Text>
-          </Link>
+          <Space direction="vertical" size={2}>
+            <Link href={`/customers/${record.customer.id}`}>
+              <Text strong style={{ color: "#1890ff", cursor: "pointer" }}>
+                {record.customer.fullName}
+              </Text>
+            </Link>
+            {record.customer.customerCode && (
+              <Tag> {record.customer.customerCode}</Tag>
+            )}
+          </Space>
         ),
       },
       {
         title: "Nguồn khách",
         key: "source",
-        width: 130,
+        width: 140,
         render: (_, record) => {
           const sourceValue = record.customer.source;
+          const sourceNotes = record.customer.sourceNotes;
           if (!sourceValue) return "Không rõ";
           const source = CUSTOMER_SOURCES.find((s) => s.value === sourceValue);
-          return source?.label || sourceValue;
+          return (
+            <div style={{ maxWidth: "140px" }}>
+              <div>{source?.label || sourceValue}</div>
+              {sourceNotes && <Text type="secondary">{sourceNotes}</Text>}
+            </div>
+          );
         },
       },
       {
@@ -119,7 +130,7 @@ export default function DetailPanel({
         title: "Giá trị",
         dataIndex: "finalPrice",
         key: "finalPrice",
-        width: 130,
+        width: 120,
         align: "right",
         render: (value) => (
           <span style={{ fontWeight: "bold", color: "#1890ff" }}>
@@ -131,7 +142,7 @@ export default function DetailPanel({
         title: "Trạng thái",
         dataIndex: "serviceStatus",
         key: "serviceStatus",
-        width: 110,
+        width: 100,
         render: (value) => (
           <Tag color={value === "Đã chốt" ? "success" : "default"}>{value}</Tag>
         ),

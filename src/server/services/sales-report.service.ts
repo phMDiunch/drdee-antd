@@ -19,6 +19,7 @@ import {
   mapSaleData,
   mapDoctorData,
   mapDetailRecords,
+  enrichDetailRecordsWithSourceNames,
 } from "./sales-report/_mappers";
 
 /**
@@ -135,8 +136,11 @@ export const salesReportService = {
 
     const services = await salesReportRepo.getDetailRecords(params);
 
+    // Enrich sourceNotes with names (employee/customer referrals)
+    const enrichedServices = await enrichDetailRecordsWithSourceNames(services);
+
     // Chuyển đổi sang định dạng response bằng mapper
-    const records = mapDetailRecords(services);
+    const records = mapDetailRecords(enrichedServices);
     const totalRevenue = records.reduce((sum, r) => sum + r.finalPrice, 0);
 
     return {

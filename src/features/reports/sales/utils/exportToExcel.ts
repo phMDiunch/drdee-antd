@@ -22,8 +22,10 @@ export async function exportSalesDetailToExcel(
     { key: "consultationDate", width: 14 },
     { key: "serviceConfirmDate", width: 14 },
     { key: "serviceName", width: 35 },
+    { key: "customerCode", width: 14 },
     { key: "customerName", width: 22 },
     { key: "customerSource", width: 18 },
+    { key: "sourceNotes", width: 25 },
     { key: "consultingSale", width: 20 },
     { key: "consultingDoctor", width: 20 },
     { key: "finalPrice", width: 16 },
@@ -37,7 +39,9 @@ export async function exportSalesDetailToExcel(
     "Ngày chốt",
     "Dịch vụ",
     "Khách hàng",
+    "Mã khách hàng",
     "Nguồn khách",
+    "Ghi chú nguồn",
     "Sale tư vấn",
     "Bác sĩ tư vấn",
     "Giá trị",
@@ -69,7 +73,9 @@ export async function exportSalesDetailToExcel(
         : "-",
       serviceName: record.dentalService.name,
       customerName: record.customer.fullName,
+      customerCode: record.customer.customerCode || "-",
       customerSource: source,
+      sourceNotes: record.customer.sourceNotes || "-",
       consultingSale: record.consultingSale?.fullName || "-",
       consultingDoctor: record.consultingDoctor?.fullName || "-",
       finalPrice: record.finalPrice,
@@ -80,7 +86,7 @@ export async function exportSalesDetailToExcel(
   // Format amount column for all data rows
   const lastRow = worksheet.lastRow;
   if (lastRow) {
-    const amountColIndex = 9; // "finalPrice" column
+    const amountColIndex = 11; // "finalPrice" column (shifted right due to new sourceNotes column)
     for (let i = 2; i <= lastRow.number; i++) {
       const cell = worksheet.getCell(i, amountColIndex);
       cell.numFmt = '#,##0" ₫"';
