@@ -61,6 +61,7 @@ export const menuItems: MenuItem[] = [
     children: [
       { key: "/reports/sales", label: "Doanh số" },
       { key: "/reports/revenue", label: "Doanh thu" },
+      { key: "/reports/labo", label: "Labo" },
     ],
   },
   {
@@ -68,6 +69,16 @@ export const menuItems: MenuItem[] = [
     icon: <InboxOutlined />,
     label: "Quản lý kho",
     children: [{ key: "/inventory/materials", label: "Danh mục vật tư" }],
+  },
+  {
+    key: "labo",
+    icon: <ExperimentOutlined />,
+    label: "Labo răng giả",
+    children: [
+      { key: "/labo-items", label: "Danh mục labo" },
+      { key: "/labo-services", label: "Bảng giá labo" },
+      { key: "/labo-orders/daily", label: "Theo ngày" },
+    ],
   },
   {
     key: "/settings",

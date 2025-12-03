@@ -164,6 +164,10 @@ model Employee {
   createdMaterials Material[] @relation("CreatedMaterials")
   updatedMaterials Material[] @relation("UpdatedMaterials")
 
+  // Liên kết đến danh mục labo
+  createdLaboItems LaboItem[] @relation("CreatedLaboItems")
+  updatedLaboItems LaboItem[] @relation("UpdatedLaboItems")
+
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
   @@index([email]) // Optimize: Login by email
@@ -657,4 +661,38 @@ model Material {
   @@index([name])
   @@index([materialType, department, category, archivedAt])
   @@index([tags]) // GIN index for array search in PostgreSQL
+}
+
+//---------------------------
+// LaboItem (Danh mục răng giả)
+//---------------------------
+
+model LaboItem {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  // Store MasterData.key (String), NOT id (UUID)
+  // NO FK relation → Allows MasterData to be deleted
+  // Frontend: Display MasterData.value if found, else display key itself
+  serviceGroup String // Nhóm dịch vụ labo (category='nhom-dich-vu-labo')
+  unit         String // Đơn vị tính (category='don-vi-tinh-labo')
+
+  archivedAt DateTime? @db.Timestamptz // Soft delete
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+
+  createdById String // ID của người tạo
+  updatedById String // ID của người cập nhật
+
+  createdBy Employee @relation("CreatedLaboItems", fields: [createdById], references: [id])
+  updatedBy Employee @relation("UpdatedLaboItems", fields: [updatedById], references: [id])
+
+  // Relations (placeholder - sẽ được thêm khi implement Supplier Labo Price và Labo Order)
+  // supplierPrices SupplierLaboPrice[]
+  // orders         LaboOrder[]
+
+  // Indexes
+  @@index([name])
+  @@index([serviceGroup, archivedAt])
 }
