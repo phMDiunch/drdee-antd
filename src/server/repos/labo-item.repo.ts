@@ -78,9 +78,9 @@ export const laboItemRepo = {
   },
 
   // ===== liên kết để bảo vệ Delete =====
-  async countLinked(_laboItemId: string) {
-    // TODO: Add counts for SupplierLaboPrice and LaboOrder when implemented
-    // const supplierPrices = await prisma.supplierLaboPrice.count({
+  async countLinked(laboItemId: string) {
+    // TODO: Add counts for LaboService and LaboOrder when implemented
+    // const supplierPrices = await prisma.laboService.count({
     //   where: { laboItemId },
     // });
     // const orders = await prisma.laboOrder.count({
@@ -89,6 +89,8 @@ export const laboItemRepo = {
     // return { supplierPrices, orders, total: supplierPrices + orders };
 
     // For now, return 0 (no linked data yet)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _used = laboItemId; // Placeholder to avoid unused warning
     return { total: 0 };
   },
 };

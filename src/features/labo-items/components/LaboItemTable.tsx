@@ -83,40 +83,40 @@ export default function LaboItemTable({
       fixed: "right",
       width: 150,
       render: (_, row) => {
+        // ✅ Calculate values once at function start (avoid CSS-in-JS warning)
         const isArchived = !!row.archivedAt;
+        const archiveButton = isArchived ? (
+          <Tooltip title="Khôi phục">
+            <Button
+              icon={<RollbackOutlined />}
+              onClick={() => onUnarchive(row)}
+            />
+          </Tooltip>
+        ) : (
+          <Tooltip title="Lưu trữ">
+            <Button icon={<InboxOutlined />} onClick={() => onArchive(row)} />
+          </Tooltip>
+        );
+
         return (
           <Space>
             <Tooltip title="Sửa">
               <Button icon={<EditOutlined />} onClick={() => onEdit(row)} />
             </Tooltip>
 
-            {!isArchived ? (
-              <Tooltip title="Lưu trữ">
-                <Button
-                  icon={<InboxOutlined />}
-                  onClick={() => onArchive(row)}
-                />
-              </Tooltip>
-            ) : (
-              <Tooltip title="Khôi phục">
-                <Button
-                  icon={<RollbackOutlined />}
-                  onClick={() => onUnarchive(row)}
-                />
-              </Tooltip>
-            )}
+            {archiveButton}
 
-            <Popconfirm
-              title="Xóa hàng labo"
-              description="Bạn chắc chắn muốn xóa? Hành động này không thể hoàn tác."
-              okText="Xóa"
-              cancelText="Hủy"
-              onConfirm={() => onDelete(row)}
-            >
-              <Tooltip title="Xóa">
+            <Tooltip title="Xóa">
+              <Popconfirm
+                title="Xóa hàng labo"
+                description="Bạn chắc chắn muốn xóa? Hành động này không thể hoàn tác."
+                okText="Xóa"
+                cancelText="Hủy"
+                onConfirm={() => onDelete(row)}
+              >
                 <Button danger icon={<DeleteOutlined />} />
-              </Tooltip>
-            </Popconfirm>
+              </Popconfirm>
+            </Tooltip>
           </Space>
         );
       },

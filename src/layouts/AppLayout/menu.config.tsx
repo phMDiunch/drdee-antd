@@ -76,7 +76,7 @@ export const menuItems: MenuItem[] = [
     label: "Labo răng giả",
     children: [
       { key: "/labo-items", label: "Danh mục labo" },
-      { key: "/labo-services", label: "Bảng giá labo" },
+      { key: "/labo-services", label: "Dịch vụ labo" },
       { key: "/labo-orders/daily", label: "Theo ngày" },
     ],
   },
