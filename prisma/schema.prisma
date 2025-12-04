@@ -57,6 +57,9 @@ model Clinic {
 
   // Liên kết đến chăm sóc sau điều trị
   treatmentCares TreatmentCare[]
+
+  // Liên kết đến đơn hàng labo
+  laboOrders LaboOrder[]
 }
 
 model Employee {
@@ -172,6 +175,12 @@ model Employee {
   createdLaboServices LaboService[] @relation("CreatedLaboServices")
   updatedLaboServices LaboService[] @relation("UpdatedLaboServices")
 
+  // Liên kết đến đơn hàng labo
+  doctorLaboOrders   LaboOrder[] @relation("DoctorLaboOrders")
+  receivedLaboOrders LaboOrder[] @relation("ReceivedLaboOrders")
+  createdLaboOrders  LaboOrder[] @relation("CreatedLaboOrders")
+  updatedLaboOrders  LaboOrder[] @relation("UpdatedLaboOrders")
+
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
   @@index([email]) // Optimize: Login by email
@@ -275,6 +284,9 @@ model Customer {
 
   // Liên kết đến chăm sóc sau điều trị (aftercare)
   treatmentCares TreatmentCare[]
+
+  // Liên kết đến đơn hàng labo
+  laboOrders LaboOrder[]
 
   // 🚀 Performance Indexes
   @@index([clinicId, createdAt]) // Optimize: Daily view - customers by clinic & date
@@ -614,9 +626,9 @@ model Supplier {
   createdBy Employee @relation("CreatedSuppliers", fields: [createdById], references: [id])
   updatedBy Employee @relation("UpdatedSuppliers", fields: [updatedById], references: [id])
 
-  // Relations (uncomment when GoodsReceipt model is implemented)
-  // goodsReceipts GoodsReceipt[]
+  // Relations
   laboServices LaboService[]
+  laboOrders   LaboOrder[]
 
   // Indexes
   @@index([name])
@@ -693,9 +705,9 @@ model LaboItem {
   createdBy Employee @relation("CreatedLaboItems", fields: [createdById], references: [id])
   updatedBy Employee @relation("UpdatedLaboItems", fields: [updatedById], references: [id])
 
-  // Relations (placeholder - sẽ được thêm khi implement Labo Service và Labo Order)
+  // Relations
   laboServices LaboService[]
-  // orders       LaboOrder[]
+  laboOrders   LaboOrder[]
 
   // Indexes
   @@index([name])
@@ -737,4 +749,59 @@ model LaboService {
   @@unique([supplierId, laboItemId])
   @@index([supplierId])
   @@index([laboItemId])
+}
+
+//---------------------------
+// LaboOrder (Đơn hàng labo - Mẫu gửi xưởng)
+//---------------------------
+
+model LaboOrder {
+  id String @id @default(uuid())
+
+  // References
+  customerId String
+  doctorId   String
+  supplierId String
+  laboItemId String
+  clinicId   String
+
+  // Pricing (Snapshot from LaboService at creation time)
+  unitPrice Int // Snapshot price per unit
+  quantity  Int // Số lượng
+  totalCost Int // = unitPrice * quantity
+  warranty  String // Snapshot warranty: "5-nam"
+
+  // Dates
+  sendDate        DateTime  @db.Date // Ngày gửi mẫu đi xưởng
+  returnDate      DateTime? @db.Date // Ngày nhận mẫu về từ xưởng
+  expectedFitDate DateTime? @db.Date // Ngày dự kiến lắp cho khách (optional)
+
+  // Details
+  detailRequirement String? // Ghi chú yêu cầu chi tiết cho xưởng
+
+  // Tracking
+  receivedById String? // Nhân viên xác nhận nhận mẫu
+
+  // Metadata
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id])
+  doctor   Employee @relation("DoctorLaboOrders", fields: [doctorId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  laboItem LaboItem @relation(fields: [laboItemId], references: [id])
+  clinic   Clinic   @relation(fields: [clinicId], references: [id])
+
+  receivedBy Employee? @relation("ReceivedLaboOrders", fields: [receivedById], references: [id])
+  createdBy  Employee  @relation("CreatedLaboOrders", fields: [createdById], references: [id])
+  updatedBy  Employee  @relation("UpdatedLaboOrders", fields: [updatedById], references: [id])
+
+  // Indexes
+  @@index([clinicId, sendDate])
+  @@index([clinicId, returnDate])
+  @@index([customerId])
+  @@index([supplierId])
 }

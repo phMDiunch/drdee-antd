@@ -91,3 +91,19 @@ export function requireAdmin(user: UserCore | null | undefined) {
 
   throw ERR.FORBIDDEN("Chỉ admin được phép thực hiện thao tác này.");
 }
+
+/**
+ * Yêu cầu quyền Employee (admin + employee).
+ * Kiểm tra employeeId phải tồn tại.
+ */
+export function requireEmployee(user: UserCore | null | undefined) {
+  if (!user) throw ERR.UNAUTHORIZED("Bạn chưa đăng nhập.");
+
+  if (!user.employeeId) {
+    throw ERR.FORBIDDEN(
+      "Tài khoản chưa được liên kết với một bản ghi nhân viên."
+    );
+  }
+
+  return true;
+}
