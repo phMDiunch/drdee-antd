@@ -3,7 +3,7 @@ import { getSalesDetailApi } from "../api";
 import { calculateStaleTime } from "../utils/caching";
 import type { GetSalesDetailQuery } from "@/shared/validation/sales-report.schema";
 
-export type TabType = "daily" | "source" | "service" | "sale" | "doctor";
+export type TabType = "daily" | "source" | "department" | "service" | "sale" | "doctor";
 
 /**
  * Hook to fetch sales detail records (lazy loading when row selected)

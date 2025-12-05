@@ -24,8 +24,8 @@ export type GetRevenueSummaryQuery = z.infer<
 export const GetRevenueDetailQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, "Month must be in YYYY-MM format"),
   clinicId: z.string().optional(), // Admin: optional, Employee: enforced in backend
-  tab: z.enum(["daily", "source", "service", "doctor"]),
-  key: z.string(), // Date string (YYYY-MM-DD), source name, serviceId, doctorId
+  tab: z.enum(["daily", "source", "department", "service", "doctor"]),
+  key: z.string(), // Date string (YYYY-MM-DD), source name, department name, serviceId, doctorId
 });
 
 export type GetRevenueDetailQuery = z.infer<typeof GetRevenueDetailQuerySchema>;
@@ -90,6 +90,21 @@ export const SourceRevenueDataSchema = z.object({
 export type SourceRevenueData = z.infer<typeof SourceRevenueDataSchema>;
 
 /**
+ * Department revenue detail row
+ */
+export const DepartmentRevenueDataSchema = z.object({
+  id: z.string(),
+  department: z.string(),
+  totalRevenue: z.number(),
+  percentageOfTotal: z.number(),
+  paymentPercentage: z.number(), // (paid / finalPrice) * 100
+  totalPaid: z.number(),
+  totalFinalPrice: z.number(),
+});
+
+export type DepartmentRevenueData = z.infer<typeof DepartmentRevenueDataSchema>;
+
+/**
  * Service revenue detail row
  */
 export const ServiceRevenueDataSchema = z.object({
@@ -125,6 +140,7 @@ export type DoctorRevenueData = z.infer<typeof DoctorRevenueDataSchema>;
 export const RevenueSummaryTabsDataSchema = z.object({
   byDate: z.array(DailyRevenueDataSchema),
   bySource: z.array(SourceRevenueDataSchema),
+  byDepartment: z.array(DepartmentRevenueDataSchema),
   byService: z.array(ServiceRevenueDataSchema),
   byDoctor: z.array(DoctorRevenueDataSchema),
 });

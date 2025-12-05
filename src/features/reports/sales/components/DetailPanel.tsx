@@ -153,6 +153,7 @@ export default function DetailPanel({
   const tabLabels = {
     daily: "ngày",
     source: "nguồn",
+    department: "bộ môn",
     service: "dịch vụ",
     sale: "sale",
     doctor: "bác sĩ",

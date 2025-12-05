@@ -16,6 +16,7 @@ import {
   mapDailyData,
   mapSourceData,
   mapServiceData,
+  mapDepartmentData,
   mapSaleData,
   mapDoctorData,
   mapDetailRecords,
@@ -65,11 +66,12 @@ export const salesReportService = {
     };
 
     // Lấy dữ liệu song song từ các public repo methods (đã có sort logic)
-    const [kpiData, dailyData, sourceData, serviceData, saleData, doctorData] =
+    const [kpiData, dailyData, sourceData, departmentData, serviceData, saleData, doctorData] =
       await Promise.all([
         salesReportRepo.getKpiData(params),
         salesReportRepo.getDailyData(params),
         salesReportRepo.getSourceData(params),
+        salesReportRepo.getDepartmentData(params),
         salesReportRepo.getServiceData(params),
         salesReportRepo.getSaleData(params),
         salesReportRepo.getDoctorData(params),
@@ -80,6 +82,7 @@ export const salesReportService = {
     const totalRevenue = dailyData.reduce((sum, d) => sum + d.revenue, 0);
     const byDate = mapDailyData(dailyData, totalRevenue);
     const bySource = mapSourceData(sourceData, totalRevenue);
+    const byDepartment = mapDepartmentData(departmentData, totalRevenue);
     const byService = mapServiceData(serviceData, totalRevenue);
     const bySale = mapSaleData(saleData, totalRevenue);
     const byDoctor = mapDoctorData(doctorData, totalRevenue);
@@ -89,6 +92,7 @@ export const salesReportService = {
       summaryTabs: {
         byDate,
         bySource,
+        byDepartment,
         byService,
         bySale,
         byDoctor,

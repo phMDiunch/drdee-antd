@@ -137,6 +137,7 @@ export default function DetailPanel({
   const tabLabels: Record<TabType, string> = {
     daily: "ngày",
     source: "nguồn",
+    department: "bộ môn",
     service: "dịch vụ",
     doctor: "bác sĩ điều trị",
   };

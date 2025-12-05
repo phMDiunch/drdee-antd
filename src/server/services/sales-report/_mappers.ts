@@ -3,6 +3,7 @@ import type {
   DailyDetailData,
   SourceDetailData,
   ServiceDetailData,
+  DepartmentDetailData,
   SaleDetailData,
   DoctorDetailData,
   ConsultedServiceDetail,
@@ -11,6 +12,7 @@ import type {
   RawDailyData,
   RawSourceData,
   RawServiceData,
+  RawDepartmentData,
   RawEmployeeData,
 } from "@/server/repos/sales-report.repo";
 import { CUSTOMER_SOURCES } from "@/features/customers/constants";
@@ -185,6 +187,33 @@ export function mapServiceData(
     averagePerService: s.closed > 0 ? Math.round(s.revenue / s.closed) : 0,
     revenuePercentage:
       totalRevenue > 0 ? Math.round((s.revenue / totalRevenue) * 1000) / 10 : 0,
+  }));
+}
+
+/**
+ * Chuyển đổi dữ liệu theo bộ môn từ repo sang response format
+ * Data đã được sort by revenue DESC ở repo layer
+ * Rank được gán dựa trên thứ tự trong array đã sort (1 = doanh số cao nhất)
+ */
+export function mapDepartmentData(
+  departmentData: RawDepartmentData[],
+  totalRevenue: number
+): DepartmentDetailData[] {
+  return departmentData.map((d, index) => ({
+    id: d.department || "null",
+    department: d.department || "Không rõ bộ môn",
+    rank: index + 1,
+    customersVisited: d.customersVisited,
+    consultations: d.consultations,
+    closed: d.closed,
+    revenue: d.revenue,
+    closingRate:
+      d.consultations > 0
+        ? Math.round((d.closed / d.consultations) * 1000) / 10
+        : 0,
+    averagePerService: d.closed > 0 ? Math.round(d.revenue / d.closed) : 0,
+    revenuePercentage:
+      totalRevenue > 0 ? Math.round((d.revenue / totalRevenue) * 1000) / 10 : 0,
   }));
 }
 

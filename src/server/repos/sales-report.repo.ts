@@ -37,6 +37,14 @@ export interface RawServiceData {
   revenue: number;
 }
 
+export interface RawDepartmentData {
+  department: string | null;
+  customersVisited: number;
+  consultations: number;
+  closed: number;
+  revenue: number;
+}
+
 export interface RawEmployeeData {
   id: string;
   fullName: string;
@@ -102,7 +110,7 @@ export const salesReportRepo = {
           customerId: true,
           finalPrice: true,
           customer: { select: { source: true } },
-          dentalService: { select: { serviceGroup: true } },
+          dentalService: { select: { serviceGroup: true, department: true } },
           consultingSale: { select: { id: true, fullName: true } },
           consultingDoctor: { select: { id: true, fullName: true } },
         },
@@ -116,7 +124,7 @@ export const salesReportRepo = {
           consultationDate: true,
           customerId: true,
           customer: { select: { source: true } },
-          dentalService: { select: { serviceGroup: true } },
+          dentalService: { select: { serviceGroup: true, department: true } },
           consultingSale: { select: { id: true, fullName: true } },
           consultingDoctor: { select: { id: true, fullName: true } },
         },
@@ -495,6 +503,37 @@ export const salesReportRepo = {
   },
 
   /**
+   * Get department breakdown data
+   * Sort by revenue DESC
+   */
+  async getDepartmentData(
+    params: GetSalesSummaryQuery
+  ): Promise<RawDepartmentData[]> {
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+    const rawData = await this.queryAllAggregationData(
+      startDate,
+      endDate,
+      clinicId
+    );
+
+    const result = this.groupByDimension(rawData, {
+      getKey: (s) =>
+        (s as unknown as { dentalService: { department: string | null } })
+          .dentalService.department,
+      mapResult: (department, data) => ({
+        department,
+        customersVisited: data.customersVisited.size,
+        consultations: data.consultations,
+        closed: data.closed,
+        revenue: data.revenue,
+      }),
+    });
+
+    return result.sort((a, b) => b.revenue - a.revenue);
+  },
+
+  /**
    * Get sale performance data
    * Sort by revenue DESC
    */
@@ -615,6 +654,13 @@ export const salesReportRepo = {
           },
         };
         break;
+      case "department":
+        additionalWhere = {
+          dentalService: {
+            department: key === "null" ? null : key,
+          },
+        };
+        break;
       case "service":
         additionalWhere = {
           dentalService: {
@@ -661,6 +707,7 @@ export const salesReportRepo = {
             id: true,
             name: true,
             serviceGroup: true,
+            department: true,
           },
         },
         consultingSale: {

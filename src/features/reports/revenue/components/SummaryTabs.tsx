@@ -5,12 +5,14 @@ import type {
   RevenueSummaryTabsData,
   DailyRevenueData,
   SourceRevenueData,
+  DepartmentRevenueData,
   ServiceRevenueData,
   DoctorRevenueData,
 } from "@/shared/validation/revenue-report.schema";
 import type { TabType } from "../hooks/useRevenueDetail";
 import DailyRevenueTable from "./DailyRevenueTable";
 import SourceRevenueTable from "./SourceRevenueTable";
+import DepartmentRevenueTable from "./DepartmentRevenueTable";
 import ServiceRevenueTable from "./ServiceRevenueTable";
 import DoctorRevenueTable from "./DoctorRevenueTable";
 
@@ -49,6 +51,19 @@ export default function SummaryTabs({
             loading={loading}
             onRowClick={(record: SourceRevenueData) =>
               onRowSelect("source", record.id)
+            }
+          />
+        ),
+      },
+      {
+        key: "department",
+        label: "Theo bộ môn",
+        children: (
+          <DepartmentRevenueTable
+            data={data.byDepartment}
+            loading={loading}
+            onRowClick={(record: DepartmentRevenueData) =>
+              onRowSelect("department", record.id)
             }
           />
         ),

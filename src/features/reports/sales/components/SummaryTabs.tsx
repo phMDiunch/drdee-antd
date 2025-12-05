@@ -43,6 +43,18 @@ export default function SummaryTabs({
         ),
       },
       {
+        key: "department",
+        label: "Theo bộ môn",
+        children: (
+          <SummaryTable
+            data={data.byDepartment}
+            loading={loading}
+            nameColumn={{ title: "Bộ môn", dataIndex: "department" }}
+            onRowClick={(record) => onRowSelect("department", record.id)}
+          />
+        ),
+      },
+      {
         key: "service",
         label: "Theo dịch vụ",
         children: (

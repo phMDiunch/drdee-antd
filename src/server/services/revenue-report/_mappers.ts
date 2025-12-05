@@ -2,6 +2,7 @@ import type {
   RevenueKpiData,
   DailyRevenueData,
   SourceRevenueData,
+  DepartmentRevenueData,
   ServiceRevenueData,
   DoctorRevenueData,
   PaymentDetailRecord,
@@ -41,6 +42,14 @@ type RawSourceData = {
   voucherCount: number;
   customerCount: number;
   totalRevenue: number;
+};
+
+type RawDepartmentData = {
+  department: string;
+  totalRevenue: number;
+  paymentPercentage: number;
+  totalPaid: number;
+  totalFinalPrice: number;
 };
 
 type RawServiceData = {
@@ -130,6 +139,28 @@ export function mapSourceData(
           : 0,
     };
   });
+}
+
+/**
+ * Chuyển đổi dữ liệu theo bộ môn từ repo sang response format
+ * Bao gồm payment percentage (aggregate)
+ */
+export function mapDepartmentData(
+  departmentData: RawDepartmentData[],
+  totalRevenue: number
+): DepartmentRevenueData[] {
+  return departmentData.map((d) => ({
+    id: d.department,
+    department: d.department === "null" ? "Không rõ bộ môn" : d.department,
+    totalRevenue: d.totalRevenue,
+    percentageOfTotal:
+      totalRevenue > 0
+        ? Math.round((d.totalRevenue / totalRevenue) * 1000) / 10
+        : 0,
+    paymentPercentage: d.paymentPercentage,
+    totalPaid: d.totalPaid,
+    totalFinalPrice: d.totalFinalPrice,
+  }));
 }
 
 /**

@@ -15,6 +15,7 @@ import {
   mapKpiData,
   mapDailyData,
   mapSourceData,
+  mapDepartmentData,
   mapServiceData,
   mapDoctorData,
   mapDetailRecords,
@@ -59,11 +60,12 @@ export const revenueReportService = {
     };
 
     // Query tất cả dữ liệu song song từ repo public methods
-    const [kpiData, dailyData, sourceData, serviceData, doctorData] =
+    const [kpiData, dailyData, sourceData, departmentData, serviceData, doctorData] =
       await Promise.all([
         revenueReportRepo.getKpiData(queryParams),
         revenueReportRepo.getDailyData(queryParams),
         revenueReportRepo.getSourceData(queryParams),
+        revenueReportRepo.getDepartmentData(queryParams),
         revenueReportRepo.getServiceData(queryParams),
         revenueReportRepo.getDoctorData(queryParams),
       ]);
@@ -76,6 +78,7 @@ export const revenueReportService = {
       summaryTabs: {
         byDate: mapDailyData(dailyData, totalRevenue),
         bySource: mapSourceData(sourceData, totalRevenue),
+        byDepartment: mapDepartmentData(departmentData, totalRevenue),
         byService: mapServiceData(serviceData, totalRevenue),
         byDoctor: mapDoctorData(doctorData, totalRevenue),
       },

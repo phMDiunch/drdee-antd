@@ -34,6 +34,7 @@ export interface RawPaymentDetail {
       id: string;
       name: string;
       serviceGroup: string | null;
+      department: string | null;
     };
     customer: {
       id: string;
@@ -104,6 +105,21 @@ export const revenueReportRepo = {
       clinicId
     );
     return this.aggregateBySource(paymentDetails);
+  },
+
+  /**
+   * Get department breakdown data
+   */
+  async getDepartmentData(params: GetRevenueSummaryQuery) {
+    const { month, clinicId } = params;
+    const { startDate, endDate } = this.getMonthDateRange(month);
+
+    const [paymentDetails, paymentAggregations] = await Promise.all([
+      this.queryPaymentDetails(startDate, endDate, clinicId),
+      this.queryPaymentAggregations(startDate, endDate, clinicId),
+    ]);
+
+    return this.aggregateByDepartment(paymentDetails, paymentAggregations);
   },
 
   /**
@@ -209,6 +225,7 @@ export const revenueReportRepo = {
                 id: true,
                 name: true,
                 serviceGroup: true,
+                department: true,
               },
             },
             treatingDoctor: {
@@ -524,6 +541,76 @@ export const revenueReportRepo = {
   },
 
   /**
+   * Helper: Aggregate by department (include payment percentage calculation)
+   * Private method - used by getDepartmentData
+   */
+  aggregateByDepartment(
+    paymentDetails: RawPaymentDetail[],
+    paymentAggregations: Map<string, number>
+  ) {
+    const departmentMap = new Map<
+      string | null,
+      {
+        department: string | null;
+        revenue: number;
+        consultedServices: Map<
+          string,
+          { totalPaid: number; finalPrice: number }
+        >;
+      }
+    >();
+
+    paymentDetails.forEach((detail) => {
+      const department = detail.consultedService.dentalService.department;
+      const consultedServiceId = detail.consultedServiceId;
+      const finalPrice = detail.consultedService.finalPrice;
+
+      const existing = departmentMap.get(department) || {
+        department,
+        revenue: 0,
+        consultedServices: new Map(),
+      };
+
+      existing.revenue += detail.amount;
+
+      // Track consulted services for payment percentage
+      if (!existing.consultedServices.has(consultedServiceId)) {
+        const totalPaid = paymentAggregations.get(consultedServiceId) || 0;
+        existing.consultedServices.set(consultedServiceId, {
+          totalPaid,
+          finalPrice,
+        });
+      }
+
+      departmentMap.set(department, existing);
+    });
+
+    return Array.from(departmentMap.entries())
+      .map(([department, data]) => {
+        // Calculate aggregate payment percentage
+        let totalPaid = 0;
+        let totalFinalPrice = 0;
+
+        data.consultedServices.forEach((cs) => {
+          totalPaid += cs.totalPaid;
+          totalFinalPrice += cs.finalPrice;
+        });
+
+        const paymentPercentage =
+          totalFinalPrice > 0 ? (totalPaid / totalFinalPrice) * 100 : 0;
+
+        return {
+          department: department || "null",
+          totalRevenue: data.revenue,
+          paymentPercentage: Math.round(paymentPercentage * 10) / 10,
+          totalPaid,
+          totalFinalPrice,
+        };
+      })
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+  },
+
+  /**
    * Helper: Aggregate by doctor
    * Private method - used by getDoctorData
    */
@@ -582,6 +669,12 @@ export const revenueReportRepo = {
           (detail) => detail.consultedService.customer.source === key
         );
       }
+
+      case "department":
+        return paymentDetails.filter((detail) => {
+          const dept = detail.consultedService.dentalService.department;
+          return key === "null" ? dept === null : dept === key;
+        });
 
       case "service":
         return paymentDetails.filter(
