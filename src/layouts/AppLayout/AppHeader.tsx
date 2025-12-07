@@ -94,7 +94,7 @@ export default function AppHeader({
       return;
     }
     if (info.key === "profile") {
-      router.push("/settings/profile");
+      router.push("/profile");
     }
   };
 
