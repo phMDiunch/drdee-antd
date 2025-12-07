@@ -7,7 +7,7 @@ import { z } from "zod";
  */
 export const SupplierBaseSchema = z.object({
   name: z.string().trim().min(2, "Tên NCC là bắt buộc").max(200),
-  shortName: z.string().trim().max(50).optional().nullable(),
+  shortName: z.string().trim().min(2, "Tên gọi tắt là bắt buộc").max(50),
   supplierGroup: z.string().trim().optional().nullable(), // Optional - from MasterData category='nhom-nha-cung-cap'
   phone: z
     .string()

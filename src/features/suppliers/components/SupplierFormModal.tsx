@@ -32,7 +32,7 @@ type Props = {
 
 const defaultValues: CreateSupplierRequest & { id?: string } = {
   name: "",
-  shortName: undefined,
+  shortName: "",
   supplierGroup: undefined,
   phone: undefined,
   email: undefined,
@@ -65,7 +65,7 @@ export default function SupplierFormModal({
       return {
         id: initial.id,
         name: initial.name,
-        shortName: initial.shortName ?? undefined,
+        shortName: initial.shortName ?? "",
         supplierGroup: initial.supplierGroup ?? undefined,
         phone: initial.phone ?? undefined,
         email: initial.email ?? undefined,
@@ -192,14 +192,15 @@ export default function SupplierFormModal({
               control={control}
               render={({ field, fieldState }) => (
                 <Form.Item
-                  label="Tên viết tắt"
+                  label="Tên gọi tắt"
+                  required
                   validateStatus={fieldState.error ? "error" : ""}
                   help={fieldState.error?.message}
                 >
                   <Input
                     {...field}
                     value={field.value ?? ""}
-                    placeholder="VD: ABC Medical"
+                    placeholder="VD: Xưởng Hùng, ABC Medical"
                     maxLength={50}
                   />
                 </Form.Item>
