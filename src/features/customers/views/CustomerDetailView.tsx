@@ -201,9 +201,7 @@ export default function CustomerDetailView({
 
               <Space>
                 <IdcardOutlined />
-                <Text type="secondary">
-                  Mã KH: {customer.customerCode || "—"}
-                </Text>
+                <Text>Mã KH: {customer.customerCode || "—"}</Text>
                 {customer.clinic && (
                   <Tag
                     icon={<BankOutlined />}

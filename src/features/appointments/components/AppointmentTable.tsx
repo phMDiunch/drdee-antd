@@ -295,11 +295,13 @@ export default function AppointmentTable({
                 title={!permission.allowed ? permission.reason : undefined}
               >
                 <Button
+                  type="primary"
                   size="small"
                   icon={<CheckOutlined />}
                   onClick={() => onCheckOut(record.id)}
                   loading={actionLoading}
                   disabled={!permission.allowed}
+                  style={{ backgroundColor: "#1890ff" }}
                 >
                   Check-out
                 </Button>
@@ -447,7 +449,15 @@ export default function AppointmentTable({
       dataSource={data}
       rowKey="id"
       loading={loading}
-      pagination={false}
+      pagination={
+        isCustomerDetailView
+          ? {
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} lịch hẹn`,
+              pageSizeOptions: ["10", "20", "50", "100"],
+            }
+          : false
+      }
       scroll={{ x: 1385 }} // Updated: 1250 + 135 (next appointment column)
       locale={{
         emptyText: "Không có lịch hẹn nào",
