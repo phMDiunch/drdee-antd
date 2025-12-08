@@ -63,130 +63,10 @@ export const revenueReportRepo = {
   // ========================================================================
 
   /**
-   * Get KPI data with MoM growth
+   * Helper: Query TẤT CẢ payment details trong tháng (1 lần duy nhất)
+   * Với đầy đủ relations cần thiết cho tất cả dimensions
    */
-  async getKpiData(params: GetRevenueSummaryQuery) {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    // Query data song song
-    const [paymentDetails, previousMonthRevenue] = await Promise.all([
-      this.queryPaymentDetails(startDate, endDate, clinicId),
-      this.getPreviousMonthRevenue(month, clinicId),
-    ]);
-
-    // Calculate and return KPI metrics
-    return this.calculateKpiMetrics(paymentDetails, previousMonthRevenue);
-  },
-
-  /**
-   * Get daily breakdown data
-   */
-  async getDailyData(params: GetRevenueSummaryQuery) {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-    const paymentDetails = await this.queryPaymentDetails(
-      startDate,
-      endDate,
-      clinicId
-    );
-    return this.aggregateByDate(paymentDetails);
-  },
-
-  /**
-   * Get source breakdown data
-   */
-  async getSourceData(params: GetRevenueSummaryQuery) {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-    const paymentDetails = await this.queryPaymentDetails(
-      startDate,
-      endDate,
-      clinicId
-    );
-    return this.aggregateBySource(paymentDetails);
-  },
-
-  /**
-   * Get department breakdown data
-   */
-  async getDepartmentData(params: GetRevenueSummaryQuery) {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const [paymentDetails, paymentAggregations] = await Promise.all([
-      this.queryPaymentDetails(startDate, endDate, clinicId),
-      this.queryPaymentAggregations(startDate, endDate, clinicId),
-    ]);
-
-    return this.aggregateByDepartment(paymentDetails, paymentAggregations);
-  },
-
-  /**
-   * Get service breakdown data
-   */
-  async getServiceData(params: GetRevenueSummaryQuery) {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-
-    const [paymentDetails, paymentAggregations] = await Promise.all([
-      this.queryPaymentDetails(startDate, endDate, clinicId),
-      this.queryPaymentAggregations(startDate, endDate, clinicId),
-    ]);
-
-    return this.aggregateByService(paymentDetails, paymentAggregations);
-  },
-
-  /**
-   * Get doctor breakdown data
-   */
-  async getDoctorData(params: GetRevenueSummaryQuery) {
-    const { month, clinicId } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-    const paymentDetails = await this.queryPaymentDetails(
-      startDate,
-      endDate,
-      clinicId
-    );
-    return this.aggregateByDoctor(paymentDetails);
-  },
-
-  /**
-   * Get detail records for a specific tab/key combination
-   */
-  async getDetailRecords(params: GetRevenueDetailQuery) {
-    const { month, clinicId, tab, key } = params;
-    const { startDate, endDate } = this.getMonthDateRange(month);
-    const paymentDetails = await this.queryPaymentDetails(
-      startDate,
-      endDate,
-      clinicId
-    );
-    return this.filterDetailsByTabAndKey(paymentDetails, tab, key);
-  },
-
-  // ========================================================================
-  // PRIVATE HELPER METHODS
-  // ========================================================================
-
-  /**
-   * Helper: Get date range for a given month
-   * Private method - used internally
-   */
-  getMonthDateRange(month: string) {
-    const [year, monthNum] = month.split("-").map(Number);
-    const startDate = new Date(year, monthNum - 1, 1);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
-
-    return { startDate, endDate };
-  },
-
-  /**
-   * Helper: Query all payment details for the month with full relations
-   * Private method - base query for all aggregations
-   */
-  async queryPaymentDetails(
+  async queryAllPaymentDetails(
     startDate: Date,
     endDate: Date,
     clinicId: string | undefined
@@ -246,68 +126,9 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Calculate payment aggregations by consultedServiceId
-   * Private method - used for payment percentage calculation
+   * Compute KPI metrics từ data có sẵn (không query DB)
    */
-  async queryPaymentAggregations(
-    startDate: Date,
-    endDate: Date,
-    clinicId: string | undefined
-  ): Promise<Map<string, number>> {
-    const aggregations = await prisma.paymentVoucherDetail.groupBy({
-      by: ["consultedServiceId"],
-      _sum: {
-        amount: true,
-      },
-      where: {
-        paymentVoucher: {
-          paymentDate: { gte: startDate, lte: endDate },
-          ...(clinicId && { clinicId }),
-        },
-      },
-    });
-
-    return new Map(
-      aggregations.map((agg) => [
-        agg.consultedServiceId!,
-        agg._sum?.amount || 0,
-      ])
-    );
-  },
-
-  /**
-   * Helper: Get previous month revenue for MoM growth calculation
-   * Private method - used by getKpiData
-   */
-  async getPreviousMonthRevenue(
-    month: string,
-    clinicId: string | undefined
-  ): Promise<number> {
-    const [year, monthNum] = month.split("-").map(Number);
-    const prevMonth = new Date(year, monthNum - 2, 1);
-    prevMonth.setHours(0, 0, 0, 0);
-    const prevMonthEnd = new Date(year, monthNum - 1, 0, 23, 59, 59, 999);
-
-    const result = await prisma.paymentVoucherDetail.aggregate({
-      _sum: {
-        amount: true,
-      },
-      where: {
-        paymentVoucher: {
-          paymentDate: { gte: prevMonth, lte: prevMonthEnd },
-          ...(clinicId && { clinicId }),
-        },
-      },
-    });
-
-    return result._sum?.amount || 0;
-  },
-
-  /**
-   * Helper: Calculate KPI metrics from payment details
-   * Private method - used by getKpiData
-   */
-  calculateKpiMetrics(
+  computeKpiMetrics(
     paymentDetails: RawPaymentDetail[],
     previousMonthRevenue: number
   ) {
@@ -367,10 +188,9 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Aggregate by date (daily breakdown)
-   * Private method - used by getDailyData
+   * Compute daily breakdown từ data có sẵn (không query DB)
    */
-  aggregateByDate(paymentDetails: RawPaymentDetail[]) {
+  computeDailyData(paymentDetails: RawPaymentDetail[]) {
     const dateMap = new Map<
       string,
       {
@@ -421,10 +241,9 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Aggregate by source
-   * Private method - used by getSourceData
+   * Compute source breakdown từ data có sẵn (không query DB)
    */
-  aggregateBySource(paymentDetails: RawPaymentDetail[]) {
+  computeSourceData(paymentDetails: RawPaymentDetail[]) {
     const sourceMap = new Map<
       string,
       {
@@ -463,10 +282,27 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Aggregate by service (include payment percentage calculation)
-   * Private method - used by getServiceData
+   * Compute payment aggregations từ data có sẵn (không query DB)
+   * Helper for service/department payment percentage
    */
-  aggregateByService(
+  computePaymentAggregations(
+    paymentDetails: RawPaymentDetail[]
+  ): Map<string, number> {
+    const aggregations = new Map<string, number>();
+
+    paymentDetails.forEach((detail) => {
+      const consultedServiceId = detail.consultedServiceId;
+      const existing = aggregations.get(consultedServiceId) || 0;
+      aggregations.set(consultedServiceId, existing + detail.amount);
+    });
+
+    return aggregations;
+  },
+
+  /**
+   * Compute service breakdown từ data có sẵn (không query DB)
+   */
+  computeServiceData(
     paymentDetails: RawPaymentDetail[],
     paymentAggregations: Map<string, number>
   ) {
@@ -541,10 +377,9 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Aggregate by department (include payment percentage calculation)
-   * Private method - used by getDepartmentData
+   * Compute department breakdown từ data có sẵn (không query DB)
    */
-  aggregateByDepartment(
+  computeDepartmentData(
     paymentDetails: RawPaymentDetail[],
     paymentAggregations: Map<string, number>
   ) {
@@ -611,10 +446,9 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Aggregate by doctor
-   * Private method - used by getDoctorData
+   * Compute doctor breakdown từ data có sẵn (không query DB)
    */
-  aggregateByDoctor(paymentDetails: RawPaymentDetail[]) {
+  computeDoctorData(paymentDetails: RawPaymentDetail[]) {
     const doctorMap = new Map<
       string,
       {
@@ -642,8 +476,7 @@ export const revenueReportRepo = {
   },
 
   /**
-   * Helper: Filter payment details by tab and key
-   * Private method - used by getDetailRecords
+   * Filter detail records by tab/key từ data có sẵn (không query DB)
    */
   filterDetailsByTabAndKey(
     paymentDetails: RawPaymentDetail[],
@@ -689,5 +522,21 @@ export const revenueReportRepo = {
       default:
         return [];
     }
+  },
+
+  // ========================================================================
+  // HELPER METHODS
+  // ========================================================================
+
+  /**
+   * Helper: Get date range for a given month
+   */
+  getMonthDateRange(month: string) {
+    const [year, monthNum] = month.split("-").map(Number);
+    const startDate = new Date(year, monthNum - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
+
+    return { startDate, endDate };
   },
 };

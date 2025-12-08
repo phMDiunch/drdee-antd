@@ -59,16 +59,54 @@ export const revenueReportService = {
           : currentUser.clinicId || undefined,
     };
 
-    // Query tất cả dữ liệu song song từ repo public methods
-    const [kpiData, dailyData, sourceData, departmentData, serviceData, doctorData] =
-      await Promise.all([
-        revenueReportRepo.getKpiData(queryParams),
-        revenueReportRepo.getDailyData(queryParams),
-        revenueReportRepo.getSourceData(queryParams),
-        revenueReportRepo.getDepartmentData(queryParams),
-        revenueReportRepo.getServiceData(queryParams),
-        revenueReportRepo.getDoctorData(queryParams),
-      ]);
+    const { startDate, endDate } = revenueReportRepo.getMonthDateRange(
+      queryParams.month
+    );
+
+    // Gọi DB 2 lần song song (current month + previous month)
+    const [paymentDetails, prevMonthDetails] = await Promise.all([
+      revenueReportRepo.queryAllPaymentDetails(
+        startDate,
+        endDate,
+        queryParams.clinicId
+      ),
+      (async () => {
+        const [year, monthNum] = queryParams.month.split("-").map(Number);
+        const prevMonth = new Date(year, monthNum - 2, 1);
+        prevMonth.setHours(0, 0, 0, 0);
+        const prevMonthEnd = new Date(year, monthNum - 1, 0, 23, 59, 59, 999);
+        return revenueReportRepo.queryAllPaymentDetails(
+          prevMonth,
+          prevMonthEnd,
+          queryParams.clinicId
+        );
+      })(),
+    ]);
+
+    // Tính previous month revenue từ data có sẵn
+    const previousMonthRevenue = prevMonthDetails.reduce(
+      (sum, d) => sum + d.amount,
+      0
+    );
+
+    // Compute tất cả dimensions từ data có sẵn - KHÔNG query DB thêm
+    const paymentAggregations =
+      revenueReportRepo.computePaymentAggregations(paymentDetails);
+    const kpiData = revenueReportRepo.computeKpiMetrics(
+      paymentDetails,
+      previousMonthRevenue
+    );
+    const dailyData = revenueReportRepo.computeDailyData(paymentDetails);
+    const sourceData = revenueReportRepo.computeSourceData(paymentDetails);
+    const departmentData = revenueReportRepo.computeDepartmentData(
+      paymentDetails,
+      paymentAggregations
+    );
+    const serviceData = revenueReportRepo.computeServiceData(
+      paymentDetails,
+      paymentAggregations
+    );
+    const doctorData = revenueReportRepo.computeDoctorData(paymentDetails);
 
     // Map to response format
     const totalRevenue = kpiData.totalRevenue;
@@ -119,18 +157,27 @@ export const revenueReportService = {
           : currentUser.clinicId || undefined,
     };
 
-    // Query detail records từ repo
-    const detailRecords = await revenueReportRepo.getDetailRecords(queryParams);
-
-    // Get payment aggregations map for percentage calculation
     const { startDate, endDate } = revenueReportRepo.getMonthDateRange(
       queryParams.month
     );
-    const aggregationsMap = await revenueReportRepo.queryPaymentAggregations(
+
+    // Query DB 1 lần duy nhất cho current month
+    const paymentDetails = await revenueReportRepo.queryAllPaymentDetails(
       startDate,
       endDate,
       queryParams.clinicId
     );
+
+    // Filter detail records từ data có sẵn (KHÔNG query DB)
+    const detailRecords = revenueReportRepo.filterDetailsByTabAndKey(
+      paymentDetails,
+      queryParams.tab,
+      queryParams.key
+    );
+
+    // Compute payment aggregations từ data có sẵn
+    const aggregationsMap =
+      revenueReportRepo.computePaymentAggregations(paymentDetails);
 
     // Calculate total revenue
     const totalRevenue = detailRecords.reduce(
