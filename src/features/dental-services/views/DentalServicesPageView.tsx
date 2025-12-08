@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { Button, Switch, Space, Typography } from "antd";
+import { Button, Switch, Space, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import DentalServiceTable from "@/features/dental-services/components/DentalServiceTable";
 import DentalServiceFormModal from "@/features/dental-services/components/DentalServiceFormModal";
@@ -19,10 +19,12 @@ import type {
 } from "@/shared/validation/dental-service.schema";
 
 const { Title, Text } = Typography;
+const { Search } = Input;
 
 type Props = { isAdmin?: boolean };
 
 export default function DentalServicesPageView({ isAdmin }: Props) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const { data, isLoading } = useDentalServices(includeArchived);
 
@@ -36,7 +38,18 @@ export default function DentalServicesPageView({ isAdmin }: Props) {
   const archive = useArchiveDentalService();
   const unarchive = useUnarchiveDentalService();
 
-  const list = useMemo(() => data ?? [], [data]);
+  const list = useMemo(() => {
+    if (!data) return [];
+    if (!searchTerm) return data;
+
+    const term = searchTerm.toLowerCase();
+    return data.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(term) ||
+        item.serviceGroup?.toLowerCase().includes(term) ||
+        item.department?.toLowerCase().includes(term)
+    );
+  }, [data, searchTerm]);
 
   const closeModal = useCallback(() => setModalOpen(false), []);
 
@@ -112,6 +125,7 @@ export default function DentalServicesPageView({ isAdmin }: Props) {
   return (
     <div>
       <Space
+        wrap
         style={{
           width: "100%",
           justifyContent: "space-between",
@@ -125,7 +139,14 @@ export default function DentalServicesPageView({ isAdmin }: Props) {
           <Text type="secondary">Danh sách dịch vụ áp dụng toàn hệ thống.</Text>
         </div>
 
-        <Space>
+        <Space wrap>
+          <Search
+            placeholder="Tìm theo tên, nhóm DV, bộ môn..."
+            allowClear
+            style={{ width: 300 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <Text>Hiển thị đã lưu trữ</Text>
           <Switch checked={includeArchived} onChange={setIncludeArchived} />
           {isAdmin && (

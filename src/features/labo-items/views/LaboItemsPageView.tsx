@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { Button, Switch, Space, Typography } from "antd";
+import { Button, Switch, Space, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import LaboItemTable from "@/features/labo-items/components/LaboItemTable";
 import LaboItemFormModal from "@/features/labo-items/components/LaboItemFormModal";
@@ -19,8 +19,10 @@ import type {
 } from "@/shared/validation/labo-item.schema";
 
 const { Title, Text } = Typography;
+const { Search } = Input;
 
 export default function LaboItemsPageView() {
+  const [searchTerm, setSearchTerm] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const { data, isLoading } = useLaboItems(includeArchived);
 
@@ -34,7 +36,17 @@ export default function LaboItemsPageView() {
   const archive = useArchiveLaboItem();
   const unarchive = useUnarchiveLaboItem();
 
-  const list = useMemo(() => data ?? [], [data]);
+  const list = useMemo(() => {
+    if (!data) return [];
+    if (!searchTerm) return data;
+
+    const term = searchTerm.toLowerCase();
+    return data.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(term) ||
+        item.serviceGroup?.toLowerCase().includes(term)
+    );
+  }, [data, searchTerm]);
 
   const closeModal = useCallback(() => setModalOpen(false), []);
 
@@ -108,6 +120,7 @@ export default function LaboItemsPageView() {
   return (
     <div>
       <Space
+        wrap
         style={{
           width: "100%",
           justifyContent: "space-between",
@@ -123,7 +136,14 @@ export default function LaboItemsPageView() {
           </Text>
         </div>
 
-        <Space>
+        <Space wrap>
+          <Search
+            placeholder="Tìm theo tên, nhóm dịch vụ..."
+            allowClear
+            style={{ width: 300 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <Text>Hiển thị đã lưu trữ</Text>
           <Switch checked={includeArchived} onChange={setIncludeArchived} />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>

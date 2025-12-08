@@ -6,8 +6,12 @@ export const LABO_SERVICE_ENDPOINTS = {
 } as const;
 
 export const LABO_SERVICE_QUERY_KEYS = {
-  list: (params?: { sortBy?: string; sortOrder?: string; supplierId?: string }) =>
-    ["labo-services", params] as const,
+  list: (params?: {
+    sortBy?: string;
+    sortOrder?: string;
+    supplierId?: string;
+    includeArchived?: boolean;
+  }) => ["labo-services", params] as const,
   byId: (id: string) => ["labo-service", id] as const,
 } as const;
 
@@ -15,6 +19,8 @@ export const LABO_SERVICE_MESSAGES = {
   CREATE_SUCCESS: "Thêm dịch vụ labo thành công.",
   UPDATE_SUCCESS: "Cập nhật giá thành công.",
   DELETE_SUCCESS: "Xóa dịch vụ thành công.",
+  ARCHIVE_SUCCESS: "Lưu trữ dịch vụ thành công.",
+  UNARCHIVE_SUCCESS: "Khôi phục dịch vụ thành công.",
 } as const;
 
 // Temporary constants - Will be replaced by MasterData

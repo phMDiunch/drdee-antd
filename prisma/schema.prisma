@@ -736,8 +736,9 @@ model LaboService {
   // Metadata
   createdById String
   updatedById String
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @db.Timestamptz
+  archivedAt  DateTime? @db.Timestamptz
 
   // Relations
   supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
@@ -772,8 +773,8 @@ model LaboOrder {
   warranty  String // Snapshot warranty: "5-nam"
 
   // Dates
-  sendDate        DateTime  @db.Date // Ngày gửi mẫu đi xưởng
-  returnDate      DateTime? @db.Date // Ngày nhận mẫu về từ xưởng
+  sendDate        DateTime  @default(now()) @db.Timestamptz // Ngày gửi mẫu đi xưởng (auto-set to now)
+  returnDate      DateTime? @db.Timestamptz // Ngày nhận mẫu về từ xưởng (set when received)
   expectedFitDate DateTime? @db.Date // Ngày dự kiến lắp cho khách (optional)
 
   // Details

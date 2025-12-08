@@ -1,10 +1,15 @@
-// src/features/labo-services/components/LaboPriceTable.tsx
+// src/features/labo-services/components/LaboServiceTable.tsx
 "use client";
 
 import React, { useMemo } from "react";
 import { Table, Tag, Button, Popconfirm, Space, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  InboxOutlined,
+  RollbackOutlined,
+} from "@ant-design/icons";
 import type { LaboServiceResponse } from "@/shared/validation/labo-service.schema";
 import { LABO_WARRANTY_LABELS } from "../constants";
 
@@ -13,18 +18,26 @@ type Props = {
   loading?: boolean;
   onEdit: (row: LaboServiceResponse) => void;
   onDelete: (row: LaboServiceResponse) => void;
+  onArchive: (row: LaboServiceResponse) => void;
+  onUnarchive: (row: LaboServiceResponse) => void;
 };
 
-export default function LaboPriceTable({
+export default function LaboServiceTable({
   data,
   loading,
   onEdit,
   onDelete,
+  onArchive,
+  onUnarchive,
 }: Props) {
   // Tạo bộ lọc động từ dữ liệu
   const supplierFilters = useMemo(() => {
     const suppliers = Array.from(
-      new Set((data || []).map((d) => d.supplier?.name).filter(Boolean))
+      new Set(
+        (data || [])
+          .map((d) => d.supplier?.shortName || d.supplier?.name)
+          .filter(Boolean)
+      )
     ) as string[];
     return suppliers.map((v) => ({ text: v, value: v }));
   }, [data]);
@@ -41,9 +54,14 @@ export default function LaboPriceTable({
       title: "Xưởng",
       dataIndex: ["supplier", "name"],
       sorter: (a, b) =>
-        (a.supplier?.name || "").localeCompare(b.supplier?.name || ""),
+        (a.supplier?.shortName || a.supplier?.name || "").localeCompare(
+          b.supplier?.shortName || b.supplier?.name || ""
+        ),
       filters: supplierFilters,
-      onFilter: (value, record) => (record.supplier?.name || "") === value,
+      onFilter: (value, record) =>
+        (record.supplier?.shortName || record.supplier?.name || "") === value,
+      render: (_, record) =>
+        record.supplier?.shortName || record.supplier?.name,
       width: 180,
     },
     {
@@ -86,16 +104,44 @@ export default function LaboPriceTable({
       width: 100,
     },
     {
+      title: "Trạng thái",
+      dataIndex: "archivedAt",
+      render: (v: string | null | undefined) =>
+        v ? (
+          <Tag color="default">Archived</Tag>
+        ) : (
+          <Tag color="green">Active</Tag>
+        ),
+      width: 140,
+    },
+    {
       title: "Thao tác",
       key: "actions",
       fixed: "right",
-      width: 120,
+      width: 150,
       render: (_, row) => {
+        const isArchived = !!row.archivedAt;
         return (
           <Space>
             <Tooltip title="Sửa giá">
               <Button icon={<EditOutlined />} onClick={() => onEdit(row)} />
             </Tooltip>
+
+            {!isArchived ? (
+              <Tooltip title="Lưu trữ">
+                <Button
+                  icon={<InboxOutlined />}
+                  onClick={() => onArchive(row)}
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title="Khôi phục">
+                <Button
+                  icon={<RollbackOutlined />}
+                  onClick={() => onUnarchive(row)}
+                />
+              </Tooltip>
+            )}
 
             <Popconfirm
               title="Xóa dịch vụ"
@@ -122,7 +168,7 @@ export default function LaboPriceTable({
       columns={columns}
       dataSource={data}
       pagination={false}
-      scroll={{ x: 1100 }}
+      scroll={{ x: 1290 }}
     />
   );
 }

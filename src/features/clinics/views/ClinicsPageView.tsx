@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
-import { Typography, Switch, Space, Button } from "antd";
+import { Typography, Switch, Space, Button, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useClinics } from "@/features/clinics/hooks/useClinics";
 import { useCreateClinic } from "@/features/clinics/hooks/useCreateClinic";
@@ -19,10 +19,12 @@ import type {
 } from "@/shared/validation/clinic.schema";
 
 const { Title, Text } = Typography;
+const { Search } = Input;
 
 type Props = { isAdmin?: boolean };
 
 export default function ClinicsPageView({ isAdmin }: Props) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const { data, isLoading } = useClinics(includeArchived);
 
@@ -36,7 +38,18 @@ export default function ClinicsPageView({ isAdmin }: Props) {
   const archive = useArchiveClinic();
   const unarchive = useUnarchiveClinic();
 
-  const list = useMemo(() => data ?? [], [data]);
+  const list = useMemo(() => {
+    if (!data) return [];
+    if (!searchTerm) return data;
+
+    const term = searchTerm.toLowerCase();
+    return data.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(term) ||
+        item.clinicCode?.toLowerCase().includes(term) ||
+        item.address?.toLowerCase().includes(term)
+    );
+  }, [data, searchTerm]);
 
   const closeModal = useCallback(() => setModalOpen(false), []);
 
@@ -110,6 +123,7 @@ export default function ClinicsPageView({ isAdmin }: Props) {
   return (
     <div>
       <Space
+        wrap
         style={{
           width: "100%",
           justifyContent: "space-between",
@@ -123,7 +137,14 @@ export default function ClinicsPageView({ isAdmin }: Props) {
           <Text type="secondary">Danh sách các chi nhánh.</Text>
         </div>
 
-        <Space>
+        <Space wrap>
+          <Search
+            placeholder="Tìm theo tên, mã, địa chỉ..."
+            allowClear
+            style={{ width: 300 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <Text>Hiển thị đã lưu trữ</Text>
           <Switch checked={includeArchived} onChange={setIncludeArchived} />
           {isAdmin && (

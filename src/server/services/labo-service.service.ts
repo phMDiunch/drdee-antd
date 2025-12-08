@@ -19,7 +19,12 @@ export const laboServiceService = {
    */
   async list(
     currentUser: UserCore | null,
-    params?: { sortBy?: string; sortOrder?: string; supplierId?: string }
+    params?: {
+      sortBy?: string;
+      sortOrder?: string;
+      supplierId?: string;
+      includeArchived?: boolean;
+    }
   ) {
     requireAdmin(currentUser);
 
@@ -129,5 +134,31 @@ export const laboServiceService = {
 
     const deleted = await laboServiceRepo.delete(id);
     return mapLaboServiceToResponse(deleted);
+  },
+
+  /**
+   * POST /labo-services/:id/archive (admin only)
+   */
+  async archive(currentUser: UserCore | null, id: string) {
+    requireAdmin(currentUser);
+
+    const existing = await laboServiceRepo.getById(id);
+    if (!existing) throw ERR.NOT_FOUND("Bảng giá không tồn tại.");
+
+    const updated = await laboServiceRepo.archive(id);
+    return mapLaboServiceToResponse(updated);
+  },
+
+  /**
+   * POST /labo-services/:id/unarchive (admin only)
+   */
+  async unarchive(currentUser: UserCore | null, id: string) {
+    requireAdmin(currentUser);
+
+    const existing = await laboServiceRepo.getById(id);
+    if (!existing) throw ERR.NOT_FOUND("Bảng giá không tồn tại.");
+
+    const updated = await laboServiceRepo.unarchive(id);
+    return mapLaboServiceToResponse(updated);
   },
 };

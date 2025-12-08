@@ -1,7 +1,7 @@
 // src/app/(private)/labo-services/page.tsx
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/server/services/auth.service";
-import LaboServicesView from "@/features/labo-services/views/LaboServicesView";
+import LaboServicesPageView from "@/features/labo-services/views/LaboServicesPageView";
 
 export default async function LaboServicesPage() {
   const user = await getSessionUser();
@@ -14,5 +14,5 @@ export default async function LaboServicesPage() {
 
   if (!isAdmin) redirect("/unauthorized");
 
-  return <LaboServicesView />;
+  return <LaboServicesPageView isAdmin={isAdmin} />;
 }

@@ -19,6 +19,7 @@ export const laboServiceRepo = {
     sortBy?: string;
     sortOrder?: string;
     supplierId?: string;
+    includeArchived?: boolean;
   }) {
     const orderBy: Prisma.LaboServiceOrderByWithRelationInput[] = [];
 
@@ -36,12 +37,17 @@ export const laboServiceRepo = {
       );
     }
 
+    const where: Prisma.LaboServiceWhereInput = {
+      ...(params?.supplierId && { supplierId: params.supplierId }),
+      ...(params?.includeArchived ? {} : { archivedAt: null }), // Only active if not including archived
+    };
+
     return prisma.laboService.findMany({
-      where: params?.supplierId ? { supplierId: params.supplierId } : {},
+      where,
       orderBy,
       include: {
         supplier: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, shortName: true },
         },
         laboItem: {
           select: { id: true, name: true, serviceGroup: true, unit: true },
@@ -57,7 +63,7 @@ export const laboServiceRepo = {
       where: { id },
       include: {
         supplier: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, shortName: true },
         },
         laboItem: {
           select: { id: true, name: true, serviceGroup: true, unit: true },
@@ -91,7 +97,7 @@ export const laboServiceRepo = {
       },
       include: {
         supplier: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, shortName: true },
         },
         laboItem: {
           select: { id: true, name: true, serviceGroup: true, unit: true },
@@ -108,7 +114,7 @@ export const laboServiceRepo = {
       data,
       include: {
         supplier: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, shortName: true },
         },
         laboItem: {
           select: { id: true, name: true, serviceGroup: true, unit: true },
@@ -121,6 +127,40 @@ export const laboServiceRepo = {
 
   async delete(id: string) {
     return prisma.laboService.delete({ where: { id } });
+  },
+
+  async archive(id: string, archivedAt: Date = new Date()) {
+    return prisma.laboService.update({
+      where: { id },
+      data: { archivedAt },
+      include: {
+        supplier: {
+          select: { id: true, name: true, shortName: true },
+        },
+        laboItem: {
+          select: { id: true, name: true, serviceGroup: true, unit: true },
+        },
+        createdBy: { select: { id: true, fullName: true } },
+        updatedBy: { select: { id: true, fullName: true } },
+      },
+    });
+  },
+
+  async unarchive(id: string) {
+    return prisma.laboService.update({
+      where: { id },
+      data: { archivedAt: null },
+      include: {
+        supplier: {
+          select: { id: true, name: true, shortName: true },
+        },
+        laboItem: {
+          select: { id: true, name: true, serviceGroup: true, unit: true },
+        },
+        createdBy: { select: { id: true, fullName: true } },
+        updatedBy: { select: { id: true, fullName: true } },
+      },
+    });
   },
 
   // ===== Bảo vệ Delete =====

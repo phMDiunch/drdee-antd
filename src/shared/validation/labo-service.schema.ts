@@ -6,8 +6,14 @@ import { z } from "zod";
  * Dùng làm nền cho Create và Update schemas
  */
 export const LaboServiceBaseSchema = z.object({
-  supplierId: z.string().uuid("ID xưởng không hợp lệ").min(1, "Vui lòng chọn xưởng"),
-  laboItemId: z.string().uuid("ID loại răng giả không hợp lệ").min(1, "Vui lòng chọn loại răng giả"),
+  supplierId: z
+    .string()
+    .uuid("ID xưởng không hợp lệ")
+    .min(1, "Vui lòng chọn xưởng"),
+  laboItemId: z
+    .string()
+    .uuid("ID loại răng giả không hợp lệ")
+    .min(1, "Vui lòng chọn loại răng giả"),
   price: z
     .number()
     .positive("Giá phải lớn hơn 0")
@@ -50,12 +56,14 @@ export const LaboServiceResponseSchema = z.object({
   updatedById: z.string().uuid(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  archivedAt: z.string().datetime().nullable(),
 
   // Nested objects
   supplier: z
     .object({
       id: z.string().uuid(),
       name: z.string(),
+      shortName: z.string().nullable(),
     })
     .nullable()
     .optional(),
@@ -104,6 +112,10 @@ export const GetLaboServicesQuerySchema = z.object({
 });
 
 /** Types */
-export type CreateLaboServiceRequest = z.infer<typeof CreateLaboServiceRequestSchema>;
-export type UpdateLaboServiceRequest = z.infer<typeof UpdateLaboServiceRequestSchema>;
+export type CreateLaboServiceRequest = z.infer<
+  typeof CreateLaboServiceRequestSchema
+>;
+export type UpdateLaboServiceRequest = z.infer<
+  typeof UpdateLaboServiceRequestSchema
+>;
 export type LaboServiceResponse = z.infer<typeof LaboServiceResponseSchema>;

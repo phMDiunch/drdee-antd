@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { Button, Switch, Space, Typography } from "antd";
+import { Button, Switch, Space, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import SupplierTable from "@/features/suppliers/components/SupplierTable";
 import SupplierFormModal from "@/features/suppliers/components/SupplierFormModal";
@@ -20,10 +20,12 @@ import type {
 } from "@/shared/validation/supplier.schema";
 
 const { Title, Text } = Typography;
+const { Search } = Input;
 
 type Props = { isAdmin?: boolean };
 
 export default function SuppliersPageView({ isAdmin }: Props) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const { data, isLoading } = useSuppliers(includeArchived);
   const { data: masterData = [] } = useMasterData();
@@ -38,7 +40,17 @@ export default function SuppliersPageView({ isAdmin }: Props) {
   const archive = useArchiveSupplier();
   const unarchive = useUnarchiveSupplier();
 
-  const list = useMemo(() => data ?? [], [data]);
+  const list = useMemo(() => {
+    if (!data) return [];
+    if (!searchTerm) return data;
+
+    const term = searchTerm.toLowerCase();
+    return data.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(term) ||
+        item.shortName?.toLowerCase().includes(term)
+    );
+  }, [data, searchTerm]);
 
   // Get supplier group options from MasterData (category='nhom-nha-cung-cap')
   const supplierGroupOptions = useMemo(() => {
@@ -122,6 +134,7 @@ export default function SuppliersPageView({ isAdmin }: Props) {
   return (
     <div>
       <Space
+        wrap
         style={{
           width: "100%",
           justifyContent: "space-between",
@@ -137,7 +150,14 @@ export default function SuppliersPageView({ isAdmin }: Props) {
           </Text>
         </div>
 
-        <Space>
+        <Space wrap>
+          <Search
+            placeholder="Tìm theo tên, tên viết tắt..."
+            allowClear
+            style={{ width: 300 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <Text>Hiển thị đã lưu trữ</Text>
           <Switch checked={includeArchived} onChange={setIncludeArchived} />
           {isAdmin && (

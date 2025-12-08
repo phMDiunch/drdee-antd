@@ -1,8 +1,8 @@
-// src/features/labo-services/components/LaboPriceFormModal.tsx
+// src/features/labo-services/components/LaboServiceFormModal.tsx
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { Modal, Form, Row, Col, InputNumber, Select } from "antd";
+import { Modal, Form, Row, Col, InputNumber, Select, Input } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -30,14 +30,14 @@ type Props = {
   ) => void;
 };
 
-const defaultValues: CreateLaboServiceRequest & { id?: string } = {
+const defaultValues: CreateLaboServiceRequest = {
   supplierId: "",
   laboItemId: "",
   price: 0,
   warranty: "1-nam",
 };
 
-export default function LaboPriceFormModal({
+export default function LaboServiceFormModal({
   open,
   mode,
   initial,
@@ -69,8 +69,8 @@ export default function LaboPriceFormModal({
     if (mode === "edit" && initial) {
       return {
         id: initial.id,
-        supplierId: initial.supplierId,
-        laboItemId: initial.laboItemId,
+        supplierId: initial.supplierId, // Keep for form type compatibility
+        laboItemId: initial.laboItemId, // Keep for form type compatibility
         price: initial.price,
         warranty: initial.warranty,
       };
@@ -84,12 +84,9 @@ export default function LaboPriceFormModal({
     reset,
     watch,
     formState: { isSubmitting },
-  } = useForm<
-    (CreateLaboServiceRequest | UpdateLaboServiceRequest) & {
-      id?: string;
-    }
-  >({
-    resolver: zodResolver(schema),
+  } = useForm<CreateLaboServiceRequest & { id?: string }>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(schema) as any,
     mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: formDefaultValues,
@@ -105,11 +102,7 @@ export default function LaboPriceFormModal({
     return laboItems.find((item) => item.id === selectedLaboItemId);
   }, [laboItems, selectedLaboItemId]);
 
-  const onValid = (
-    values: (CreateLaboServiceRequest | UpdateLaboServiceRequest) & {
-      id?: string;
-    }
-  ) => {
+  const onValid = (values: CreateLaboServiceRequest & { id?: string }) => {
     if (mode === "edit") {
       const payload: UpdateLaboServiceRequest = {
         id: values.id || (initial?.id as string),
@@ -119,8 +112,8 @@ export default function LaboPriceFormModal({
       onSubmit(payload);
     } else {
       const payload: CreateLaboServiceRequest = {
-        supplierId: (values as CreateLaboServiceRequest).supplierId,
-        laboItemId: (values as CreateLaboServiceRequest).laboItemId,
+        supplierId: values.supplierId,
+        laboItemId: values.laboItemId,
         price: values.price,
         warranty: values.warranty,
       };
@@ -145,92 +138,109 @@ export default function LaboPriceFormModal({
       maskClosable={false}
     >
       <Form layout="vertical" requiredMark>
+        {/* Row 1: Supplier, LaboItem */}
         <Row gutter={12}>
-          {mode === "create" && (
-            <>
-              <Col xs={24}>
-                <Controller
-                  name="supplierId"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Xưởng labo"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={fieldState.error?.message}
-                    >
-                      <Select
-                        {...field}
-                        placeholder="Chọn xưởng labo"
-                        loading={loadingSuppliers}
-                        showSearch
-                        optionFilterProp="label"
-                        options={laboSuppliers.map((s) => ({
-                          label: s.name,
-                          value: s.id,
-                        }))}
-                      />
-                    </Form.Item>
-                  )}
+          <Col xs={24}>
+            {mode === "create" ? (
+              <Controller
+                name="supplierId"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Form.Item
+                    label="Xưởng labo"
+                    required
+                    validateStatus={fieldState.error ? "error" : ""}
+                    help={fieldState.error?.message}
+                  >
+                    <Select
+                      {...field}
+                      placeholder="Chọn xưởng labo"
+                      loading={loadingSuppliers}
+                      showSearch
+                      optionFilterProp="label"
+                      options={laboSuppliers.map((s) => ({
+                        label: s.shortName || s.name,
+                        value: s.id,
+                      }))}
+                    />
+                  </Form.Item>
+                )}
+              />
+            ) : (
+              <Form.Item label="Xưởng labo" required>
+                <Input
+                  disabled
+                  value={
+                    initial?.supplier?.shortName || initial?.supplier?.name
+                  }
                 />
-              </Col>
-              <Col xs={24}>
-                <Controller
-                  name="laboItemId"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Form.Item
-                      label="Loại răng giả"
-                      required
-                      validateStatus={fieldState.error ? "error" : ""}
-                      help={
-                        fieldState.error?.message ||
-                        (selectedLaboItem
-                          ? `Nhóm: ${selectedLaboItem.serviceGroup} | Đơn vị: ${selectedLaboItem.unit}`
-                          : undefined)
-                      }
-                    >
-                      <Select
-                        {...field}
-                        placeholder="Chọn loại răng giả"
-                        loading={loadingLaboItems}
-                        showSearch
-                        optionFilterProp="label"
-                        options={laboItems.map((item) => ({
-                          label: item.name,
-                          value: item.id,
-                        }))}
-                      />
-                    </Form.Item>
-                  )}
-                />
-              </Col>
-            </>
-          )}
+              </Form.Item>
+            )}
+          </Col>
+          <Col xs={24}>
+            {mode === "create" ? (
+              <Controller
+                name="laboItemId"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Form.Item
+                    label="Loại răng giả"
+                    required
+                    validateStatus={fieldState.error ? "error" : ""}
+                    help={fieldState.error?.message}
+                  >
+                    <Select
+                      {...field}
+                      placeholder="Chọn loại răng giả"
+                      loading={loadingLaboItems}
+                      showSearch
+                      optionFilterProp="label"
+                      options={laboItems.map((item) => ({
+                        label: item.name,
+                        value: item.id,
+                      }))}
+                    />
+                  </Form.Item>
+                )}
+              />
+            ) : (
+              <Form.Item label="Loại răng giả" required>
+                <Input disabled value={initial?.laboItem?.name} />
+              </Form.Item>
+            )}
+          </Col>
+        </Row>
 
-          {mode === "edit" && (
-            <>
-              <Col xs={24}>
-                <Form.Item label="Xưởng">
-                  <div style={{ padding: "4px 0" }}>
-                    <strong>{initial?.supplier?.name}</strong>
-                  </div>
-                </Form.Item>
-              </Col>
-              <Col xs={24}>
-                <Form.Item label="Dịch vụ">
-                  <div style={{ padding: "4px 0" }}>
-                    <strong>{initial?.laboItem?.name}</strong>
-                    <div style={{ fontSize: "12px", color: "#666" }}>
-                      Nhóm: {initial?.laboItem?.serviceGroup} | Đơn vị:{" "}
-                      {initial?.laboItem?.unit}
-                    </div>
-                  </div>
-                </Form.Item>
-              </Col>
-            </>
-          )}
+        {/* Row 2: Service Group, Unit */}
+        <Row gutter={12}>
+          <Col xs={24} lg={12}>
+            <Form.Item label="Nhóm dịch vụ" required>
+              <Input
+                disabled
+                value={
+                  mode === "create"
+                    ? selectedLaboItem?.serviceGroup || ""
+                    : initial?.laboItem?.serviceGroup || ""
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Form.Item label="Đơn vị" required>
+              <Input
+                disabled
+                value={
+                  mode === "create"
+                    ? selectedLaboItem?.unit || ""
+                    : initial?.laboItem?.unit || ""
+                }
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
+        {/* Row 3: Price, Warranty */}
+        <Row gutter={12}>
           <Col xs={24} lg={12}>
             <Controller
               name="price"
@@ -240,12 +250,7 @@ export default function LaboPriceFormModal({
                   label="Giá (VND)"
                   required
                   validateStatus={fieldState.error ? "error" : ""}
-                  help={
-                    fieldState.error?.message ||
-                    (mode === "edit" && initial?.price
-                      ? `Giá cũ: ${initial.price.toLocaleString("vi-VN")} ₫`
-                      : undefined)
-                  }
+                  help={fieldState.error?.message}
                 >
                   <InputNumber
                     {...field}
@@ -271,15 +276,7 @@ export default function LaboPriceFormModal({
                   label="Bảo hành"
                   required
                   validateStatus={fieldState.error ? "error" : ""}
-                  help={
-                    fieldState.error?.message ||
-                    (mode === "edit" && initial?.warranty
-                      ? `Hiện tại: ${
-                          LABO_WARRANTY_LABELS[initial.warranty] ||
-                          initial.warranty
-                        }`
-                      : undefined)
-                  }
+                  help={fieldState.error?.message}
                 >
                   <Select
                     {...field}
@@ -293,23 +290,6 @@ export default function LaboPriceFormModal({
               )}
             />
           </Col>
-
-          {mode === "edit" && (
-            <Col xs={24}>
-              <div
-                style={{
-                  background: "#fff7e6",
-                  border: "1px solid #ffd591",
-                  padding: "12px",
-                  borderRadius: "4px",
-                  fontSize: "13px",
-                }}
-              >
-                ⚠️ <strong>Lưu ý:</strong> Giá cũ trong các đơn hàng trước đó sẽ
-                không thay đổi (snapshot pricing).
-              </div>
-            </Col>
-          )}
         </Row>
       </Form>
     </Modal>

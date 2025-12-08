@@ -14,18 +14,20 @@ import { LABO_SERVICE_ENDPOINTS } from "./constants";
 /**
  * Get labo services list
  * GET /api/v1/labo-services
- * @param params - Query parameters (sortBy, sortOrder, supplierId)
+ * @param params - Query parameters (sortBy, sortOrder, supplierId, includeArchived)
  * @returns Array of labo services
  */
 export async function getLaboServicesApi(params?: {
   sortBy?: string;
   sortOrder?: string;
   supplierId?: string;
+  includeArchived?: boolean;
 }) {
   const query = new URLSearchParams();
   if (params?.sortBy) query.set("sortBy", params.sortBy);
   if (params?.sortOrder) query.set("sortOrder", params.sortOrder);
   if (params?.supplierId) query.set("supplierId", params.supplierId);
+  if (params?.includeArchived) query.set("includeArchived", "true");
 
   const url = `${LABO_SERVICE_ENDPOINTS.ROOT}?${query.toString()}`;
   const res = await fetch(url, { cache: "no-store" });

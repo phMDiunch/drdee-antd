@@ -36,3 +36,21 @@ export async function deleteLaboServiceAction(priceId: string) {
   const user = await getSessionUser();
   return await laboServiceService.remove(user, priceId);
 }
+
+/**
+ * Server Action: Archive labo service (soft delete)
+ * Usage: await archiveLaboServiceAction(id);
+ */
+export async function archiveLaboServiceAction(priceId: string) {
+  const user = await getSessionUser();
+  return await laboServiceService.archive(user, priceId);
+}
+
+/**
+ * Server Action: Unarchive labo service (restore)
+ * Usage: await unarchiveLaboServiceAction(id);
+ */
+export async function unarchiveLaboServiceAction(priceId: string) {
+  const user = await getSessionUser();
+  return await laboServiceService.unarchive(user, priceId);
+}

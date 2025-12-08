@@ -2,7 +2,7 @@ import type { LaboService, Supplier, LaboItem, Employee } from "@prisma/client";
 
 // LaboService với relations từ Prisma
 type LaboServiceWithRelations = LaboService & {
-  supplier?: Pick<Supplier, "id" | "name"> | null;
+  supplier?: Pick<Supplier, "id" | "name" | "shortName"> | null;
   laboItem?: Pick<LaboItem, "id" | "name" | "serviceGroup" | "unit"> | null;
   createdBy?: Pick<Employee, "id" | "fullName"> | null;
   updatedBy?: Pick<Employee, "id" | "fullName"> | null;
@@ -23,12 +23,14 @@ export function mapLaboServiceToResponse(row: LaboServiceWithRelations) {
     updatedById: row.updatedById,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    archivedAt: row.archivedAt?.toISOString() ?? null,
 
     // Nested objects - giữ nguyên cấu trúc quan hệ
     supplier: row.supplier
       ? {
           id: row.supplier.id,
           name: row.supplier.name,
+          shortName: row.supplier.shortName,
         }
       : null,
 

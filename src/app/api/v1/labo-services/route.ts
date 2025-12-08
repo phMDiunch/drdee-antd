@@ -7,7 +7,7 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
  * GET /api/v1/labo-services - List labo services
- * Query params: sortBy, sortOrder, supplierId
+ * Query params: sortBy, sortOrder, supplierId, includeArchived
  * Used by: useLaboServices() hook
  * Validation: Handled by service layer
  * Cache: 5 minutes (master data)
@@ -23,6 +23,7 @@ export async function GET(req: Request) {
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
       supplierId: query.supplierId,
+      includeArchived: query.includeArchived === "true",
     });
 
     // 🚀 API Response Caching - Master data cache 5 minutes

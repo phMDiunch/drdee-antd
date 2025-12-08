@@ -174,6 +174,7 @@ export default function MaterialsPageView({ isAdmin }: Props) {
   return (
     <div>
       <Space
+        wrap
         style={{
           width: "100%",
           justifyContent: "space-between",
@@ -189,7 +190,7 @@ export default function MaterialsPageView({ isAdmin }: Props) {
           </Text>
         </div>
 
-        <Space>
+        <Space wrap>
           <Text>Hiển thị đã lưu trữ</Text>
           <Switch checked={includeArchived} onChange={setIncludeArchived} />
           {isAdmin && (

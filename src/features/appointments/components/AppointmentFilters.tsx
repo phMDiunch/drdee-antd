@@ -32,16 +32,18 @@ export default function AppointmentFilters({
     <div
       style={{
         display: "flex",
+        flexWrap: "wrap",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 16,
+        gap: 12,
       }}
     >
       {/* Left side: Count display */}
       <Text strong>{dailyCount} lịch hẹn hôm nay</Text>
 
       {/* Right side: Search + Export + Create button */}
-      <Space>
+      <Space wrap>
         <Input
           placeholder="Tìm theo tên hoặc mã khách hàng..."
           prefix={<SearchOutlined />}
