@@ -15,6 +15,7 @@ import {
 import { CheckOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import Link from "next/link";
+import dayjs from "dayjs";
 import type { DailyLaboOrderResponse } from "@/shared/validation/labo-order.schema";
 
 const { Text } = Typography;
@@ -44,7 +45,7 @@ export function LaboOrderTable({
         title: "Khách hàng",
         dataIndex: "customer",
         key: "customer",
-        width: 170,
+        width: 150,
         render: (_, record) => {
           const customerName = record.customer.fullName;
           const customerCode = record.customer.customerCode;
@@ -74,11 +75,26 @@ export function LaboOrderTable({
         render: (_, record) => record.doctor.fullName,
       },
       {
+        title: "Ngày điều trị",
+        dataIndex: "treatmentDate",
+        key: "treatmentDate",
+        width: 120,
+        render: (treatmentDate: string) =>
+          dayjs(treatmentDate).format("DD/MM/YYYY"),
+      },
+      {
+        title: "Loại đơn hàng",
+        dataIndex: "orderType",
+        key: "orderType",
+        width: 100,
+      },
+      {
         title: "Xưởng",
         dataIndex: "supplier",
         key: "supplier",
         width: 120,
-        render: (_, record) => record.supplier.name,
+        render: (_, record) =>
+          record.supplier.shortName || record.supplier.name,
       },
       {
         title: "Loại răng",
@@ -108,16 +124,51 @@ export function LaboOrderTable({
         align: "center" as const,
       },
       {
-        title: "Thao tác",
-        key: "actions",
-        width: 180,
-        fixed: "right" as const,
-        render: (_, record) => {
-          const isReturned = record.returnDate !== null;
-          const canEdit = isAdmin || !isReturned;
+        title: "Ngày gửi mẫu",
+        dataIndex: "sendDate",
+        key: "sendDate",
+        width: 140,
+        render: (sendDate: string) =>
+          dayjs(sendDate).format("DD/MM/YYYY HH:mm"),
+      },
+      {
+        title: "Ngày hẹn lắp",
+        dataIndex: "expectedFitDate",
+        key: "expectedFitDate",
+        width: 100,
+        render: (expectedFitDate: string | null) =>
+          expectedFitDate ? dayjs(expectedFitDate).format("DD/MM/YYYY") : "-",
+      },
+      {
+        title: "Yêu cầu",
+        dataIndex: "detailRequirement",
+        key: "detailRequirement",
+        width: 150,
+        ellipsis: {
+          showTitle: false,
+        },
+        render: (detailRequirement: string | null) =>
+          detailRequirement ? (
+            <Tooltip title={detailRequirement}>
+              <Text>{detailRequirement}</Text>
+            </Tooltip>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        title: "Ngày nhận mẫu",
+        dataIndex: "returnDate",
+        key: "returnDate",
+        width: 140,
+        align: "center" as const,
+        render: (returnDate: string | null, record) => {
+          if (returnDate) {
+            return <Text>{dayjs(returnDate).format("DD/MM/YYYY HH:mm")}</Text>;
+          }
 
-          // Calculate JSX elements first
-          const receiveButton = !isReturned ? (
+          // Chưa nhận mẫu - hiển thị button
+          return (
             <Tooltip title="Xác nhận đã nhận mẫu từ xưởng">
               <Popconfirm
                 title="Bạn có chắc chắn đã nhận mẫu này từ xưởng?"
@@ -126,7 +177,7 @@ export function LaboOrderTable({
                 cancelText="Không"
               >
                 <Button
-                  type="link"
+                  type="primary"
                   size="small"
                   icon={<CheckOutlined />}
                   loading={actionLoading}
@@ -135,57 +186,49 @@ export function LaboOrderTable({
                 </Button>
               </Popconfirm>
             </Tooltip>
-          ) : null;
-
-          const editButton = canEdit ? (
-            <Tooltip title="Sửa đơn hàng">
-              <Button
-                type="link"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => onEdit(record)}
-              >
-                Sửa
-              </Button>
-            </Tooltip>
-          ) : (
-            <Tooltip title="Chỉ admin mới sửa được đơn đã nhận mẫu">
-              <Button type="link" size="small" icon={<EditOutlined />} disabled>
-                Sửa
-              </Button>
-            </Tooltip>
           );
-
-          const deleteButton = isAdmin ? (
-            <Tooltip title="Xóa đơn hàng">
-              <Popconfirm
-                title="Bạn có chắc chắn muốn xóa đơn hàng này?"
-                onConfirm={() => onDelete(record.id)}
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button
-                  type="link"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={actionLoading}
-                >
-                  Xóa
-                </Button>
-              </Popconfirm>
-            </Tooltip>
-          ) : null;
-
-          // Filter out null values
-          const actions = [receiveButton, editButton, deleteButton].filter(
-            Boolean
-          );
+        },
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        width: 100,
+        fixed: "right" as const,
+        render: (_, record) => {
+          const isReturned = record.returnDate !== null;
+          const canEdit = isAdmin || !isReturned;
+          const editTooltip = canEdit
+            ? "Sửa đơn hàng"
+            : "Chỉ admin mới sửa được đơn đã nhận mẫu";
 
           return (
             <Space split={<Divider type="vertical" />} size={0}>
-              {actions}
+              <Tooltip title={editTooltip}>
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  disabled={!canEdit}
+                  onClick={() => onEdit(record)}
+                />
+              </Tooltip>
+              {isAdmin && (
+                <Tooltip title="Xóa đơn hàng">
+                  <Popconfirm
+                    title="Bạn có chắc chắn muốn xóa đơn hàng này?"
+                    onConfirm={() => onDelete(record.id)}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={actionLoading}
+                    />
+                  </Popconfirm>
+                </Tooltip>
+              )}
             </Space>
           );
         },
@@ -200,7 +243,7 @@ export function LaboOrderTable({
       rowKey="id"
       loading={loading}
       pagination={false}
-      scroll={{ x: 950 }}
+      scroll={{ x: 1350 }}
       locale={{
         emptyText: "Không có đơn hàng",
       }}

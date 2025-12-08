@@ -177,6 +177,7 @@ model Employee {
 
   // Liên kết đến đơn hàng labo
   doctorLaboOrders   LaboOrder[] @relation("DoctorLaboOrders")
+  sentLaboOrders     LaboOrder[] @relation("SentLaboOrders")
   receivedLaboOrders LaboOrder[] @relation("ReceivedLaboOrders")
   createdLaboOrders  LaboOrder[] @relation("CreatedLaboOrders")
   updatedLaboOrders  LaboOrder[] @relation("UpdatedLaboOrders")
@@ -741,10 +742,11 @@ model LaboService {
   archivedAt  DateTime? @db.Timestamptz
 
   // Relations
-  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  laboItem  LaboItem @relation(fields: [laboItemId], references: [id], onDelete: Restrict)
-  createdBy Employee @relation("CreatedLaboServices", fields: [createdById], references: [id])
-  updatedBy Employee @relation("UpdatedLaboServices", fields: [updatedById], references: [id])
+  supplier   Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  laboItem   LaboItem    @relation(fields: [laboItemId], references: [id], onDelete: Restrict)
+  createdBy  Employee    @relation("CreatedLaboServices", fields: [createdById], references: [id])
+  updatedBy  Employee    @relation("UpdatedLaboServices", fields: [updatedById], references: [id])
+  laboOrders LaboOrder[] // Orders using this pricing
 
   // Unique constraint: Mỗi supplier chỉ có 1 giá cho mỗi laboItem
   @@unique([supplierId, laboItemId])
@@ -760,11 +762,16 @@ model LaboOrder {
   id String @id @default(uuid())
 
   // References
-  customerId String
-  doctorId   String
-  supplierId String
-  laboItemId String
-  clinicId   String
+  customerId    String
+  doctorId      String
+  laboServiceId String // Link to pricing record (audit trail)
+  supplierId    String // Denormalized for query performance
+  laboItemId    String // Denormalized for query performance
+  clinicId      String
+
+  // Treatment Info
+  treatmentDate DateTime @db.Date // Ngày bác sĩ điều trị
+  orderType     String // "lam-moi" | "bao-hanh"
 
   // Pricing (Snapshot from LaboService at creation time)
   unitPrice Int // Snapshot price per unit
@@ -781,6 +788,7 @@ model LaboOrder {
   detailRequirement String? // Ghi chú yêu cầu chi tiết cho xưởng
 
   // Tracking
+  sentById     String // Nhân viên gửi mẫu (usually same as createdById)
   receivedById String? // Nhân viên xác nhận nhận mẫu
 
   // Metadata
@@ -790,12 +798,14 @@ model LaboOrder {
   updatedAt   DateTime @updatedAt @db.Timestamptz
 
   // Relations
-  customer Customer @relation(fields: [customerId], references: [id])
-  doctor   Employee @relation("DoctorLaboOrders", fields: [doctorId], references: [id])
-  supplier Supplier @relation(fields: [supplierId], references: [id])
-  laboItem LaboItem @relation(fields: [laboItemId], references: [id])
-  clinic   Clinic   @relation(fields: [clinicId], references: [id])
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  doctor      Employee    @relation("DoctorLaboOrders", fields: [doctorId], references: [id])
+  laboService LaboService @relation(fields: [laboServiceId], references: [id])
+  supplier    Supplier    @relation(fields: [supplierId], references: [id])
+  laboItem    LaboItem    @relation(fields: [laboItemId], references: [id])
+  clinic      Clinic      @relation(fields: [clinicId], references: [id])
 
+  sentBy     Employee  @relation("SentLaboOrders", fields: [sentById], references: [id])
   receivedBy Employee? @relation("ReceivedLaboOrders", fields: [receivedById], references: [id])
   createdBy  Employee  @relation("CreatedLaboOrders", fields: [createdById], references: [id])
   updatedBy  Employee  @relation("UpdatedLaboOrders", fields: [updatedById], references: [id])
@@ -805,4 +815,5 @@ model LaboOrder {
   @@index([clinicId, returnDate])
   @@index([customerId])
   @@index([supplierId])
+  @@index([laboServiceId])
 }

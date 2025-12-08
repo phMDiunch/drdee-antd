@@ -121,10 +121,14 @@ export const laboOrderService = {
     const data: LaboOrderCreateInput = {
       customerId: parsed.data.customerId,
       doctorId: parsed.data.doctorId,
+      treatmentDate: parsed.data.treatmentDate,
+      orderType: parsed.data.orderType,
+      sentById: parsed.data.sentById,
+      laboServiceId: laboService.id,
       supplierId: parsed.data.supplierId,
       laboItemId: parsed.data.laboItemId,
       quantity: parsed.data.quantity,
-      sendDate: parsed.data.sendDate,
+      // sendDate is auto-set to now() at database level
       expectedFitDate: parsed.data.expectedFitDate ?? null,
       detailRequirement: parsed.data.detailRequirement ?? null,
 
@@ -201,16 +205,20 @@ export const laboOrderService = {
       updateData.totalCost = existing.unitPrice * parsed.data.quantity;
     }
 
-    if (parsed.data.sendDate !== undefined) {
-      updateData.sendDate = parsed.data.sendDate;
-    }
-
     if (parsed.data.expectedFitDate !== undefined) {
       updateData.expectedFitDate = parsed.data.expectedFitDate ?? null;
     }
 
     if (parsed.data.detailRequirement !== undefined) {
       updateData.detailRequirement = parsed.data.detailRequirement ?? null;
+    }
+
+    // Admin-only field: returnDate
+    if (parsed.data.returnDate !== undefined) {
+      if (currentUser.role !== "admin") {
+        throw ERR.FORBIDDEN("Chỉ admin mới có quyền sửa ngày nhận mẫu.");
+      }
+      updateData.returnDate = parsed.data.returnDate ?? null;
     }
 
     const updated = await laboOrderRepo.update(id, updateData);

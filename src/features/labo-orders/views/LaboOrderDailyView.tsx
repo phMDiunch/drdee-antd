@@ -8,15 +8,18 @@ import { LaboOrderStatistics } from "../components/LaboOrderStatistics";
 import { LaboOrderTable } from "../components/LaboOrderTable";
 import { LaboOrderFilters } from "../components/LaboOrderFilters";
 import { CreateLaboOrderModal } from "../components/CreateLaboOrderModal";
+import { UpdateLaboOrderModal } from "../components/UpdateLaboOrderModal";
 import { useLaboOrdersDaily } from "../hooks/useLaboOrdersDaily";
 import { useReceiveLaboOrder } from "../hooks/useReceiveLaboOrder";
 import { useDeleteLaboOrder } from "../hooks/useDeleteLaboOrder";
 import { useCreateLaboOrder } from "../hooks/useCreateLaboOrder";
+import { useUpdateLaboOrder } from "../hooks/useUpdateLaboOrder";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
 import type {
   DailyLaboOrderResponse,
   CreateLaboOrderRequest,
+  UpdateLaboOrderRequest,
 } from "@/shared/validation/labo-order.schema";
 
 export function LaboOrderDailyView() {
@@ -36,6 +39,9 @@ export function LaboOrderDailyView() {
   );
 
   const [openCreate, setOpenCreate] = useState(false);
+  const [openUpdate, setOpenUpdate] = useState(false);
+  const [selectedOrder, setSelectedOrder] =
+    useState<DailyLaboOrderResponse | null>(null);
 
   // Fetch sent orders
   const { data: sentData, isLoading: sentLoading } = useLaboOrdersDaily({
@@ -61,6 +67,7 @@ export function LaboOrderDailyView() {
 
   // Mutations
   const createMutation = useCreateLaboOrder();
+  const updateMutation = useUpdateLaboOrder();
   const receiveOrderMutation = useReceiveLaboOrder();
   const deleteOrderMutation = useDeleteLaboOrder();
 
@@ -73,8 +80,8 @@ export function LaboOrderDailyView() {
   );
 
   const handleEditOrder = useCallback((order: DailyLaboOrderResponse) => {
-    // TODO: Open edit modal or navigate to edit page
-    console.log("Edit order:", order.id);
+    setSelectedOrder(order);
+    setOpenUpdate(true);
   }, []);
 
   const handleDeleteOrder = useCallback(
@@ -94,6 +101,19 @@ export function LaboOrderDailyView() {
       }
     },
     [createMutation]
+  );
+
+  const handleUpdateSubmit = useCallback(
+    async (id: string, payload: UpdateLaboOrderRequest) => {
+      try {
+        await updateMutation.mutateAsync(payload);
+        setOpenUpdate(false);
+        setSelectedOrder(null);
+      } catch {
+        // Hook handles error notification
+      }
+    },
+    [updateMutation]
   );
 
   const handleExportExcel = useCallback(() => {
@@ -208,7 +228,18 @@ export function LaboOrderDailyView() {
         onSubmit={handleCreateSubmit}
       />
 
-      {/* TODO: Add UpdateLaboOrderModal */}
+      {selectedOrder && (
+        <UpdateLaboOrderModal
+          open={openUpdate}
+          order={selectedOrder}
+          confirmLoading={updateMutation.isPending}
+          onCancel={() => {
+            setOpenUpdate(false);
+            setSelectedOrder(null);
+          }}
+          onSubmit={handleUpdateSubmit}
+        />
+      )}
     </div>
   );
 }

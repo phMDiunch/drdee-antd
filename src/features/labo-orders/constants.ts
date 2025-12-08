@@ -21,3 +21,12 @@ export const LABO_ORDER_MESSAGES = {
   DELETE_SUCCESS: "Xóa đơn hàng thành công.",
   RECEIVE_SUCCESS: "Đã xác nhận nhận mẫu.",
 } as const;
+
+/**
+ * Labo Order Types
+ * Loại đơn hàng: Làm mới (có phí) hoặc Bảo hành (miễn phí)
+ */
+export const LABO_ORDER_TYPE_OPTIONS = [
+  { label: "Làm mới", value: "Làm mới" },
+  { label: "Bảo hành", value: "Bảo hành" },
+] as const;

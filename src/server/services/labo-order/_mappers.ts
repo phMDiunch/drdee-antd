@@ -12,7 +12,8 @@ import type {
 type LaboOrderWithRelations = LaboOrder & {
   customer?: Pick<Customer, "id" | "fullName" | "customerCode"> | null;
   doctor?: Pick<Employee, "id" | "fullName"> | null;
-  supplier?: Pick<Supplier, "id" | "name"> | null;
+  sentBy?: Pick<Employee, "id" | "fullName"> | null;
+  supplier?: Pick<Supplier, "id" | "name" | "shortName"> | null;
   laboItem?: Pick<LaboItem, "id" | "name" | "serviceGroup" | "unit"> | null;
   clinic?: Pick<Clinic, "id" | "clinicCode" | "name"> | null;
   receivedBy?: Pick<Employee, "id" | "fullName"> | null;
@@ -29,6 +30,10 @@ export function mapLaboOrderToResponse(row: LaboOrderWithRelations) {
     id: row.id,
     customerId: row.customerId,
     doctorId: row.doctorId,
+    treatmentDate: row.treatmentDate.toISOString().split("T")[0],
+    orderType: row.orderType,
+    sentById: row.sentById,
+    laboServiceId: row.laboServiceId,
     supplierId: row.supplierId,
     laboItemId: row.laboItemId,
     clinicId: row.clinicId,
@@ -39,11 +44,9 @@ export function mapLaboOrderToResponse(row: LaboOrderWithRelations) {
     totalCost: row.totalCost,
     warranty: row.warranty,
 
-    // Dates (convert to ISO date string YYYY-MM-DD)
-    sendDate: row.sendDate.toISOString().split("T")[0],
-    returnDate: row.returnDate
-      ? row.returnDate.toISOString().split("T")[0]
-      : null,
+    // Dates (convert to ISO datetime string for sendDate/returnDate, date string for expectedFitDate)
+    sendDate: row.sendDate.toISOString(),
+    returnDate: row.returnDate ? row.returnDate.toISOString() : null,
     expectedFitDate: row.expectedFitDate
       ? row.expectedFitDate.toISOString().split("T")[0]
       : null,
@@ -83,14 +86,26 @@ export function mapLaboOrderToResponse(row: LaboOrderWithRelations) {
           fullName: "Unknown",
         },
 
+    sentBy: row.sentBy
+      ? {
+          id: row.sentBy.id,
+          fullName: row.sentBy.fullName,
+        }
+      : {
+          id: row.sentById,
+          fullName: "Unknown",
+        },
+
     supplier: row.supplier
       ? {
           id: row.supplier.id,
           name: row.supplier.name,
+          shortName: row.supplier.shortName,
         }
       : {
           id: row.supplierId,
           name: "Unknown",
+          shortName: null,
         },
 
     laboItem: row.laboItem

@@ -11,6 +11,7 @@ import type {
  * Following appointment.repo.ts pattern
  */
 export type LaboOrderCreateInput = CreateLaboOrderRequest & {
+  laboServiceId: string; // 🔒 Server-controlled: Link to LaboService (audit trail)
   unitPrice: number; // 🔒 Server-controlled: Snapshot from LaboService
   totalCost: number; // 🔒 Server-controlled: unitPrice * quantity
   warranty: string; // 🔒 Server-controlled: Snapshot from LaboService
@@ -48,6 +49,7 @@ const includeFullLaboOrder = {
     select: {
       id: true,
       name: true,
+      shortName: true,
     },
   },
   laboItem: {
@@ -63,6 +65,12 @@ const includeFullLaboOrder = {
       id: true,
       clinicCode: true,
       name: true,
+    },
+  },
+  sentBy: {
+    select: {
+      id: true,
+      fullName: true,
     },
   },
   receivedBy: {
@@ -101,8 +109,12 @@ export const laboOrderRepo = {
   }) {
     const { date, type, clinicId } = params;
 
-    // Convert YYYY-MM-DD string to Date object
-    const targetDate = new Date(date);
+    // Convert YYYY-MM-DD string to Date range (start of day to end of day)
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
     // Build where conditions
     const where: Prisma.LaboOrderWhereInput = {
@@ -110,9 +122,15 @@ export const laboOrderRepo = {
     };
 
     if (type === "sent") {
-      where.sendDate = targetDate;
+      where.sendDate = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
     } else {
-      where.returnDate = targetDate;
+      where.returnDate = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
     }
 
     // Fetch orders with nested relations
@@ -147,6 +165,12 @@ export const laboOrderRepo = {
       data: {
         customerId: data.customerId,
         doctorId: data.doctorId,
+        treatmentDate: data.treatmentDate
+          ? new Date(data.treatmentDate)
+          : new Date(),
+        orderType: data.orderType,
+        sentById: data.sentById,
+        laboServiceId: data.laboServiceId,
         supplierId: data.supplierId,
         laboItemId: data.laboItemId,
         clinicId: data.clinicId,
@@ -157,8 +181,7 @@ export const laboOrderRepo = {
         totalCost: data.totalCost,
         warranty: data.warranty,
 
-        // Dates
-        sendDate: new Date(data.sendDate),
+        // Dates (sendDate auto-set to now() at database level)
         expectedFitDate: data.expectedFitDate
           ? new Date(data.expectedFitDate)
           : null,
@@ -203,6 +226,12 @@ export const laboOrderRepo = {
     if (data.expectedFitDate !== undefined) {
       updateData.expectedFitDate = data.expectedFitDate
         ? new Date(data.expectedFitDate)
+        : null;
+    }
+
+    if (data.returnDate !== undefined) {
+      updateData.returnDate = data.returnDate
+        ? new Date(data.returnDate)
         : null;
     }
 

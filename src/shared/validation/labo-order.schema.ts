@@ -12,6 +12,12 @@ export const LaboOrderBaseSchema = z.object({
   doctorId: z
     .string({ message: "Vui lòng chọn bác sĩ" })
     .min(1, "Vui lòng chọn bác sĩ"),
+  treatmentDate: z
+    .string({ message: "Vui lòng chọn ngày điều trị" })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày điều trị không đúng định dạng"),
+  orderType: z
+    .string({ message: "Vui lòng chọn loại đơn hàng" })
+    .min(1, "Vui lòng chọn loại đơn hàng"),
   supplierId: z
     .string({ message: "Vui lòng chọn xưởng" })
     .min(1, "Vui lòng chọn xưởng"),
@@ -23,9 +29,9 @@ export const LaboOrderBaseSchema = z.object({
     .int("Số lượng phải là số nguyên")
     .positive("Số lượng phải lớn hơn 0")
     .max(100, "Số lượng tối đa là 100"),
-  sendDate: z
-    .string({ message: "Vui lòng chọn ngày gửi" })
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày gửi không đúng định dạng"),
+  sentById: z
+    .string({ message: "Vui lòng chọn người gửi mẫu" })
+    .min(1, "Vui lòng chọn người gửi mẫu"),
   expectedFitDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày dự kiến lắp không đúng định dạng")
@@ -56,6 +62,12 @@ export const CreateLaboOrderFormSchema = z.object({
   doctorId: z
     .string({ message: "Vui lòng chọn bác sĩ" })
     .min(1, "Vui lòng chọn bác sĩ"),
+  treatmentDate: z
+    .string({ message: "Vui lòng chọn ngày điều trị" })
+    .min(1, "Vui lòng chọn ngày điều trị"),
+  orderType: z
+    .string({ message: "Vui lòng chọn loại đơn hàng" })
+    .min(1, "Vui lòng chọn loại đơn hàng"),
   supplierId: z
     .string({ message: "Vui lòng chọn xưởng" })
     .min(1, "Vui lòng chọn xưởng"),
@@ -67,10 +79,12 @@ export const CreateLaboOrderFormSchema = z.object({
     .int("Số lượng phải là số nguyên")
     .positive("Số lượng phải lớn hơn 0")
     .max(100, "Số lượng tối đa là 100"),
-  sendDate: z
-    .string({ message: "Vui lòng chọn ngày gửi" })
-    .min(1, "Vui lòng chọn ngày gửi"),
-  expectedFitDate: z.string().optional().nullable(),
+  sentById: z
+    .string({ message: "Vui lòng chọn người gửi mẫu" })
+    .min(1, "Vui lòng chọn người gửi mẫu"),
+  expectedFitDate: z
+    .string({ message: "Vui lòng chọn ngày hẹn lắp" })
+    .min(1, "Vui lòng chọn ngày hẹn lắp"),
   detailRequirement: z
     .string()
     .max(1000, "Ghi chú tối đa 1000 ký tự")
@@ -100,6 +114,35 @@ export const UpdateLaboOrderRequestSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày dự kiến lắp không đúng định dạng")
     .optional()
     .nullable(),
+  returnDate: z
+    .string()
+    .datetime("Ngày nhận mẫu không đúng định dạng")
+    .optional()
+    .nullable(),
+  detailRequirement: z
+    .string()
+    .max(1000, "Ghi chú tối đa 1000 ký tự")
+    .optional()
+    .nullable(),
+});
+
+/**
+ * Update Labo Order Form Schema
+ * Dùng ở: Form update (React Hook Form)
+ * Date fields là strings để tương thích với DatePicker
+ * Note: sendDate is read-only (auto-set on create), not editable
+ * Note: returnDate can be edited by admin only
+ */
+export const UpdateLaboOrderFormSchema = z.object({
+  quantity: z
+    .number({ message: "Vui lòng nhập số lượng" })
+    .int("Số lượng phải là số nguyên")
+    .positive("Số lượng phải lớn hơn 0")
+    .max(100, "Số lượng tối đa là 100"),
+  expectedFitDate: z
+    .string({ message: "Vui lòng chọn ngày hẹn lắp" })
+    .min(1, "Vui lòng chọn ngày hẹn lắp"),
+  returnDate: z.string().optional().nullable(),
   detailRequirement: z
     .string()
     .max(1000, "Ghi chú tối đa 1000 ký tự")
@@ -116,9 +159,14 @@ export const DailyLaboOrderResponseSchema = z.object({
   id: z.string().uuid(),
   customerId: z.string().uuid(),
   doctorId: z.string().uuid(),
+  laboServiceId: z.string().uuid(), // Link to pricing record (audit trail)
   supplierId: z.string().uuid(),
   laboItemId: z.string().uuid(),
   clinicId: z.string().uuid(),
+
+  // Treatment Info
+  treatmentDate: z.string(), // Date string YYYY-MM-DD
+  orderType: z.string(), // "lam-moi" | "bao-hanh"
 
   // Pricing snapshot
   unitPrice: z.number(),
@@ -127,16 +175,19 @@ export const DailyLaboOrderResponseSchema = z.object({
   warranty: z.string(),
 
   // Dates
-  sendDate: z.string(), // ISO date string
-  returnDate: z.string().nullable(),
+  sendDate: z.string().datetime(), // ISO datetime string
+  returnDate: z.string().datetime().nullable(),
   expectedFitDate: z.string().nullable(),
 
-  // Details
   // Details
   detailRequirement: z.string().nullable(),
 
   // Tracking
+  sentById: z.string().uuid(),
   receivedById: z.string().uuid().nullable(),
+  createdById: z.string().uuid().nullable(),
+  updatedById: z.string().uuid().nullable(),
+  createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 
   // Nested objects
@@ -154,6 +205,7 @@ export const DailyLaboOrderResponseSchema = z.object({
   supplier: z.object({
     id: z.string().uuid(),
     name: z.string(),
+    shortName: z.string().nullable(),
   }),
 
   laboItem: z.object({
@@ -163,6 +215,14 @@ export const DailyLaboOrderResponseSchema = z.object({
     serviceGroupLabel: z.string().optional(), // Will be resolved by frontend from MasterData
     unit: z.string(),
   }),
+
+  sentBy: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+    })
+    .nullable()
+    .optional(),
 
   receivedBy: z
     .object({
@@ -217,6 +277,7 @@ export type CreateLaboOrderFormData = z.infer<typeof CreateLaboOrderFormSchema>;
 export type UpdateLaboOrderRequest = z.infer<
   typeof UpdateLaboOrderRequestSchema
 >;
+export type UpdateLaboOrderFormData = z.infer<typeof UpdateLaboOrderFormSchema>;
 export type DailyLaboOrderResponse = z.infer<
   typeof DailyLaboOrderResponseSchema
 >;

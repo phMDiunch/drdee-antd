@@ -27,6 +27,7 @@ import type {
   CreateLaboOrderRequest,
 } from "@/shared/validation/labo-order.schema";
 import { CreateLaboOrderFormSchema } from "@/shared/validation/labo-order.schema";
+import { LABO_ORDER_TYPE_OPTIONS } from "../constants";
 
 dayjs.locale("vi");
 
@@ -59,10 +60,12 @@ export function CreateLaboOrderModal({
     () => ({
       customerId: prefilledCustomer?.id || "",
       doctorId: "",
+      treatmentDate: "",
+      orderType: "",
       supplierId: "",
       laboItemId: "",
       quantity: 1,
-      sendDate: "",
+      sentById: "",
       expectedFitDate: "",
       detailRequirement: "",
     }),
@@ -161,13 +164,13 @@ export function CreateLaboOrderModal({
     return suppliersData
       .filter((s) => s.supplierGroup === "labo-xuong-rang-gia")
       .map((s) => ({
-        label: s.name,
+        label: s.shortName || s.name,
         value: s.id,
       }));
   }, [suppliersData]);
 
   // Labo Services - Load khi đã chọn supplier
-  const { data: laboServicesData = [] } = useLaboServices({
+  const { data: laboServicesData = [] } = useLaboServices(false, {
     supplierId: supplierId || undefined,
   });
 
@@ -220,7 +223,6 @@ export function CreateLaboOrderModal({
   const onValid = (formData: CreateLaboOrderFormData) => {
     const payload: CreateLaboOrderRequest = {
       ...formData,
-      sendDate: dayjs(formData.sendDate).format("YYYY-MM-DD"),
       expectedFitDate: formData.expectedFitDate
         ? dayjs(formData.expectedFitDate).format("YYYY-MM-DD")
         : null,
@@ -328,7 +330,80 @@ export function CreateLaboOrderModal({
           </Col>
         </Row>
 
-        {/* Row 2: Supplier, Labo Item */}
+        {/* Row 2: Treatment Date, Order Type, Sent By */}
+        <Row gutter={12}>
+          <Col xs={24} lg={8}>
+            <Controller
+              name="treatmentDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Ngày điều trị"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={field.value ? dayjs(field.value) : undefined}
+                    onChange={(d) =>
+                      field.onChange(d ? d.format("YYYY-MM-DD") : "")
+                    }
+                    locale={viVN}
+                    style={{ width: "100%" }}
+                    placeholder="Chọn ngày điều trị"
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="orderType"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Loại đơn hàng"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Select
+                    {...field}
+                    placeholder="Chọn loại đơn hàng"
+                    options={[...LABO_ORDER_TYPE_OPTIONS]}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="sentById"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Người gửi mẫu"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Select
+                    {...field}
+                    showSearch
+                    placeholder="Chọn người gửi mẫu"
+                    optionFilterProp="label"
+                    options={doctorOptions}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+        </Row>
+
+        {/* Row 3: Supplier, Labo Item */}
         <Row gutter={12}>
           <Col xs={24} lg={12}>
             <Controller
@@ -411,9 +486,9 @@ export function CreateLaboOrderModal({
           </Row>
         )}
 
-        {/* Row 3: Quantity, Send Date, Expected Fit Date */}
+        {/* Row 4: Quantity, Expected Fit Date */}
         <Row gutter={12}>
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={12}>
             <Controller
               name="quantity"
               control={control}
@@ -436,13 +511,13 @@ export function CreateLaboOrderModal({
             />
           </Col>
 
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={12}>
             <Controller
-              name="sendDate"
+              name="expectedFitDate"
               control={control}
               render={({ field, fieldState }) => (
                 <Form.Item
-                  label="Ngày gửi"
+                  label="Ngày hẹn lắp"
                   required
                   validateStatus={fieldState.error ? "error" : ""}
                   help={fieldState.error?.message}
@@ -455,32 +530,7 @@ export function CreateLaboOrderModal({
                     }
                     locale={viVN}
                     style={{ width: "100%" }}
-                    placeholder="Chọn ngày gửi"
-                  />
-                </Form.Item>
-              )}
-            />
-          </Col>
-
-          <Col xs={24} lg={8}>
-            <Controller
-              name="expectedFitDate"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Form.Item
-                  label="Ngày dự kiến lắp"
-                  validateStatus={fieldState.error ? "error" : ""}
-                  help={fieldState.error?.message}
-                >
-                  <DatePicker
-                    format="DD/MM/YYYY"
-                    value={field.value ? dayjs(field.value) : undefined}
-                    onChange={(d) =>
-                      field.onChange(d ? d.format("YYYY-MM-DD") : "")
-                    }
-                    locale={viVN}
-                    style={{ width: "100%" }}
-                    placeholder="Chọn ngày (không bắt buộc)"
+                    placeholder="Chọn ngày hẹn lắp"
                   />
                 </Form.Item>
               )}
@@ -488,7 +538,7 @@ export function CreateLaboOrderModal({
           </Col>
         </Row>
 
-        {/* Row 4: Detail Requirement */}
+        {/* Row 5: Detail Requirement */}
         <Row gutter={12}>
           <Col xs={24}>
             <Controller
