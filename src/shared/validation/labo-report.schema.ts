@@ -57,10 +57,9 @@ export const DailyLaboDataSchema = z.object({
 export const SupplierLaboDataSchema = z.object({
   id: z.string(),
   supplierId: z.string(),
-  supplierName: z.string(),
+  supplierShortName: z.string().nullable(),
   orderCount: z.number(),
   totalCost: z.number(),
-  avgCost: z.number(),
   percentage: z.number(),
   rank: z.number(), // 1, 2, 3...
 });
@@ -81,7 +80,7 @@ export const ServiceLaboDataSchema = z.object({
   id: z.string(),
   serviceId: z.string(),
   serviceName: z.string(),
-  supplierName: z.string(),
+  supplierShortName: z.string().nullable(),
   itemName: z.string(),
   orderCount: z.number(),
   totalCost: z.number(),
@@ -97,11 +96,11 @@ export const LaboOrderDetailRecordSchema = z.object({
   returnDate: z.string().nullable(),
   returnDateDisplay: z.string().nullable(),
   customerName: z.string(),
-  customerCode: z.string(),
+  customerCode: z.string().nullable(),
   customerId: z.string(),
   doctorName: z.string(),
   serviceName: z.string(),
-  supplierName: z.string(),
+  supplierShortName: z.string().nullable(),
   itemName: z.string(),
   orderType: z.string(), // "Làm mới" | "Bảo hành"
   quantity: z.number(),

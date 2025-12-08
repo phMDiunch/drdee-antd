@@ -97,8 +97,8 @@ export default function SummaryTable<T extends DimensionData>({
     } else if (dimension === "supplier") {
       baseColumns.push({
         title: "Xưởng",
-        dataIndex: "supplierName",
-        key: "supplierName",
+        dataIndex: "supplierShortName",
+        key: "supplierShortName",
         render: (value: string) => <Text strong>{value}</Text>,
       });
     } else if (dimension === "doctor") {
@@ -179,7 +179,7 @@ export default function SummaryTable<T extends DimensionData>({
     if (dimension === "daily") {
       row.date = <Text strong>Tổng cộng</Text>;
     } else if (dimension === "supplier") {
-      row.supplierName = <Text strong>Tổng cộng</Text>;
+      row.supplierShortName = <Text strong>Tổng cộng</Text>;
     } else if (dimension === "doctor") {
       row.doctorName = <Text strong>Tổng cộng</Text>;
     } else if (dimension === "service") {

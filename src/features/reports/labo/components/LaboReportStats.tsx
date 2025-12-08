@@ -1,9 +1,7 @@
 import React from "react";
-import { Card, Col, Row, Statistic, Typography } from "antd";
+import { Card, Col, Row, Statistic } from "antd";
 import { ExperimentOutlined, DollarOutlined } from "@ant-design/icons";
 import type { LaboKpiData } from "@/shared/validation/labo-report.schema";
-
-const { Text } = Typography;
 
 type Props = {
   data: LaboKpiData | undefined;

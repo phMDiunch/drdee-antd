@@ -66,8 +66,8 @@ export default function DetailPanel({
       },
       {
         title: "Xưởng",
-        dataIndex: "supplierName",
-        key: "supplierName",
+        dataIndex: "supplierShortName",
+        key: "supplierShortName",
         width: 120,
       },
       {

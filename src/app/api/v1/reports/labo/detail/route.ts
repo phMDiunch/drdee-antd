@@ -15,9 +15,20 @@ export async function GET(req: Request) {
   try {
     const user = await getSessionUser();
     const { searchParams } = new URL(req.url);
-    const query = Object.fromEntries(searchParams);
+    const query = {
+      month: searchParams.get("month") || "",
+      clinicId: searchParams.get("clinicId") || undefined,
+      tab: (searchParams.get("tab") || "") as
+        | "daily"
+        | "supplier"
+        | "doctor"
+        | "service",
+      key: searchParams.get("key") || "",
+      page: parseInt(searchParams.get("page") || "1", 10),
+      pageSize: parseInt(searchParams.get("pageSize") || "20", 10),
+    };
 
-    const data = await laboReportService.getLaboReportDetail(query, user);
+    const data = await laboReportService.getDetail(user, query);
 
     return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {

@@ -1,10 +1,15 @@
 import { ServiceError } from "@/server/services/errors";
-import type { SessionUser } from "@/server/services/auth.service";
+import type { UserCore } from "@/shared/types/user";
+import dayjs from "dayjs";
+import type {
+  GetLaboReportSummaryQuery,
+  GetLaboReportDetailQuery,
+  LaboReportSummaryResponse,
+  LaboReportDetailResponse,
+} from "@/shared/validation/labo-report.schema";
 import {
   GetLaboReportSummaryQuerySchema,
   GetLaboReportDetailQuerySchema,
-  type LaboReportSummaryResponse,
-  type LaboReportDetailResponse,
 } from "@/shared/validation/labo-report.schema";
 import { laboReportRepo } from "@/server/repos/labo-report.repo";
 import {
@@ -18,29 +23,19 @@ import {
 
 export const laboReportService = {
   /**
-   * Get labo report summary (KPI + 4 dimension tabs)
-   * @param query - Month và clinicId (optional)
-   * @param user - Current session user
-   * @returns Summary response với KPI và 4 tabs data
+   * Lấy báo cáo tổng quan (KPI + 4 dimension tabs)
    */
-  async getLaboReportSummary(
-    query: unknown,
-    user: SessionUser
+  async getSummary(
+    currentUser: UserCore | null,
+    query: GetLaboReportSummaryQuery
   ): Promise<LaboReportSummaryResponse> {
-    // 1. Validate query
-    const parsed = GetLaboReportSummaryQuerySchema.safeParse(query);
-    if (!parsed.success) {
-      throw new ServiceError(
-        "INVALID_QUERY",
-        "Tham số query không hợp lệ",
-        400
-      );
+    // Kiểm tra đăng nhập
+    if (!currentUser) {
+      throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
     }
 
-    const { month, clinicId } = parsed.data;
-
-    // 2. Check permissions - chỉ admin được xem báo cáo labo
-    if (user.role !== "admin") {
+    // Chỉ admin được xem báo cáo labo
+    if (currentUser.role !== "admin") {
       throw new ServiceError(
         "PERMISSION_DENIED",
         "Chỉ admin được xem báo cáo labo",
@@ -48,54 +43,84 @@ export const laboReportService = {
       );
     }
 
-    // 3. Parallel queries (5 repo methods)
-    const [kpiData, dailyData, supplierData, doctorData, serviceData] =
-      await Promise.all([
-        laboReportRepo.getKpiData({ month, clinicId }),
-        laboReportRepo.getDailyData({ month, clinicId }),
-        laboReportRepo.getSupplierData({ month, clinicId }),
-        laboReportRepo.getDoctorData({ month, clinicId }),
-        laboReportRepo.getServiceData({ month, clinicId }),
-      ]);
+    // Validate dữ liệu đầu vào
+    const parsed = GetLaboReportSummaryQuerySchema.safeParse(query);
+    if (!parsed.success) {
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ",
+        400
+      );
+    }
+    const validatedQuery = parsed.data;
 
-    // 4. Map raw data to response format (data đã sorted và ranked từ repo)
+    const params = {
+      month: validatedQuery.month,
+      clinicId: validatedQuery.clinicId,
+    };
+
+    // Gọi DB 1 lần duy nhất để lấy tất cả orders
+    const [orders, prevMonthData] = await Promise.all([
+      laboReportRepo.queryAllOrders(params),
+      (async () => {
+        const prevMonth = dayjs(params.month)
+          .subtract(1, "month")
+          .format("YYYY-MM");
+        const prevOrders = await laboReportRepo.queryAllOrders({
+          month: prevMonth,
+          clinicId: params.clinicId,
+        });
+        return {
+          orders: prevOrders.length,
+          cost: prevOrders.reduce((sum, o) => sum + o.totalCost, 0),
+        };
+      })(),
+    ]);
+
+    // Tính toán tất cả dimensions từ data có sẵn (không query DB thêm)
+    const kpiData = laboReportRepo.computeKpiData(
+      orders,
+      prevMonthData.orders,
+      prevMonthData.cost
+    );
+    const dailyData = laboReportRepo.computeDailyData(orders);
+    const supplierData = laboReportRepo.computeSupplierData(orders);
+    const doctorData = laboReportRepo.computeDoctorData(orders);
+    const serviceData = laboReportRepo.computeServiceData(orders);
+
+    // Chuyển đổi dữ liệu bằng mapper functions
+    const kpi = mapKpiData(kpiData);
     const totalCost = kpiData.totalCost;
+    const byDate = mapDailyData(dailyData, totalCost);
+    const bySupplier = mapSupplierData(supplierData, totalCost);
+    const byDoctor = mapDoctorData(doctorData, totalCost);
+    const byService = mapServiceData(serviceData, totalCost);
 
     return {
-      kpi: mapKpiData(kpiData),
+      kpi,
       summaryTabs: {
-        byDate: mapDailyData(dailyData, totalCost),
-        bySupplier: mapSupplierData(supplierData, totalCost),
-        byDoctor: mapDoctorData(doctorData, totalCost),
-        byService: mapServiceData(serviceData, totalCost),
+        byDate,
+        bySupplier,
+        byDoctor,
+        byService,
       },
     };
   },
 
   /**
-   * Get labo report detail records (drill-down panel)
-   * @param query - Month, clinicId, tab, key, pagination
-   * @param user - Current session user
-   * @returns Detail response với records và pagination
+   * Lấy danh sách chi tiết cho một tab/key cụ thể
    */
-  async getLaboReportDetail(
-    query: unknown,
-    user: SessionUser
+  async getDetail(
+    currentUser: UserCore | null,
+    query: GetLaboReportDetailQuery
   ): Promise<LaboReportDetailResponse> {
-    // 1. Validate query
-    const parsed = GetLaboReportDetailQuerySchema.safeParse(query);
-    if (!parsed.success) {
-      throw new ServiceError(
-        "INVALID_QUERY",
-        "Tham số query không hợp lệ",
-        400
-      );
+    // Kiểm tra đăng nhập
+    if (!currentUser) {
+      throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
     }
 
-    const { month, clinicId, tab, key, page, pageSize } = parsed.data;
-
-    // 2. Check permissions - chỉ admin được xem báo cáo labo
-    if (user.role !== "admin") {
+    // Chỉ admin được xem báo cáo labo
+    if (currentUser.role !== "admin") {
       throw new ServiceError(
         "PERMISSION_DENIED",
         "Chỉ admin được xem báo cáo labo",
@@ -103,21 +128,35 @@ export const laboReportService = {
       );
     }
 
-    // 3. Get detail records
-    const { records, total } = await laboReportRepo.getDetailRecords({
-      month,
-      clinicId,
-      tab,
-      key,
-      page,
-      pageSize,
-    });
+    // Validate dữ liệu đầu vào
+    const parsed = GetLaboReportDetailQuerySchema.safeParse(query);
+    if (!parsed.success) {
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ",
+        400
+      );
+    }
+    const validatedQuery = parsed.data;
 
-    // 4. Calculate total cost
+    const params = {
+      month: validatedQuery.month,
+      clinicId: validatedQuery.clinicId,
+      tab: validatedQuery.tab,
+      key: validatedQuery.key,
+      page: validatedQuery.page,
+      pageSize: validatedQuery.pageSize,
+    };
+
+    // Lấy dữ liệu chi tiết
+    const { records, total } = await laboReportRepo.getDetailRecords(params);
+
+    // Chuyển đổi sang định dạng response bằng mapper
+    const mappedRecords = mapDetailRecords(records);
     const totalCost = records.reduce((sum, r) => sum + r.totalCost, 0);
 
     return {
-      records: mapDetailRecords(records),
+      records: mappedRecords,
       totalRecords: total,
       totalCost,
     };

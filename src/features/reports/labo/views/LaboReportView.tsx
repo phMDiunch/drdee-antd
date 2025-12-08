@@ -108,7 +108,7 @@ export default function LaboReportView() {
       } else if (activeTab === "supplier") {
         const supplierRecord = record as SupplierLaboData;
         key = supplierRecord.supplierId;
-        label = supplierRecord.supplierName;
+        label = supplierRecord.supplierShortName || "N/A";
       } else if (activeTab === "doctor") {
         const doctorRecord = record as DoctorLaboData;
         key = doctorRecord.doctorId;

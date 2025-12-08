@@ -20,10 +20,9 @@ export type RawDailyData = {
 
 export type RawSupplierData = {
   supplierId: string;
-  supplierName: string;
+  supplierShortName: string | null;
   orderCount: number;
   totalCost: number;
-  avgCost: number;
   rank: number;
 };
 
@@ -38,7 +37,7 @@ export type RawDoctorData = {
 export type RawServiceData = {
   serviceId: string;
   serviceName: string;
-  supplierName: string;
+  supplierShortName: string | null;
   itemName: string;
   orderCount: number;
   totalCost: number;
@@ -50,11 +49,11 @@ export type RawDetailRecord = {
   sendDate: Date;
   returnDate: Date | null;
   customerName: string;
-  customerCode: string;
+  customerCode: string | null;
   customerId: string;
   doctorName: string;
   serviceName: string | null;
-  supplierName: string;
+  supplierShortName: string | null;
   itemName: string;
   orderType: string;
   quantity: number;
@@ -86,38 +85,10 @@ export const laboReportRepo = {
   // ========== Public Methods ==========
 
   /**
-   * Get KPI data with MoM growth
+   * Helper: Lấy TẤT CẢ orders trong tháng (1 lần query duy nhất)
+   * Với đầy đủ relations cần thiết cho tất cả dimensions
    */
-  async getKpiData(params: BaseQueryParams): Promise<RawKpiData> {
-    const { startDate, endDate } = getMonthDateRange(params.month);
-    const whereClause = buildWhereClause(startDate, endDate, params.clinicId);
-
-    // Current month
-    const current = await prisma.laboOrder.aggregate({
-      where: whereClause,
-      _count: true,
-      _sum: { totalCost: true },
-    });
-
-    // Previous month
-    const prevMonth = dayjs(params.month)
-      .subtract(1, "month")
-      .format("YYYY-MM");
-    const prevData = await getPreviousMonthData(prevMonth, params.clinicId);
-
-    return {
-      totalOrders: current._count,
-      totalCost: current._sum.totalCost || 0,
-      previousMonthOrders: prevData.orders,
-      previousMonthCost: prevData.cost,
-    };
-  },
-
-  /**
-   * Get daily breakdown by returnDate (ngày nhận mẫu)
-   * Sort ASC chronological, no rank
-   */
-  async getDailyData(params: BaseQueryParams): Promise<RawDailyData[]> {
+  async queryAllOrders(params: BaseQueryParams) {
     const { startDate, endDate } = getMonthDateRange(params.month);
     const whereClause = buildWhereClause(startDate, endDate, params.clinicId);
 
@@ -126,9 +97,53 @@ export const laboReportRepo = {
       select: {
         returnDate: true,
         totalCost: true,
+        supplierId: true,
+        doctorId: true,
+        laboServiceId: true,
+        supplier: {
+          select: { shortName: true },
+        },
+        doctor: {
+          select: { fullName: true },
+        },
+        laboService: {
+          select: {
+            supplier: { select: { shortName: true } },
+            laboItem: { select: { name: true } },
+          },
+        },
       },
     });
 
+    return orders;
+  },
+
+  /**
+   * Get KPI data với data có sẵn (không query DB)
+   */
+  computeKpiData(
+    orders: Awaited<ReturnType<typeof this.queryAllOrders>>,
+    previousMonthOrders: number | null,
+    previousMonthCost: number | null
+  ): RawKpiData {
+    const totalOrders = orders.length;
+    const totalCost = orders.reduce((sum, o) => sum + o.totalCost, 0);
+
+    return {
+      totalOrders,
+      totalCost,
+      previousMonthOrders,
+      previousMonthCost,
+    };
+  },
+
+  /**
+   * Get daily breakdown với data có sẵn (không query DB)
+   * Sort ASC chronological, no rank
+   */
+  computeDailyData(
+    orders: Awaited<ReturnType<typeof this.queryAllOrders>>
+  ): RawDailyData[] {
     // Group by returnDate
     const grouped = new Map<string, { count: number; cost: number }>();
 
@@ -157,28 +172,16 @@ export const laboReportRepo = {
   },
 
   /**
-   * Get supplier breakdown
+   * Get supplier breakdown với data có sẵn (không query DB)
    * Sort DESC by totalCost, assign rank
    */
-  async getSupplierData(params: BaseQueryParams): Promise<RawSupplierData[]> {
-    const { startDate, endDate } = getMonthDateRange(params.month);
-    const whereClause = buildWhereClause(startDate, endDate, params.clinicId);
-
-    const orders = await prisma.laboOrder.findMany({
-      where: whereClause,
-      select: {
-        supplierId: true,
-        totalCost: true,
-        supplier: {
-          select: { shortName: true },
-        },
-      },
-    });
-
+  computeSupplierData(
+    orders: Awaited<ReturnType<typeof this.queryAllOrders>>
+  ): RawSupplierData[] {
     // Group by supplierId
     const grouped = new Map<
       string,
-      { name: string; count: number; cost: number }
+      { name: string | null; count: number; cost: number }
     >();
 
     for (const order of orders) {
@@ -199,10 +202,9 @@ export const laboReportRepo = {
     for (const [supplierId, data] of grouped.entries()) {
       result.push({
         supplierId,
-        supplierName: data.name,
+        supplierShortName: data.name,
         orderCount: data.count,
         totalCost: data.cost,
-        avgCost: data.cost / data.count,
         rank: 0, // Will assign below
       });
     }
@@ -218,24 +220,12 @@ export const laboReportRepo = {
   },
 
   /**
-   * Get doctor breakdown (sentBy)
+   * Get doctor breakdown với data có sẵn (không query DB)
    * Sort DESC by totalCost, assign rank
    */
-  async getDoctorData(params: BaseQueryParams): Promise<RawDoctorData[]> {
-    const { startDate, endDate } = getMonthDateRange(params.month);
-    const whereClause = buildWhereClause(startDate, endDate, params.clinicId);
-
-    const orders = await prisma.laboOrder.findMany({
-      where: whereClause,
-      select: {
-        doctorId: true,
-        totalCost: true,
-        doctor: {
-          select: { fullName: true },
-        },
-      },
-    });
-
+  computeDoctorData(
+    orders: Awaited<ReturnType<typeof this.queryAllOrders>>
+  ): RawDoctorData[] {
     // Group by doctorId
     const grouped = new Map<
       string,
@@ -277,33 +267,18 @@ export const laboReportRepo = {
   },
 
   /**
-   * Get service breakdown (laboService)
+   * Get service breakdown với data có sẵn (không query DB)
    * Sort DESC by totalCost, assign rank
    */
-  async getServiceData(params: BaseQueryParams): Promise<RawServiceData[]> {
-    const { startDate, endDate } = getMonthDateRange(params.month);
-    const whereClause = buildWhereClause(startDate, endDate, params.clinicId);
-
-    const orders = await prisma.laboOrder.findMany({
-      where: whereClause,
-      select: {
-        laboServiceId: true,
-        totalCost: true,
-        laboService: {
-          select: {
-            supplier: { select: { shortName: true } },
-            laboItem: { select: { name: true } },
-          },
-        },
-      },
-    });
-
+  computeServiceData(
+    orders: Awaited<ReturnType<typeof this.queryAllOrders>>
+  ): RawServiceData[] {
     // Group by laboServiceId
     const grouped = new Map<
       string,
       {
         name: string;
-        supplierName: string;
+        supplierShortName: string | null;
         itemName: string;
         count: number;
         cost: number;
@@ -315,14 +290,14 @@ export const laboReportRepo = {
 
       const existing = grouped.get(order.laboServiceId) || {
         name: order.laboService.laboItem.name, // Service name is actually the laboItem name
-        supplierName: order.laboService.supplier.shortName,
+        supplierShortName: order.laboService.supplier.shortName,
         itemName: order.laboService.laboItem.name,
         count: 0,
         cost: 0,
       };
       grouped.set(order.laboServiceId, {
         name: existing.name,
-        supplierName: existing.supplierName,
+        supplierShortName: existing.supplierShortName,
         itemName: existing.itemName,
         count: existing.count + 1,
         cost: existing.cost + order.totalCost,
@@ -335,7 +310,7 @@ export const laboReportRepo = {
       result.push({
         serviceId,
         serviceName: data.name,
-        supplierName: data.supplierName,
+        supplierShortName: data.supplierShortName,
         itemName: data.itemName,
         orderCount: data.count,
         totalCost: data.cost,
@@ -354,6 +329,8 @@ export const laboReportRepo = {
 
   /**
    * Get detail records for drill-down panel
+   * Base filter: returnDate trong tháng
+   * Daily tab: Thêm filter chính xác ngày returnDate
    */
   async getDetailRecords(
     params: DetailQueryParams
@@ -364,6 +341,7 @@ export const laboReportRepo = {
     // Additional filter by dimension
     if (params.tab === "daily") {
       const targetDate = new Date(params.key);
+      // Ghi đè returnDate với ngày cụ thể (thay vì range cả tháng)
       whereClause = {
         ...whereClause,
         returnDate: {
@@ -429,7 +407,7 @@ export const laboReportRepo = {
         customerId: r.customer.id,
         doctorName: r.doctor.fullName,
         serviceName: r.laboService?.laboItem.name || null,
-        supplierName: r.supplier.shortName,
+        supplierShortName: r.supplier.shortName,
         itemName: r.laboItem.name,
         orderType: r.orderType,
         quantity: r.quantity,
@@ -454,10 +432,17 @@ function getMonthDateRange(month: string) {
 
 /**
  * Build where clause for base filter
+ * NOTE: Báo cáo labo filter theo returnDate (ngày nhận mẫu từ xưởng), không phải sendDate
  */
 function buildWhereClause(startDate: Date, endDate: Date, clinicId?: string) {
-  const where: any = {
-    sendDate: { gte: startDate, lte: endDate },
+  const where: {
+    returnDate: { gte: Date; lte: Date };
+    clinicId?: string;
+    supplierId?: string;
+    doctorId?: string;
+    laboServiceId?: string;
+  } = {
+    returnDate: { gte: startDate, lte: endDate },
   };
 
   if (clinicId) {
@@ -465,23 +450,4 @@ function buildWhereClause(startDate: Date, endDate: Date, clinicId?: string) {
   }
 
   return where;
-}
-
-/**
- * Query previous month for MoM growth
- */
-async function getPreviousMonthData(month: string, clinicId?: string) {
-  const { startDate, endDate } = getMonthDateRange(month);
-  const whereClause = buildWhereClause(startDate, endDate, clinicId);
-
-  const prev = await prisma.laboOrder.aggregate({
-    where: whereClause,
-    _count: true,
-    _sum: { totalCost: true },
-  });
-
-  return {
-    orders: prev._count || null,
-    cost: prev._sum.totalCost || null,
-  };
 }
