@@ -1,8 +1,4 @@
 import { prisma } from "@/services/prisma/prisma";
-import type {
-  GetRevenueSummaryQuery,
-  GetRevenueDetailQuery,
-} from "@/shared/validation/revenue-report.schema";
 
 /**
  * Revenue Report Repository

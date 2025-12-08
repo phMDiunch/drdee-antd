@@ -16,6 +16,7 @@ import { mapLaboServiceToResponse } from "./labo-service/_mappers";
 export const laboServiceService = {
   /**
    * GET /labo-services
+   * Note: Không check admin vì Employee cần list labo services để chọn dịch vụ khi tạo labo order
    */
   async list(
     currentUser: UserCore | null,
@@ -26,7 +27,10 @@ export const laboServiceService = {
       includeArchived?: boolean;
     }
   ) {
-    requireAdmin(currentUser);
+    // Authentication check only
+    if (!currentUser) {
+      throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
+    }
 
     const rows = await laboServiceRepo.list(params);
     return rows.map(mapLaboServiceToResponse);

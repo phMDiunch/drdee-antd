@@ -99,29 +99,43 @@ export const CreateLaboOrderFormSchema = z.object({
  */
 export const UpdateLaboOrderRequestSchema = z.object({
   id: z.string({ message: "ID không hợp lệ" }),
+  // Basic fields (Employee + Admin)
   quantity: z
     .number({ message: "Vui lòng nhập số lượng" })
     .int("Số lượng phải là số nguyên")
     .positive("Số lượng phải lớn hơn 0")
     .max(100, "Số lượng tối đa là 100")
     .optional(),
-  sendDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày gửi không đúng định dạng")
-    .optional(),
   expectedFitDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày dự kiến lắp không đúng định dạng")
     .optional()
     .nullable(),
+  detailRequirement: z
+    .string()
+    .max(1000, "Ghi chú tối đa 1000 ký tự")
+    .optional()
+    .nullable(),
+  // Admin-only fields (validated by permission layer)
+  treatmentDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày điều trị không đúng định dạng")
+    .optional(),
+  orderType: z
+    .enum(["Làm mới", "Bảo hành"], {
+      message: "Loại đơn hàng không hợp lệ",
+    })
+    .optional(),
+  sentById: z.string().uuid("ID nhân viên gửi mẫu không hợp lệ").optional(),
+  sendDate: z.string().datetime("Ngày gửi không đúng định dạng").optional(),
   returnDate: z
     .string()
     .datetime("Ngày nhận mẫu không đúng định dạng")
     .optional()
     .nullable(),
-  detailRequirement: z
+  receivedById: z
     .string()
-    .max(1000, "Ghi chú tối đa 1000 ký tự")
+    .uuid("ID nhân viên nhận mẫu không hợp lệ")
     .optional()
     .nullable(),
 });
@@ -130,10 +144,11 @@ export const UpdateLaboOrderRequestSchema = z.object({
  * Update Labo Order Form Schema
  * Dùng ở: Form update (React Hook Form)
  * Date fields là strings để tương thích với DatePicker
- * Note: sendDate is read-only (auto-set on create), not editable
- * Note: returnDate can be edited by admin only
+ * Admin can edit: treatmentDate, orderType, sentById, sendDate, returnDate
+ * Employee can edit: quantity, expectedFitDate, detailRequirement only
  */
 export const UpdateLaboOrderFormSchema = z.object({
+  // Basic fields (Employee + Admin)
   quantity: z
     .number({ message: "Vui lòng nhập số lượng" })
     .int("Số lượng phải là số nguyên")
@@ -142,10 +157,21 @@ export const UpdateLaboOrderFormSchema = z.object({
   expectedFitDate: z
     .string({ message: "Vui lòng chọn ngày hẹn lắp" })
     .min(1, "Vui lòng chọn ngày hẹn lắp"),
-  returnDate: z.string().optional().nullable(),
   detailRequirement: z
     .string()
     .max(1000, "Ghi chú tối đa 1000 ký tự")
+    .optional(),
+  // Admin-only fields
+  treatmentDate: z.string().min(1, "Vui lòng chọn ngày điều trị"),
+  orderType: z.enum(["Làm mới", "Bảo hành"], {
+    message: "Loại đơn hàng không hợp lệ",
+  }),
+  sentById: z.string().uuid("ID nhân viên gửi mẫu không hợp lệ"),
+  sendDate: z.string().min(1, "Vui lòng chọn ngày gửi mẫu"),
+  returnDate: z.string().optional().nullable(),
+  receivedById: z
+    .string()
+    .uuid("ID nhân viên nhận mẫu không hợp lệ")
     .optional()
     .nullable(),
 });

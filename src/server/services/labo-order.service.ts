@@ -7,6 +7,7 @@ import {
 import { laboServiceRepo } from "@/server/repos/labo-service.repo";
 import { ERR, ServiceError } from "./errors";
 import { requireEmployee } from "./auth.service";
+import { laboOrderPermissions } from "@/shared/permissions/labo-order.permissions";
 import {
   CreateLaboOrderRequestSchema,
   UpdateLaboOrderRequestSchema,
@@ -113,9 +114,12 @@ export const laboOrderService = {
       );
     }
 
-    // Calculate totalCost
+    // Calculate totalCost based on orderType
     const unitPrice = laboService.price;
-    const totalCost = unitPrice * parsed.data.quantity;
+    const totalCost =
+      parsed.data.orderType === "Bảo hành"
+        ? 0
+        : unitPrice * parsed.data.quantity;
 
     // Prepare create input with server-controlled fields
     const data: LaboOrderCreateInput = {
@@ -151,6 +155,8 @@ export const laboOrderService = {
    * PUT /labo-orders/:id (update)
    * Permission: labo-orders:update (admin + employee)
    * Business rule: Employee can only edit orders with returnDate === null
+   * Admin can edit: treatmentDate, orderType, sentById, sendDate + all basic fields
+   * Employee can edit: quantity, expectedFitDate, detailRequirement only
    */
   async update(currentUser: UserCore | null, body: unknown) {
     requireEmployee(currentUser);
@@ -167,30 +173,31 @@ export const laboOrderService = {
       );
     }
 
-    const { id } = parsed.data;
+    const { id, ...updates } = parsed.data;
 
     // Check if order exists
     const existing = await laboOrderRepo.getById(id);
     if (!existing) throw ERR.NOT_FOUND("Đơn hàng không tồn tại.");
 
-    // Clinic access control
-    if (
-      currentUser?.role !== "admin" &&
-      existing.clinicId !== currentUser?.clinicId
-    ) {
-      throw ERR.FORBIDDEN("Bạn không có quyền sửa đơn hàng này.");
-    }
-
-    // Business rule: Employee can only edit if returnDate === null
-    if (currentUser?.role !== "admin") {
-      const canEdit = await laboOrderRepo.canEditByEmployee(id);
-      if (!canEdit) {
-        throw new ServiceError(
-          "PERMISSION_DENIED",
-          "Chỉ admin mới sửa được đơn đã nhận mẫu.",
-          403
-        );
-      }
+    // Use permission file for validation
+    try {
+      laboOrderPermissions.validateUpdate(
+        {
+          role: currentUser.role,
+          employeeId: currentUser.employeeId,
+          clinicId: currentUser.clinicId,
+        },
+        existing,
+        updates
+      );
+    } catch (error) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        error instanceof Error
+          ? error.message
+          : "Không có quyền sửa đơn hàng labo",
+        403
+      );
     }
 
     // Prepare update input
@@ -198,27 +205,54 @@ export const laboOrderService = {
       updatedById: currentUser.employeeId,
     };
 
-    // Optional fields
-    if (parsed.data.quantity !== undefined) {
-      updateData.quantity = parsed.data.quantity;
-      // Recalculate totalCost if quantity changes
-      updateData.totalCost = existing.unitPrice * parsed.data.quantity;
+    // Basic fields (Employee + Admin)
+    if (updates.quantity !== undefined) {
+      updateData.quantity = updates.quantity;
+      // Recalculate totalCost based on orderType
+      const currentOrderType = updates.orderType ?? existing.orderType;
+      updateData.totalCost =
+        currentOrderType === "Bảo hành"
+          ? 0
+          : existing.unitPrice * updates.quantity;
     }
 
-    if (parsed.data.expectedFitDate !== undefined) {
-      updateData.expectedFitDate = parsed.data.expectedFitDate ?? null;
+    if (updates.expectedFitDate !== undefined) {
+      updateData.expectedFitDate = updates.expectedFitDate ?? null;
     }
 
-    if (parsed.data.detailRequirement !== undefined) {
-      updateData.detailRequirement = parsed.data.detailRequirement ?? null;
+    if (updates.detailRequirement !== undefined) {
+      updateData.detailRequirement = updates.detailRequirement ?? null;
     }
 
-    // Admin-only field: returnDate
-    if (parsed.data.returnDate !== undefined) {
-      if (currentUser.role !== "admin") {
-        throw ERR.FORBIDDEN("Chỉ admin mới có quyền sửa ngày nhận mẫu.");
-      }
-      updateData.returnDate = parsed.data.returnDate ?? null;
+    // Admin-only fields (permission already validated above)
+    if (updates.treatmentDate !== undefined) {
+      updateData.treatmentDate = updates.treatmentDate;
+    }
+
+    if (updates.orderType !== undefined) {
+      updateData.orderType = updates.orderType;
+      // Recalculate totalCost when orderType changes
+      const currentQuantity = updates.quantity ?? existing.quantity;
+      updateData.totalCost =
+        updates.orderType === "Bảo hành"
+          ? 0
+          : existing.unitPrice * currentQuantity;
+    }
+
+    if (updates.sentById !== undefined) {
+      updateData.sentById = updates.sentById;
+    }
+
+    if (updates.sendDate !== undefined) {
+      updateData.sendDate = updates.sendDate;
+    }
+
+    if (updates.returnDate !== undefined) {
+      updateData.returnDate = updates.returnDate ?? null;
+    }
+
+    if (updates.receivedById !== undefined) {
+      updateData.receivedById = updates.receivedById ?? null;
     }
 
     const updated = await laboOrderRepo.update(id, updateData);

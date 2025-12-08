@@ -29,6 +29,7 @@ import AppointmentsTab from "../components/detail-tabs/AppointmentsTab";
 import ConsultedServicesTab from "../components/detail-tabs/ConsultedServicesTab";
 import TreatmentLogsTab from "../components/detail-tabs/TreatmentLogsTab";
 import TreatmentCareTab from "../components/detail-tabs/TreatmentCareTab";
+import LaboOrdersTab from "../components/detail-tabs/LaboOrdersTab";
 import PaymentsTab from "../components/detail-tabs/PaymentsTab";
 import FinancialSummaryCard from "../components/FinancialSummaryCard";
 import dayjs from "dayjs";
@@ -301,6 +302,11 @@ export default function CustomerDetailView({
               key: "treatmentCare",
               label: "Chăm sóc sau điều trị",
               children: <TreatmentCareTab />,
+            },
+            {
+              key: "laboOrders",
+              label: "Đơn hàng labo",
+              children: <LaboOrdersTab />,
             },
           ]}
         />

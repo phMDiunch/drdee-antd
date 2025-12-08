@@ -7,6 +7,13 @@ import dayjs from "dayjs";
 
 const { Text } = Typography;
 
+// Helper function - stable reference, tránh recreate trong render
+const getOrderTypeColor = (orderType: string): string => {
+  if (orderType === "Làm mới") return "blue";
+  if (orderType === "Bảo hành") return "green";
+  return "default";
+};
+
 interface DetailPanelProps {
   activeTab?: "daily" | "supplier" | "doctor" | "service" | null;
   selectedRowLabel?: string;
@@ -81,14 +88,9 @@ export default function DetailPanel({
         dataIndex: "orderType",
         key: "orderType",
         width: 130,
-        render: (value) => {
-          const colorMap: Record<string, string> = {
-            "Đơn mới": "blue",
-            "Đơn sửa": "orange",
-            "Đơn thêm": "green",
-          };
-          return <Tag color={colorMap[value] || "default"}>{value}</Tag>;
-        },
+        render: (value: string) => (
+          <Tag color={getOrderTypeColor(value)}>{value}</Tag>
+        ),
       },
       {
         title: "Số lượng",

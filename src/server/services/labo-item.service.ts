@@ -20,9 +20,13 @@ function normalizeName(name: string) {
 export const laboItemService = {
   /**
    * GET /labo-items
+   * Note: Không check admin vì Employee cần list labo items để hiển thị trong labo order form
    */
   async list(currentUser: UserCore | null, includeArchived: boolean) {
-    requireAdmin(currentUser);
+    // Authentication check only
+    if (!currentUser) {
+      throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
+    }
 
     const rows = await laboItemRepo.list(includeArchived);
     return rows.map(mapLaboItemToResponse);

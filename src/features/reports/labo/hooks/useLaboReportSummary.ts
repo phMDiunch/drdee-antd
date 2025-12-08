@@ -13,7 +13,8 @@ export function useLaboReportSummary(filters: GetLaboReportSummaryQuery) {
     queryKey: LABO_REPORT_QUERY_KEYS.summary(filters.month, filters.clinicId),
     queryFn: () => getLaboReportSummaryApi(filters),
     staleTime: calculateStaleTime(filters.month),
-    gcTime: 5 * 60 * 1000, // 5 hours
+    gcTime: 5 * 60 * 60 * 1000, // 5 hours
+    refetchOnWindowFocus: true,
     enabled: !!filters.month,
   });
 }

@@ -18,7 +18,8 @@ export function useLaboReportDetail(filters: GetLaboReportDetailQuery) {
     ),
     queryFn: () => getLaboReportDetailApi(filters),
     staleTime: calculateStaleTime(filters.month),
-    gcTime: 5 * 60 * 1000,
+    gcTime: 5 * 60 * 60 * 1000, // 5 hours
+    refetchOnWindowFocus: true,
     enabled: !!filters.tab && !!filters.key && !!filters.month,
   });
 }

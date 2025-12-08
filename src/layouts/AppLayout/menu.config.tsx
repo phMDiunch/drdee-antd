@@ -55,15 +55,12 @@ export const menuItems: MenuItem[] = [
     children: [{ key: "/payments/daily", label: "Theo ngày" }],
   },
   {
-    key: "reports",
-    icon: <BarChartOutlined />,
-    label: "Báo cáo",
-    children: [
-      { key: "/reports/sales", label: "Doanh số" },
-      { key: "/reports/revenue", label: "Doanh thu" },
-      { key: "/reports/labo", label: "Labo" },
-    ],
+    key: "labo",
+    icon: <ExperimentOutlined />,
+    label: "Labo răng giả",
+    children: [{ key: "/labo-orders/daily", label: "Theo ngày" }],
   },
+
   {
     key: "inventory",
     icon: <InboxOutlined />,
@@ -71,13 +68,13 @@ export const menuItems: MenuItem[] = [
     children: [{ key: "/inventory/materials", label: "Danh mục vật tư" }],
   },
   {
-    key: "labo",
-    icon: <ExperimentOutlined />,
-    label: "Labo răng giả",
+    key: "reports",
+    icon: <BarChartOutlined />,
+    label: "Báo cáo",
     children: [
-      { key: "/labo-items", label: "Danh mục labo" },
-      { key: "/labo-services", label: "Dịch vụ labo" },
-      { key: "/labo-orders/daily", label: "Theo ngày" },
+      { key: "/reports/sales", label: "Doanh số" },
+      { key: "/reports/revenue", label: "Doanh thu" },
+      { key: "/reports/labo", label: "Labo" },
     ],
   },
   {
@@ -89,6 +86,8 @@ export const menuItems: MenuItem[] = [
       { key: "/master-data", label: "Danh mục hệ thống" },
       { key: "/dental-services", label: "Dịch vụ nha khoa" },
       { key: "/suppliers", label: "Nhà cung cấp" },
+      { key: "/labo-items", label: "Danh mục labo" },
+      { key: "/labo-services", label: "Dịch vụ labo" },
     ],
   },
 ];

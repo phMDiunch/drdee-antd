@@ -29,6 +29,7 @@ import type {
   UpdateLaboOrderFormData,
 } from "@/shared/validation/labo-order.schema";
 import { UpdateLaboOrderFormSchema } from "@/shared/validation/labo-order.schema";
+import { LABO_ORDER_TYPE_OPTIONS } from "../constants";
 
 dayjs.locale("vi");
 
@@ -92,6 +93,12 @@ export function UpdateLaboOrderModal({
         ? dayjs(order.returnDate).format("YYYY-MM-DD HH:mm")
         : null,
       detailRequirement: order.detailRequirement || "",
+      // Admin-only fields
+      treatmentDate: dayjs(order.treatmentDate).format("YYYY-MM-DD"),
+      orderType: order.orderType as "Làm mới" | "Bảo hành",
+      sentById: order.sentById,
+      sendDate: dayjs(order.sendDate).format("YYYY-MM-DD HH:mm"),
+      receivedById: order.receivedById || null,
     }),
     [order]
   );
@@ -125,11 +132,20 @@ export function UpdateLaboOrderModal({
       detailRequirement: formData.detailRequirement || null,
     };
 
-    // Only include returnDate if user is admin
+    // Admin can edit additional fields
     if (isAdmin) {
       payload.returnDate = formData.returnDate
         ? dayjs(formData.returnDate).toISOString()
         : null;
+      payload.treatmentDate = dayjs(formData.treatmentDate).format(
+        "YYYY-MM-DD"
+      );
+      payload.orderType = formData.orderType;
+      payload.sentById = formData.sentById;
+      payload.sendDate = formData.sendDate
+        ? dayjs(formData.sendDate).toISOString()
+        : dayjs(order.sendDate).toISOString();
+      payload.receivedById = formData.receivedById || null;
     }
 
     onSubmit(order.id, payload);
@@ -163,9 +179,9 @@ export function UpdateLaboOrderModal({
       )}
 
       <Form layout="vertical" requiredMark>
-        {/* Row 1: Customer, Doctor - READ ONLY (disabled) */}
+        {/* Row 1: Khách hàng (1/3), Bác sĩ (1/3), Ngày điều trị (1/3) */}
         <Row gutter={12}>
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={8}>
             <Form.Item label="Khách hàng" required>
               <Input
                 value={`${order.customer.customerCode || ""} - ${
@@ -177,7 +193,7 @@ export function UpdateLaboOrderModal({
             </Form.Item>
           </Col>
 
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={8}>
             <Form.Item label="Bác sĩ" required>
               <Select
                 value={order.doctorId}
@@ -187,42 +203,36 @@ export function UpdateLaboOrderModal({
               />
             </Form.Item>
           </Col>
-        </Row>
-
-        {/* Row 2: Treatment Date, Order Type, Sent By - READ ONLY */}
-        <Row gutter={12}>
-          <Col xs={24} lg={8}>
-            <Form.Item label="Ngày điều trị" required>
-              <Input
-                value={dayjs(order.treatmentDate).format("DD/MM/YYYY")}
-                disabled
-                style={{ color: "rgba(0, 0, 0, 0.85)" }}
-              />
-            </Form.Item>
-          </Col>
 
           <Col xs={24} lg={8}>
-            <Form.Item label="Loại đơn hàng" required>
-              <Input
-                value={order.orderType}
-                disabled
-                style={{ color: "rgba(0, 0, 0, 0.85)" }}
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} lg={8}>
-            <Form.Item label="Người gửi mẫu" required>
-              <Input
-                value={order.sentBy?.fullName || "Unknown"}
-                disabled
-                style={{ color: "rgba(0, 0, 0, 0.85)" }}
-              />
-            </Form.Item>
+            <Controller
+              name="treatmentDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Ngày điều trị"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    value={field.value ? dayjs(field.value) : null}
+                    onChange={(d) =>
+                      field.onChange(d ? d.format("YYYY-MM-DD") : "")
+                    }
+                    locale={viVN}
+                    style={{ width: "100%" }}
+                    placeholder="Chọn ngày điều trị"
+                    disabled={!isAdmin}
+                  />
+                </Form.Item>
+              )}
+            />
           </Col>
         </Row>
 
-        {/* Row 3: Supplier, Labo Item, Send Date - READ ONLY */}
+        {/* Row 2: Xưởng labo (1/3), Loại răng giả (1/3), Số lượng (1/3) */}
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Form.Item label="Xưởng labo" required>
@@ -247,19 +257,6 @@ export function UpdateLaboOrderModal({
           </Col>
 
           <Col xs={24} lg={8}>
-            <Form.Item label="Ngày gửi mẫu">
-              <Input
-                value={dayjs(order.sendDate).format("DD/MM/YYYY HH:mm")}
-                disabled
-                style={{ color: "rgba(0, 0, 0, 0.85)" }}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        {/* Row 4: Quantity, Expected Fit Date, Return Date - EDITABLE */}
-        <Row gutter={12}>
-          <Col xs={24} lg={8}>
             <Controller
               name="quantity"
               control={control}
@@ -282,7 +279,91 @@ export function UpdateLaboOrderModal({
               )}
             />
           </Col>
+        </Row>
 
+        {/* Row 3: Loại đơn hàng (1/3), Ngày gửi mẫu (1/3), Người gửi mẫu (1/3) */}
+        <Row gutter={12}>
+          <Col xs={24} lg={8}>
+            <Controller
+              name="orderType"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Loại đơn hàng"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Select
+                    {...field}
+                    options={[...LABO_ORDER_TYPE_OPTIONS]}
+                    disabled={!isAdmin}
+                    style={{ color: "rgba(0, 0, 0, 0.85)" }}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="sendDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Ngày gửi mẫu"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <DatePicker
+                    showTime={{ format: "HH:mm" }}
+                    format="DD/MM/YYYY HH:mm"
+                    value={field.value ? dayjs(field.value) : null}
+                    onChange={(d) =>
+                      field.onChange(d ? d.format("YYYY-MM-DD HH:mm") : "")
+                    }
+                    locale={viVN}
+                    style={{ width: "100%" }}
+                    placeholder="Chọn ngày gửi mẫu"
+                    disabled={!isAdmin}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="sentById"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Người gửi mẫu"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Select
+                    {...field}
+                    options={doctorOptions}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? "")
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    disabled={!isAdmin}
+                    style={{ color: "rgba(0, 0, 0, 0.85)" }}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+        </Row>
+
+        {/* Row 4: Ngày hẹn lắp (1/3), Ngày nhận mẫu (1/3), Người nhận mẫu (1/3) */}
+        <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
               name="expectedFitDate"
@@ -332,6 +413,35 @@ export function UpdateLaboOrderModal({
                     style={{ width: "100%" }}
                     placeholder="Chọn ngày nhận mẫu"
                     disabled={!isAdmin}
+                    allowClear
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="receivedById"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Người nhận mẫu"
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Select
+                    {...field}
+                    options={doctorOptions}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? "")
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    disabled={!isAdmin}
+                    style={{ color: "rgba(0, 0, 0, 0.85)" }}
+                    placeholder="Chọn người nhận mẫu"
                     allowClear
                   />
                 </Form.Item>

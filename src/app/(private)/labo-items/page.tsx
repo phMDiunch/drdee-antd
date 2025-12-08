@@ -10,7 +10,7 @@ export default async function LaboItemsPage() {
 
   // Admin-only access
   if (!isAdmin) {
-    redirect("/");
+    redirect("/unauthorized");
   }
 
   return <LaboItemsPageView />;

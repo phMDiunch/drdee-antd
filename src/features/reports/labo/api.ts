@@ -4,6 +4,11 @@ import type {
   LaboReportSummaryResponse,
   LaboReportDetailResponse,
 } from "@/shared/validation/labo-report.schema";
+import {
+  LaboReportSummaryResponseSchema,
+  LaboReportDetailResponseSchema,
+} from "@/shared/validation/labo-report.schema";
+import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
  * Get labo report summary (KPI + 4 dimension tabs)
@@ -17,11 +22,18 @@ export async function getLaboReportSummaryApi(
   }
   const query = new URLSearchParams(queryParams);
   const res = await fetch(`/api/v1/reports/labo/summary?${query}`);
+  const json = await res.json();
+
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error);
+    throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
   }
-  return res.json();
+
+  const parsed = LaboReportSummaryResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new Error("Dữ liệu báo cáo labo không hợp lệ.");
+  }
+
+  return parsed.data;
 }
 
 /**
@@ -42,9 +54,16 @@ export async function getLaboReportDetailApi(
   }
   const query = new URLSearchParams(queryParams);
   const res = await fetch(`/api/v1/reports/labo/detail?${query}`);
+  const json = await res.json();
+
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error);
+    throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
   }
-  return res.json();
+
+  const parsed = LaboReportDetailResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new Error("Dữ liệu chi tiết báo cáo labo không hợp lệ.");
+  }
+
+  return parsed.data;
 }

@@ -20,10 +20,13 @@ function normalizeName(name: string) {
 export const supplierService = {
   /**
    * GET /suppliers
+   * Note: Không check admin vì Employee cần list suppliers để chọn xưởng khi tạo labo order
    */
   async list(currentUser: UserCore | null, includeArchived: boolean) {
-    // Admin only
-    requireAdmin(currentUser);
+    // Authentication check only
+    if (!currentUser) {
+      throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
+    }
 
     const rows = await supplierRepo.list(includeArchived);
     return rows.map(mapSupplierToResponse);

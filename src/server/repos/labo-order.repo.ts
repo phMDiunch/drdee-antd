@@ -239,6 +239,26 @@ export const laboOrderRepo = {
       updateData.detailRequirement = data.detailRequirement ?? null;
     }
 
+    if (data.treatmentDate !== undefined) {
+      updateData.treatmentDate = new Date(data.treatmentDate);
+    }
+
+    if (data.orderType !== undefined) {
+      updateData.orderType = data.orderType;
+    }
+
+    if (data.sentById !== undefined) {
+      updateData.sentBy = {
+        connect: { id: data.sentById },
+      };
+    }
+
+    if (data.receivedById !== undefined) {
+      updateData.receivedBy = data.receivedById
+        ? { connect: { id: data.receivedById } }
+        : { disconnect: true };
+    }
+
     return prisma.laboOrder.update({
       where: { id },
       data: updateData,

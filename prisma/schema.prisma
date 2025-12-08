@@ -789,7 +789,7 @@ model LaboOrder {
 
   // Tracking
   sentById     String // Nhân viên gửi mẫu (usually same as createdById)
-  receivedById String? // Nhân viên xác nhận nhận mẫu
+  receivedById String? // Nhân viên nhận mẫu
 
   // Metadata
   createdById String
