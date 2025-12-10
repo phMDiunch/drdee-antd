@@ -24,6 +24,7 @@ import {
 import { useCustomerDetail } from "@/features/customers";
 import { useConsultedServicesByCustomer } from "@/features/consulted-services";
 import { usePaymentVouchers } from "@/features/payments";
+import { useLaboOrdersByCustomer } from "@/features/labo-orders";
 import CustomerInfoTab from "../components/detail-tabs/CustomerInfoTab";
 import AppointmentsTab from "../components/detail-tabs/AppointmentsTab";
 import ConsultedServicesTab from "../components/detail-tabs/ConsultedServicesTab";
@@ -71,6 +72,10 @@ export default function CustomerDetailView({
     sortDirection: "desc",
   });
   const paymentVouchersCount = paymentVouchersData?.items?.length || 0;
+
+  // Fetch labo orders for count
+  const { data: laboOrdersData } = useLaboOrdersByCustomer(customerId);
+  const laboOrdersCount = laboOrdersData?.items?.length || 0;
 
   // Calculate age from dob
   const getAge = (dob: string | null) => {
@@ -305,7 +310,7 @@ export default function CustomerDetailView({
             },
             {
               key: "laboOrders",
-              label: "Đơn hàng labo",
+              label: `Đơn hàng labo (${laboOrdersCount})`,
               children: (
                 <LaboOrdersTab
                   customerId={customerId}

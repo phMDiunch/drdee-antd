@@ -7,18 +7,15 @@ import ClinicTabs from "@/shared/components/ClinicTabs";
 import { LaboOrderStatistics } from "../components/LaboOrderStatistics";
 import { LaboOrderTable } from "../components/LaboOrderTable";
 import { LaboOrderFilters } from "../components/LaboOrderFilters";
-import { CreateLaboOrderModal } from "../components/CreateLaboOrderModal";
 import { UpdateLaboOrderModal } from "../components/UpdateLaboOrderModal";
 import { useLaboOrdersDaily } from "../hooks/useLaboOrdersDaily";
 import { useReceiveLaboOrder } from "../hooks/useReceiveLaboOrder";
 import { useDeleteLaboOrder } from "../hooks/useDeleteLaboOrder";
-import { useCreateLaboOrder } from "../hooks/useCreateLaboOrder";
 import { useUpdateLaboOrder } from "../hooks/useUpdateLaboOrder";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
 import type {
   LaboOrderResponse,
-  CreateLaboOrderRequest,
   UpdateLaboOrderRequest,
 } from "@/shared/validation/labo-order.schema";
 
@@ -37,7 +34,6 @@ export function LaboOrderDailyView() {
     currentUser?.clinicId || undefined
   );
 
-  const [openCreate, setOpenCreate] = useState(false);
   const [openUpdate, setOpenUpdate] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<LaboOrderResponse | null>(
     null
@@ -66,7 +62,6 @@ export function LaboOrderDailyView() {
   );
 
   // Mutations
-  const createMutation = useCreateLaboOrder();
   const updateMutation = useUpdateLaboOrder();
   const receiveOrderMutation = useReceiveLaboOrder();
   const deleteOrderMutation = useDeleteLaboOrder();
@@ -89,18 +84,6 @@ export function LaboOrderDailyView() {
       deleteOrderMutation.mutate(orderId);
     },
     [deleteOrderMutation]
-  );
-
-  const handleCreateSubmit = useCallback(
-    async (payload: CreateLaboOrderRequest) => {
-      try {
-        await createMutation.mutateAsync(payload);
-        setOpenCreate(false);
-      } catch {
-        // Hook handles error notification
-      }
-    },
-    [createMutation]
   );
 
   const handleUpdateSubmit = useCallback(
@@ -206,7 +189,6 @@ export function LaboOrderDailyView() {
 
       <LaboOrderFilters
         loading={isLoading}
-        onCreate={() => setOpenCreate(true)}
         onExportExcel={handleExportExcel}
         dailyCount={totalCount}
       />
@@ -215,14 +197,6 @@ export function LaboOrderDailyView() {
         defaultActiveKey={["sent", "returned"]}
         items={collapseItems}
         style={{ marginBottom: 16 }}
-      />
-
-      <CreateLaboOrderModal
-        open={openCreate}
-        selectedClinicId={selectedClinicId}
-        confirmLoading={createMutation.isPending}
-        onCancel={() => setOpenCreate(false)}
-        onSubmit={handleCreateSubmit}
       />
 
       {selectedOrder && (

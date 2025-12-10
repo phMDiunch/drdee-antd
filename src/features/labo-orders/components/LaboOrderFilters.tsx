@@ -9,7 +9,7 @@ const { Text } = Typography;
 
 type Props = {
   loading?: boolean;
-  onCreate: () => void;
+  onCreate?: () => void;
   onExportExcel?: () => void;
   dailyCount: number;
 };
@@ -43,14 +43,16 @@ export function LaboOrderFilters({
             Xuất Excel
           </Button>
         )}
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={onCreate}
-          loading={loading}
-        >
-          Thêm đơn hàng
-        </Button>
+        {onCreate && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={onCreate}
+            loading={loading}
+          >
+            Thêm đơn hàng
+          </Button>
+        )}
       </Space>
     </div>
   );

@@ -11,6 +11,7 @@ import {
   DatePicker,
   InputNumber,
   Spin,
+  Radio,
 } from "antd";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -61,7 +62,7 @@ export function CreateLaboOrderModal({
       customerId: prefilledCustomer?.id || "",
       doctorId: "",
       treatmentDate: "",
-      orderType: undefined,
+      orderType: "Làm mới",
       supplierId: "",
       laboItemId: "",
       quantity: 1,
@@ -369,9 +370,8 @@ export function CreateLaboOrderModal({
                   validateStatus={fieldState.error ? "error" : ""}
                   help={fieldState.error?.message}
                 >
-                  <Select
+                  <Radio.Group
                     {...field}
-                    placeholder="Chọn loại đơn hàng"
                     options={[...LABO_ORDER_TYPE_OPTIONS]}
                   />
                 </Form.Item>
