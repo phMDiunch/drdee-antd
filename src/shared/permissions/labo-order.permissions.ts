@@ -170,7 +170,7 @@ export const laboOrderPermissions = {
    * Returns permission level and restrictions
    *
    * Rules:
-   * - Admin: Full access (can edit all fields including treatmentDate, orderType, sentById, sendDate)
+   * - Admin: Full access (can edit all fields including treatmentDate, orderType, sentById, sentDate)
    * - Employee: Limited access (only if returnDate === null, can only edit quantity, expectedFitDate, detailRequirement)
    */
   canEdit(
@@ -251,7 +251,7 @@ export const laboOrderPermissions = {
    *
    * Admin can edit all fields:
    * - quantity, expectedFitDate, detailRequirement (basic fields)
-   * - treatmentDate, orderType, sentById, sendDate (admin-only fields)
+   * - treatmentDate, orderType, sentById, sentDate (admin-only fields)
    * - returnDate (admin-only field)
    *
    * Employee can only edit:
@@ -267,7 +267,7 @@ export const laboOrderPermissions = {
       treatmentDate?: string; // Admin only
       orderType?: string; // Admin only
       sentById?: string; // Admin only
-      sendDate?: string; // Admin only
+      sentDate?: string; // Admin only
       returnDate?: string | null; // Admin only
       receivedById?: string | null; // Admin only
     }

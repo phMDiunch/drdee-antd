@@ -46,7 +46,7 @@ export type RawServiceData = {
 
 export type RawDetailRecord = {
   id: string;
-  sendDate: Date;
+  sentDate: Date;
   returnDate: Date | null;
   customerName: string;
   customerCode: string | null;
@@ -362,7 +362,7 @@ export const laboReportRepo = {
         where: whereClause,
         select: {
           id: true,
-          sendDate: true,
+          sentDate: true,
           returnDate: true,
           orderType: true,
           quantity: true,
@@ -392,7 +392,7 @@ export const laboReportRepo = {
         },
         skip: (params.page - 1) * params.pageSize,
         take: params.pageSize,
-        orderBy: { sendDate: "desc" },
+        orderBy: { sentDate: "desc" },
       }),
       prisma.laboOrder.count({ where: whereClause }),
     ]);
@@ -400,7 +400,7 @@ export const laboReportRepo = {
     return {
       records: records.map((r) => ({
         id: r.id,
-        sendDate: r.sendDate,
+        sentDate: r.sentDate,
         returnDate: r.returnDate,
         customerName: r.customer.fullName,
         customerCode: r.customer.customerCode,
@@ -432,7 +432,7 @@ function getMonthDateRange(month: string) {
 
 /**
  * Build where clause for base filter
- * NOTE: Báo cáo labo filter theo returnDate (ngày nhận mẫu từ xưởng), không phải sendDate
+ * NOTE: Báo cáo labo filter theo returnDate (ngày nhận mẫu từ xưởng), không phải sentDate
  */
 function buildWhereClause(startDate: Date, endDate: Date, clinicId?: string) {
   const where: {

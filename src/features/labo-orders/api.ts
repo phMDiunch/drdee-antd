@@ -1,45 +1,39 @@
 // src/features/labo-orders/api.ts
 /**
  * Labo Order API Client
- * Consolidated API functions for labo order operations
+ * CHỈ chứa queries (GET) - Mutations dùng Server Actions
  */
 
-import { DailyLaboOrderResponseSchema } from "@/shared/validation/labo-order.schema";
-import { COMMON_MESSAGES } from "@/shared/constants/messages";
+import type {
+  GetDailyLaboOrdersQuery,
+  LaboOrdersDailyResponse,
+} from "@/shared/validation/labo-order.schema";
 import { LABO_ORDER_ENDPOINTS } from "./constants";
-import { z } from "zod";
 
 /**
  * Get daily labo orders (sent or returned on specific date)
  * GET /api/v1/labo-orders/daily
- * @param params - Query parameters (date, type, clinicId)
- * @returns { items, total }
  */
-export async function getDailyLaboOrdersApi(params: {
-  date: string; // YYYY-MM-DD
-  type: "sent" | "returned";
-  clinicId?: string;
-}) {
-  const query = new URLSearchParams();
-  query.set("date", params.date);
-  query.set("type", params.type);
-  if (params.clinicId) query.set("clinicId", params.clinicId);
+export async function getDailyLaboOrdersApi(
+  params: GetDailyLaboOrdersQuery
+): Promise<LaboOrdersDailyResponse> {
+  // Filter out undefined values to avoid sending "undefined" as string
+  const filteredParams = Object.entries(params).reduce((acc, [key, value]) => {
+    if (value !== undefined && value !== null) {
+      acc[key] = String(value);
+    }
+    return acc;
+  }, {} as Record<string, string>);
 
-  const url = `${LABO_ORDER_ENDPOINTS.DAILY}?${query.toString()}`;
-  const res = await fetch(url, { cache: "no-store" });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
-
-  // Validate response shape: { items: [], total: number }
-  const responseSchema = z.object({
-    items: z.array(DailyLaboOrderResponseSchema),
-    total: z.number(),
+  const query = new URLSearchParams(filteredParams);
+  const res = await fetch(`${LABO_ORDER_ENDPOINTS.DAILY}?${query.toString()}`, {
+    cache: "no-store",
   });
 
-  const parsed = responseSchema.safeParse(json);
-  if (!parsed.success) {
-    throw new Error("Phản hồi danh sách đơn hàng không hợp lệ.");
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error);
   }
 
-  return parsed.data;
+  return res.json();
 }

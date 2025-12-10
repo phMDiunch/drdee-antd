@@ -1,18 +1,26 @@
 // src/features/labo-orders/hooks/useLaboOrdersDaily.ts
 "use client";
+
 import { useQuery } from "@tanstack/react-query";
 import { getDailyLaboOrdersApi } from "../api";
-import { LABO_ORDER_QUERY_KEYS } from "../constants";
+import type { GetDailyLaboOrdersQuery } from "@/shared/validation/labo-order.schema";
 
-export function useLaboOrdersDaily(params: {
-  date: string;
-  type: "sent" | "returned";
-  clinicId?: string;
-}) {
+/**
+ * Query hook: Get daily labo orders (sent or returned)
+ * Transactional data - refetch on focus
+ */
+export function useLaboOrdersDaily(params: GetDailyLaboOrdersQuery) {
   return useQuery({
-    queryKey: LABO_ORDER_QUERY_KEYS.daily(params),
+    queryKey: [
+      "labo-orders",
+      "daily",
+      params.date,
+      params.type,
+      params.clinicId,
+    ],
     queryFn: () => getDailyLaboOrdersApi(params),
-    staleTime: 1000 * 60 * 1, // 1 minute (transactional data)
-    gcTime: 1000 * 60 * 5, // Giữ trong bộ nhớ 5 phút
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 }

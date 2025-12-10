@@ -5,21 +5,38 @@ import {
   type LaboOrderUpdateInput,
 } from "@/server/repos/labo-order.repo";
 import { laboServiceRepo } from "@/server/repos/labo-service.repo";
-import { ERR, ServiceError } from "./errors";
-import { requireEmployee } from "./auth.service";
+import { ServiceError } from "./errors";
 import { laboOrderPermissions } from "@/shared/permissions/labo-order.permissions";
 import {
   CreateLaboOrderRequestSchema,
   UpdateLaboOrderRequestSchema,
   GetDailyLaboOrdersQuerySchema,
   ReceiveLaboOrderRequestSchema,
+  LaboOrderResponseSchema,
+  LaboOrdersDailyResponseSchema,
 } from "@/shared/validation/labo-order.schema";
 import type { UserCore } from "@/shared/types/user";
 import { mapLaboOrderToResponse } from "./labo-order/_mappers";
 
+/**
+ * Require authenticated employee
+ */
+function requireEmployee(user: UserCore | null | undefined) {
+  if (!user) {
+    throw new ServiceError("UNAUTHORIZED", "Bạn chưa đăng nhập", 401);
+  }
+  if (!user.employeeId) {
+    throw new ServiceError(
+      "MISSING_EMPLOYEE_ID",
+      "Tài khoản chưa được liên kết với nhân viên",
+      403
+    );
+  }
+}
+
 export const laboOrderService = {
   /**
-   * GET /labo-orders/daily - Get daily labo orders (sent or returned)
+   * Get daily labo orders (sent or returned)
    * Permission: labo-orders:view-daily (admin + employee)
    */
   async getDailyLaboOrders(currentUser: UserCore | null, query: unknown) {
@@ -28,113 +45,144 @@ export const laboOrderService = {
     // Validate query params
     const parsed = GetDailyLaboOrdersQuerySchema.safeParse(query);
     if (!parsed.success) {
-      throw ERR.INVALID(
-        parsed.error.issues[0]?.message ?? "Query params không hợp lệ."
+      const firstError = parsed.error.issues[0];
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        firstError?.message || "Tham số truy vấn không hợp lệ",
+        400
       );
     }
 
-    const { date, type, clinicId } = parsed.data;
+    const { date, type, clinicId, customerId } = parsed.data;
 
     // Clinic access control
     let targetClinicId = clinicId;
     if (currentUser?.role !== "admin") {
       // Employee: locked to own clinic
       if (!currentUser?.clinicId) {
-        throw ERR.FORBIDDEN("Tài khoản chưa được gán phòng khám.");
+        throw new ServiceError(
+          "MISSING_CLINIC",
+          "Tài khoản chưa được gán phòng khám",
+          403
+        );
       }
       targetClinicId = currentUser.clinicId;
     }
 
-    // Fetch daily orders
+    // Fetch daily orders with statistics
     const result = await laboOrderRepo.getDailyLaboOrders({
       date,
       type,
       clinicId: targetClinicId,
+      customerId, // NEW: Pass customerId for customer detail view
     });
 
-    return {
+    const response = {
       items: result.items.map(mapLaboOrderToResponse),
-      total: result.total,
+      count: result.count,
+      statistics: result.statistics,
     };
+
+    return LaboOrdersDailyResponseSchema.parse(response);
   },
 
   /**
-   * GET /labo-orders/:id
+   * Get labo order by ID
    * Permission: labo-orders:view (admin + employee)
    */
   async getById(currentUser: UserCore | null, id: string) {
     requireEmployee(currentUser);
 
     const row = await laboOrderRepo.getById(id);
-    if (!row) throw ERR.NOT_FOUND("Đơn hàng không tồn tại.");
+    if (!row) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy đơn hàng labo", 404);
+    }
 
     // Clinic access control
     if (
       currentUser?.role !== "admin" &&
       row.clinicId !== currentUser?.clinicId
     ) {
-      throw ERR.FORBIDDEN("Bạn không có quyền xem đơn hàng này.");
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        "Bạn không có quyền xem đơn hàng này",
+        403
+      );
     }
 
-    return mapLaboOrderToResponse(row);
+    const mapped = mapLaboOrderToResponse(row);
+    return LaboOrderResponseSchema.parse(mapped);
   },
 
   /**
-   * POST /labo-orders (create)
+   * Create new labo order
    * Permission: labo-orders:create (admin + employee)
    */
   async create(currentUser: UserCore | null, body: unknown) {
     requireEmployee(currentUser);
 
     if (!currentUser?.employeeId) {
-      throw ERR.FORBIDDEN("Tài khoản chưa liên kết nhân viên.");
+      throw new ServiceError(
+        "MISSING_EMPLOYEE_ID",
+        "Tài khoản chưa liên kết nhân viên",
+        403
+      );
     }
 
     if (!currentUser?.clinicId) {
-      throw ERR.FORBIDDEN("Tài khoản chưa được gán phòng khám.");
+      throw new ServiceError(
+        "MISSING_CLINIC",
+        "Tài khoản chưa được gán phòng khám",
+        403
+      );
     }
 
     // Validate request body
     const parsed = CreateLaboOrderRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(
-        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      const firstError = parsed.error.issues[0];
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        firstError?.message || "Dữ liệu không hợp lệ",
+        400
       );
     }
 
+    const data = parsed.data;
+
     // Fetch LaboService for pricing snapshot
     const laboService = await laboServiceRepo.getBySupplierAndLaboItem(
-      parsed.data.supplierId,
-      parsed.data.laboItemId
+      data.supplierId,
+      data.laboItemId
     );
 
     if (!laboService) {
-      throw ERR.NOT_FOUND(
-        "Không tìm thấy bảng giá cho xưởng và loại răng giả này."
+      throw new ServiceError(
+        "NOT_FOUND",
+        "Không tìm thấy bảng giá cho xưởng và loại răng giả này",
+        404
       );
     }
 
     // Calculate totalCost based on orderType
     const unitPrice = laboService.price;
     const totalCost =
-      parsed.data.orderType === "Bảo hành"
-        ? 0
-        : unitPrice * parsed.data.quantity;
+      data.orderType === "Bảo hành" ? 0 : unitPrice * data.quantity;
 
     // Prepare create input with server-controlled fields
-    const data: LaboOrderCreateInput = {
-      customerId: parsed.data.customerId,
-      doctorId: parsed.data.doctorId,
-      treatmentDate: parsed.data.treatmentDate,
-      orderType: parsed.data.orderType,
-      sentById: parsed.data.sentById,
+    const createInput: LaboOrderCreateInput = {
+      customerId: data.customerId,
+      doctorId: data.doctorId,
+      treatmentDate: data.treatmentDate,
+      orderType: data.orderType,
+      sentById: data.sentById,
       laboServiceId: laboService.id,
-      supplierId: parsed.data.supplierId,
-      laboItemId: parsed.data.laboItemId,
-      quantity: parsed.data.quantity,
-      // sendDate is auto-set to now() at database level
-      expectedFitDate: parsed.data.expectedFitDate ?? null,
-      detailRequirement: parsed.data.detailRequirement ?? null,
+      supplierId: data.supplierId,
+      laboItemId: data.laboItemId,
+      quantity: data.quantity,
+      // sentDate is auto-set to now() at database level
+      expectedFitDate: data.expectedFitDate ?? null,
+      detailRequirement: data.detailRequirement ?? null,
 
       // Snapshot pricing from LaboService
       unitPrice,
@@ -147,37 +195,45 @@ export const laboOrderService = {
       updatedById: currentUser.employeeId,
     };
 
-    const created = await laboOrderRepo.create(data);
-    return mapLaboOrderToResponse(created);
+    const created = await laboOrderRepo.create(createInput);
+    const mapped = mapLaboOrderToResponse(created);
+    return LaboOrderResponseSchema.parse(mapped);
   },
 
   /**
-   * PUT /labo-orders/:id (update)
+   * Update labo order
    * Permission: labo-orders:update (admin + employee)
    * Business rule: Employee can only edit orders with returnDate === null
-   * Admin can edit: treatmentDate, orderType, sentById, sendDate + all basic fields
-   * Employee can edit: quantity, expectedFitDate, detailRequirement only
    */
   async update(currentUser: UserCore | null, body: unknown) {
     requireEmployee(currentUser);
 
     if (!currentUser?.employeeId) {
-      throw ERR.FORBIDDEN("Tài khoản chưa liên kết nhân viên.");
+      throw new ServiceError(
+        "MISSING_EMPLOYEE_ID",
+        "Tài khoản chưa liên kết nhân viên",
+        403
+      );
     }
 
     // Validate request body
     const parsed = UpdateLaboOrderRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(
-        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      const firstError = parsed.error.issues[0];
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        firstError?.message || "Dữ liệu không hợp lệ",
+        400
       );
     }
 
     const { id, ...updates } = parsed.data;
 
     // Check if order exists
-    const existing = await laboOrderRepo.getById(id);
-    if (!existing) throw ERR.NOT_FOUND("Đơn hàng không tồn tại.");
+    const existing = await laboOrderRepo.getById(id!);
+    if (!existing) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy đơn hàng labo", 404);
+    }
 
     // Use permission file for validation
     try {
@@ -188,7 +244,12 @@ export const laboOrderService = {
           clinicId: currentUser.clinicId,
         },
         existing,
-        updates
+        {
+          ...updates,
+          // Convert Date to string for permission validation
+          sentDate: updates.sentDate?.toISOString(),
+          returnDate: updates.returnDate?.toISOString() ?? null,
+        }
       );
     } catch (error) {
       throw new ServiceError(
@@ -243,8 +304,8 @@ export const laboOrderService = {
       updateData.sentById = updates.sentById;
     }
 
-    if (updates.sendDate !== undefined) {
-      updateData.sendDate = updates.sendDate;
+    if (updates.sentDate !== undefined) {
+      updateData.sentDate = updates.sentDate;
     }
 
     if (updates.returnDate !== undefined) {
@@ -255,44 +316,57 @@ export const laboOrderService = {
       updateData.receivedById = updates.receivedById ?? null;
     }
 
-    const updated = await laboOrderRepo.update(id, updateData);
-    return mapLaboOrderToResponse(updated);
+    const updated = await laboOrderRepo.update(id!, updateData);
+    const mapped = mapLaboOrderToResponse(updated);
+    return LaboOrderResponseSchema.parse(mapped);
   },
 
   /**
-   * DELETE /labo-orders/:id
+   * Delete labo order
    * Permission: labo-orders:delete (admin only)
    */
   async remove(currentUser: UserCore | null, id: string) {
     // Admin only
     if (currentUser?.role !== "admin") {
-      throw ERR.FORBIDDEN("Chỉ admin mới có quyền xóa đơn hàng.");
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        "Chỉ admin mới có quyền xóa đơn hàng labo",
+        403
+      );
     }
 
     const existing = await laboOrderRepo.getById(id);
-    if (!existing) throw ERR.NOT_FOUND("Đơn hàng không tồn tại.");
+    if (!existing) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy đơn hàng labo", 404);
+    }
 
-    const deleted = await laboOrderRepo.delete(id);
-    return mapLaboOrderToResponse(deleted);
+    await laboOrderRepo.delete(id);
+    return { success: true, message: "Đã xóa đơn hàng labo" };
   },
 
   /**
-   * POST /labo-orders/receive (receive labo order)
+   * Receive labo order (quick action)
    * Permission: labo-orders:receive (admin + employee)
-   * Quick action: Set returnDate = now, receivedById = currentUserId
    */
   async receiveLaboOrder(currentUser: UserCore | null, body: unknown) {
     requireEmployee(currentUser);
 
     if (!currentUser?.employeeId) {
-      throw ERR.FORBIDDEN("Tài khoản chưa liên kết nhân viên.");
+      throw new ServiceError(
+        "MISSING_EMPLOYEE_ID",
+        "Tài khoản chưa liên kết nhân viên",
+        403
+      );
     }
 
     // Validate request body
     const parsed = ReceiveLaboOrderRequestSchema.safeParse(body);
     if (!parsed.success) {
-      throw ERR.INVALID(
-        parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ."
+      const firstError = parsed.error.issues[0];
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        firstError?.message || "Dữ liệu không hợp lệ",
+        400
       );
     }
 
@@ -300,19 +374,29 @@ export const laboOrderService = {
 
     // Check if order exists
     const existing = await laboOrderRepo.getById(orderId);
-    if (!existing) throw ERR.NOT_FOUND("Đơn hàng không tồn tại.");
+    if (!existing) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy đơn hàng labo", 404);
+    }
 
     // Clinic access control
     if (
       currentUser?.role !== "admin" &&
       existing.clinicId !== currentUser?.clinicId
     ) {
-      throw ERR.FORBIDDEN("Bạn không có quyền xác nhận nhận mẫu này.");
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        "Bạn không có quyền xác nhận nhận mẫu này",
+        403
+      );
     }
 
     // Validate: returnDate must be null
     if (existing.returnDate !== null) {
-      throw ERR.INVALID("Đơn hàng này đã được nhận mẫu.");
+      throw new ServiceError(
+        "ALREADY_RECEIVED",
+        "Đơn hàng này đã được nhận mẫu",
+        400
+      );
     }
 
     // Receive order
@@ -321,6 +405,7 @@ export const laboOrderService = {
       currentUser.employeeId
     );
 
-    return mapLaboOrderToResponse(received);
+    const mapped = mapLaboOrderToResponse(received);
+    return LaboOrderResponseSchema.parse(mapped);
   },
 };

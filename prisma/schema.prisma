@@ -780,7 +780,7 @@ model LaboOrder {
   warranty  String // Snapshot warranty: "5-nam"
 
   // Dates
-  sendDate        DateTime  @default(now()) @db.Timestamptz // Ngày gửi mẫu đi xưởng (auto-set to now)
+  sentDate        DateTime  @default(now()) @db.Timestamptz // Ngày gửi mẫu đi xưởng (auto-set to now)
   returnDate      DateTime? @db.Timestamptz // Ngày nhận mẫu về từ xưởng (set when received)
   expectedFitDate DateTime? @db.Date // Ngày dự kiến lắp cho khách (optional)
 
@@ -811,7 +811,7 @@ model LaboOrder {
   updatedBy  Employee  @relation("UpdatedLaboOrders", fields: [updatedById], references: [id])
 
   // Indexes
-  @@index([clinicId, sendDate])
+  @@index([clinicId, sentDate])
   @@index([clinicId, returnDate])
   @@index([customerId])
   @@index([supplierId])

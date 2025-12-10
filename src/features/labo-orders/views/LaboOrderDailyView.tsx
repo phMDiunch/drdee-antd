@@ -17,14 +17,13 @@ import { useUpdateLaboOrder } from "../hooks/useUpdateLaboOrder";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
 import type {
-  DailyLaboOrderResponse,
+  LaboOrderResponse,
   CreateLaboOrderRequest,
   UpdateLaboOrderRequest,
 } from "@/shared/validation/labo-order.schema";
 
 export function LaboOrderDailyView() {
   const { user: currentUser } = useCurrentUser();
-  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
 
   const {
     selectedDate,
@@ -40,8 +39,9 @@ export function LaboOrderDailyView() {
 
   const [openCreate, setOpenCreate] = useState(false);
   const [openUpdate, setOpenUpdate] = useState(false);
-  const [selectedOrder, setSelectedOrder] =
-    useState<DailyLaboOrderResponse | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<LaboOrderResponse | null>(
+    null
+  );
 
   // Fetch sent orders
   const { data: sentData, isLoading: sentLoading } = useLaboOrdersDaily({
@@ -79,7 +79,7 @@ export function LaboOrderDailyView() {
     [receiveOrderMutation]
   );
 
-  const handleEditOrder = useCallback((order: DailyLaboOrderResponse) => {
+  const handleEditOrder = useCallback((order: LaboOrderResponse) => {
     setSelectedOrder(order);
     setOpenUpdate(true);
   }, []);
@@ -106,7 +106,7 @@ export function LaboOrderDailyView() {
   const handleUpdateSubmit = useCallback(
     async (id: string, payload: UpdateLaboOrderRequest) => {
       try {
-        await updateMutation.mutateAsync(payload);
+        await updateMutation.mutateAsync({ orderId: id, data: payload });
         setOpenUpdate(false);
         setSelectedOrder(null);
       } catch {
@@ -138,7 +138,6 @@ export function LaboOrderDailyView() {
           <LaboOrderTable
             data={sentOrders}
             loading={sentLoading}
-            isAdmin={isAdmin}
             onReceive={handleReceiveOrder}
             onEdit={handleEditOrder}
             onDelete={handleDeleteOrder}
@@ -159,7 +158,6 @@ export function LaboOrderDailyView() {
           <LaboOrderTable
             data={returnedOrders}
             loading={returnedLoading}
-            isAdmin={isAdmin}
             onReceive={handleReceiveOrder}
             onEdit={handleEditOrder}
             onDelete={handleDeleteOrder}
@@ -175,7 +173,6 @@ export function LaboOrderDailyView() {
       returnedOrders,
       sentLoading,
       returnedLoading,
-      isAdmin,
       handleReceiveOrder,
       handleEditOrder,
       handleDeleteOrder,

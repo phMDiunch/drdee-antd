@@ -56,12 +56,12 @@ export function CreateLaboOrderModal({
 }: Props) {
   // const { user: currentUser } = useCurrentUser();
 
-  const defaultValues = useMemo(
+  const defaultValues: Partial<CreateLaboOrderFormData> = useMemo(
     () => ({
       customerId: prefilledCustomer?.id || "",
       doctorId: "",
       treatmentDate: "",
-      orderType: "",
+      orderType: undefined,
       supplierId: "",
       laboItemId: "",
       quantity: 1,

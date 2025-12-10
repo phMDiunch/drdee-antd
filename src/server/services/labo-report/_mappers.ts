@@ -128,8 +128,8 @@ export function mapDetailRecords(
 ): LaboOrderDetailRecord[] {
   return raw.map((item) => ({
     id: item.id,
-    sendDate: item.sendDate.toISOString(),
-    sendDateDisplay: dayjs(item.sendDate).format("DD/MM/YYYY"),
+    sentDate: item.sentDate.toISOString(),
+    sentDateDisplay: dayjs(item.sentDate).format("DD/MM/YYYY"),
     returnDate: item.returnDate ? item.returnDate.toISOString() : null,
     returnDateDisplay: item.returnDate
       ? dayjs(item.returnDate).format("DD/MM/YYYY")

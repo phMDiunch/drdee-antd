@@ -113,7 +113,7 @@ LaboOrder {
   detailRequirement: String?   // Màu sắc, yêu cầu chi tiết
 
   // Tracking
-  sendDate: DateTime           // Ngày gửi mẫu
+  sentDate: DateTime           // Ngày gửi mẫu
   sentById: String             // Người gửi
   returnDate: DateTime?        // Ngày trả mẫu
   receivedById: String?        // Người nhận
@@ -336,7 +336,7 @@ Nurse/Receptionist:
 
 ### Performance
 
-- Daily view: Index trên `sendDate`, `returnDate`
+- Daily view: Index trên `sentDate`, `returnDate`
 - Reports: Index trên `returnDate`, `supplierId`, `doctorId`, `clinicId`
 - Denormalized warranty label để tránh JOIN với MasterData
 

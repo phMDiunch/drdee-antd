@@ -16,31 +16,36 @@ import { CheckOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import Link from "next/link";
 import dayjs from "dayjs";
-import type { DailyLaboOrderResponse } from "@/shared/validation/labo-order.schema";
+import type { LaboOrderResponse } from "@/shared/validation/labo-order.schema";
+import { laboOrderPermissions } from "@/shared/permissions/labo-order.permissions";
+import { useCurrentUser } from "@/shared/providers";
 
 const { Text } = Typography;
 
 type Props = {
-  data: DailyLaboOrderResponse[];
+  data: LaboOrderResponse[];
   loading?: boolean;
-  isAdmin: boolean;
   onReceive: (id: string) => void;
-  onEdit: (order: DailyLaboOrderResponse) => void;
+  onEdit: (order: LaboOrderResponse) => void;
   onDelete: (id: string) => void;
   actionLoading?: boolean;
+  isCustomerDetailView?: boolean;
 };
 
 export function LaboOrderTable({
   data,
   loading,
-  isAdmin,
   onReceive,
   onEdit,
   onDelete,
   actionLoading,
+  isCustomerDetailView = false,
 }: Props) {
-  const columns = useMemo<ColumnsType<DailyLaboOrderResponse>>(() => {
-    return [
+  const { user: currentUser } = useCurrentUser();
+
+  const columns = useMemo<ColumnsType<LaboOrderResponse>>(() => {
+    const allColumns: ColumnsType<LaboOrderResponse> = [
+      // 1. Khách hàng (hidden in customer detail view)
       {
         title: "Khách hàng",
         dataIndex: "customer",
@@ -67,13 +72,7 @@ export function LaboOrderTable({
           );
         },
       },
-      {
-        title: "Bác sĩ",
-        dataIndex: "doctor",
-        key: "doctor",
-        width: 120,
-        render: (_, record) => record.doctor.fullName,
-      },
+      // 2. Ngày điều trị
       {
         title: "Ngày điều trị",
         dataIndex: "treatmentDate",
@@ -82,12 +81,15 @@ export function LaboOrderTable({
         render: (treatmentDate: string) =>
           dayjs(treatmentDate).format("DD/MM/YYYY"),
       },
+      // 3. Bác sĩ
       {
-        title: "Loại đơn hàng",
-        dataIndex: "orderType",
-        key: "orderType",
-        width: 100,
+        title: "Bác sĩ",
+        dataIndex: "doctor",
+        key: "doctor",
+        width: 120,
+        render: (_, record) => record.doctor.fullName,
       },
+      // 4. Xưởng
       {
         title: "Xưởng",
         dataIndex: "supplier",
@@ -96,6 +98,7 @@ export function LaboOrderTable({
         render: (_, record) =>
           record.supplier.shortName || record.supplier.name,
       },
+      // 5. Loại răng
       {
         title: "Loại răng",
         dataIndex: "laboItem",
@@ -116,6 +119,7 @@ export function LaboOrderTable({
           );
         },
       },
+      // 6. Số lượng
       {
         title: "SL",
         dataIndex: "quantity",
@@ -123,22 +127,7 @@ export function LaboOrderTable({
         width: 50,
         align: "center" as const,
       },
-      {
-        title: "Ngày gửi mẫu",
-        dataIndex: "sendDate",
-        key: "sendDate",
-        width: 140,
-        render: (sendDate: string) =>
-          dayjs(sendDate).format("DD/MM/YYYY HH:mm"),
-      },
-      {
-        title: "Ngày hẹn lắp",
-        dataIndex: "expectedFitDate",
-        key: "expectedFitDate",
-        width: 100,
-        render: (expectedFitDate: string | null) =>
-          expectedFitDate ? dayjs(expectedFitDate).format("DD/MM/YYYY") : "-",
-      },
+      // 7. Yêu cầu
       {
         title: "Yêu cầu",
         dataIndex: "detailRequirement",
@@ -156,6 +145,32 @@ export function LaboOrderTable({
             "-"
           ),
       },
+      // 8. Loại đơn hàng
+      {
+        title: "Loại đơn hàng",
+        dataIndex: "orderType",
+        key: "orderType",
+        width: 100,
+      },
+      // 9. Ngày gửi mẫu
+      {
+        title: "Ngày gửi mẫu",
+        dataIndex: "sentDate",
+        key: "sentDate",
+        width: 140,
+        render: (sentDate: string) =>
+          dayjs(sentDate).format("DD/MM/YYYY HH:mm"),
+      },
+      // 10. Ngày hẹn lắp
+      {
+        title: "Ngày hẹn lắp",
+        dataIndex: "expectedFitDate",
+        key: "expectedFitDate",
+        width: 100,
+        render: (expectedFitDate: string | null) =>
+          expectedFitDate ? dayjs(expectedFitDate).format("DD/MM/YYYY") : "-",
+      },
+      // 11. Ngày nhận mẫu
       {
         title: "Ngày nhận mẫu",
         dataIndex: "returnDate",
@@ -195,23 +210,23 @@ export function LaboOrderTable({
         width: 100,
         fixed: "right" as const,
         render: (_, record) => {
-          const isReturned = record.returnDate !== null;
-          const canEdit = isAdmin || !isReturned;
-          const editTooltip = canEdit
-            ? "Sửa đơn hàng"
-            : "Chỉ admin mới sửa được đơn đã nhận mẫu";
+          const editPermission = laboOrderPermissions.canEdit(
+            currentUser,
+            record
+          );
+          const deletePermission = laboOrderPermissions.canDelete(currentUser);
 
           return (
             <Space split={<Divider type="vertical" />} size={0}>
-              <Tooltip title={editTooltip}>
+              <Tooltip title={editPermission.reason || "Sửa đơn hàng"}>
                 <Button
                   size="small"
                   icon={<EditOutlined />}
-                  disabled={!canEdit}
+                  disabled={!editPermission.allowed}
                   onClick={() => onEdit(record)}
                 />
               </Tooltip>
-              {isAdmin && (
+              {deletePermission.allowed && (
                 <Tooltip title="Xóa đơn hàng">
                   <Popconfirm
                     title="Bạn có chắc chắn muốn xóa đơn hàng này?"
@@ -234,7 +249,21 @@ export function LaboOrderTable({
         },
       },
     ];
-  }, [isAdmin, onReceive, onEdit, onDelete, actionLoading]);
+
+    // Filter out customer column when in customer detail view
+    if (isCustomerDetailView) {
+      return allColumns.filter((col) => col.key !== "customer");
+    }
+
+    return allColumns;
+  }, [
+    onReceive,
+    onEdit,
+    onDelete,
+    actionLoading,
+    isCustomerDetailView,
+    currentUser,
+  ]);
 
   return (
     <Table

@@ -44,8 +44,8 @@ export function mapLaboOrderToResponse(row: LaboOrderWithRelations) {
     totalCost: row.totalCost,
     warranty: row.warranty,
 
-    // Dates (convert to ISO datetime string for sendDate/returnDate, date string for expectedFitDate)
-    sendDate: row.sendDate.toISOString(),
+    // Dates (convert to ISO datetime string for sentDate/returnDate, date string for expectedFitDate)
+    sentDate: row.sentDate.toISOString(),
     returnDate: row.returnDate ? row.returnDate.toISOString() : null,
     expectedFitDate: row.expectedFitDate
       ? row.expectedFitDate.toISOString().split("T")[0]

@@ -91,8 +91,8 @@ export const ServiceLaboDataSchema = z.object({
 // Detail Record (for drill-down panel)
 export const LaboOrderDetailRecordSchema = z.object({
   id: z.string(),
-  sendDate: z.string(), // ISO date
-  sendDateDisplay: z.string(), // DD/MM/YYYY
+  sentDate: z.string(), // ISO date
+  sentDateDisplay: z.string(), // DD/MM/YYYY
   returnDate: z.string().nullable(),
   returnDateDisplay: z.string().nullable(),
   customerName: z.string(),

@@ -306,7 +306,15 @@ export default function CustomerDetailView({
             {
               key: "laboOrders",
               label: "Đơn hàng labo",
-              children: <LaboOrdersTab />,
+              children: (
+                <LaboOrdersTab
+                  customerId={customerId}
+                  customerCode={customer.customerCode ?? ""}
+                  customerName={customer.fullName}
+                  clinicId={customer.clinicId ?? ""}
+                  onDataChange={refetch}
+                />
+              ),
             },
           ]}
         />

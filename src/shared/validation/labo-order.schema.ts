@@ -2,22 +2,33 @@
 import { z } from "zod";
 
 /**
- * Labo Order Base Schema
- * Dùng làm nền cho Create và Update schemas
+ * ============================================================================
+ * SHARED BASE SCHEMAS (Common Fields)
+ * ============================================================================
  */
-export const LaboOrderBaseSchema = z.object({
-  customerId: z
-    .string({ message: "Vui lòng chọn khách hàng" })
-    .min(1, "Vui lòng chọn khách hàng"),
+
+/**
+ * Order Types
+ */
+export const ORDER_TYPES = ["Làm mới", "Bảo hành"] as const;
+export type OrderType = (typeof ORDER_TYPES)[number];
+
+/**
+ * Labo Order Common Fields Schema
+ * Base schema chứa tất cả fields shared giữa Frontend và Backend
+ * - Frontend: Extend với fields phù hợp cho form
+ * - Backend: Extend với coerced types và server metadata
+ */
+const LaboOrderCommonFieldsSchema = z.object({
   doctorId: z
     .string({ message: "Vui lòng chọn bác sĩ" })
     .min(1, "Vui lòng chọn bác sĩ"),
   treatmentDate: z
     .string({ message: "Vui lòng chọn ngày điều trị" })
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày điều trị không đúng định dạng"),
-  orderType: z
-    .string({ message: "Vui lòng chọn loại đơn hàng" })
-    .min(1, "Vui lòng chọn loại đơn hàng"),
+  orderType: z.enum(ORDER_TYPES, {
+    message: "Vui lòng chọn loại đơn hàng",
+  }),
   supplierId: z
     .string({ message: "Vui lòng chọn xưởng" })
     .min(1, "Vui lòng chọn xưởng"),
@@ -45,154 +56,210 @@ export const LaboOrderBaseSchema = z.object({
 });
 
 /**
- * Create Labo Order Request Schema
- * Dùng ở: Form create + Server Action
+ * Shared Conditional Validation Function
+ * Business rules for Labo Orders
+ * - Rule 1: expectedFitDate phải sau treatmentDate
+ * - Rule 2: returnDate và receivedById phải đi cùng nhau
  */
-export const CreateLaboOrderRequestSchema = LaboOrderBaseSchema;
+const validateLaboOrderConditionalFields = (
+  data: {
+    treatmentDate?: string;
+    expectedFitDate?: string | null;
+    returnDate?: string | null;
+    receivedById?: string | null;
+    quantity?: number;
+  },
+  ctx: z.RefinementCtx
+) => {
+  // Rule 1: expectedFitDate must be after treatmentDate
+  if (data.treatmentDate && data.expectedFitDate) {
+    const treatment = new Date(data.treatmentDate);
+    const expected = new Date(data.expectedFitDate);
+
+    if (expected < treatment) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Ngày dự kiến lắp phải sau ngày điều trị",
+        path: ["expectedFitDate"],
+      });
+    }
+  }
+
+  // Rule 2: returnDate và receivedById phải đi cùng nhau
+  const hasReturnDate = Boolean(data.returnDate);
+  const hasReceivedById = Boolean(data.receivedById);
+
+  if (hasReturnDate && !hasReceivedById) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Vui lòng chọn người nhận mẫu",
+      path: ["receivedById"],
+    });
+  }
+
+  if (hasReceivedById && !hasReturnDate) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Vui lòng chọn ngày nhận mẫu",
+      path: ["returnDate"],
+    });
+  }
+};
 
 /**
- * Create Labo Order Form Schema
- * Dùng ở: Form create (React Hook Form)
- * Date fields là strings để tương thích với DatePicker
+ * ============================================================================
+ * FRONTEND SCHEMAS (Client-side Form Validation)
+ * ============================================================================
  */
-export const CreateLaboOrderFormSchema = z.object({
+
+/**
+ * Create Labo Order Form Schema (FRONTEND ONLY)
+ * Dùng ở: CreateLaboOrderModal với React Hook Form + zodResolver
+ */
+export const CreateLaboOrderFormSchema = LaboOrderCommonFieldsSchema.extend({
   customerId: z
-    .string({ message: "Vui lòng chọn khách hàng" })
-    .min(1, "Vui lòng chọn khách hàng"),
-  doctorId: z
-    .string({ message: "Vui lòng chọn bác sĩ" })
-    .min(1, "Vui lòng chọn bác sĩ"),
-  treatmentDate: z
-    .string({ message: "Vui lòng chọn ngày điều trị" })
-    .min(1, "Vui lòng chọn ngày điều trị"),
-  orderType: z
-    .string({ message: "Vui lòng chọn loại đơn hàng" })
-    .min(1, "Vui lòng chọn loại đơn hàng"),
-  supplierId: z
-    .string({ message: "Vui lòng chọn xưởng" })
-    .min(1, "Vui lòng chọn xưởng"),
-  laboItemId: z
-    .string({ message: "Vui lòng chọn loại răng giả" })
-    .min(1, "Vui lòng chọn loại răng giả"),
-  quantity: z
-    .number({ message: "Vui lòng nhập số lượng" })
-    .int("Số lượng phải là số nguyên")
-    .positive("Số lượng phải lớn hơn 0")
-    .max(100, "Số lượng tối đa là 100"),
-  sentById: z
-    .string({ message: "Vui lòng chọn người gửi mẫu" })
-    .min(1, "Vui lòng chọn người gửi mẫu"),
+    .string({ message: "Khách hàng không hợp lệ" })
+    .min(1, "Khách hàng không hợp lệ"),
+  // expectedFitDate is required in form
   expectedFitDate: z
     .string({ message: "Vui lòng chọn ngày hẹn lắp" })
     .min(1, "Vui lòng chọn ngày hẹn lắp"),
-  detailRequirement: z
-    .string()
-    .max(1000, "Ghi chú tối đa 1000 ký tự")
-    .optional()
-    .nullable(),
-});
+}).superRefine(validateLaboOrderConditionalFields);
+
+export type CreateLaboOrderFormData = z.infer<typeof CreateLaboOrderFormSchema>;
 
 /**
- * Update Labo Order Request Schema
- * Chỉ cho phép cập nhật một số fields
- * KHÔNG cho phép thay đổi pricing snapshot và receivedById
+ * ============================================================================
+ * BACKEND SCHEMAS (Server-side API Validation)
+ * ============================================================================
  */
-export const UpdateLaboOrderRequestSchema = z.object({
-  id: z.string({ message: "ID không hợp lệ" }),
-  // Basic fields (Employee + Admin)
-  quantity: z
-    .number({ message: "Vui lòng nhập số lượng" })
-    .int("Số lượng phải là số nguyên")
-    .positive("Số lượng phải lớn hơn 0")
-    .max(100, "Số lượng tối đa là 100")
-    .optional(),
-  expectedFitDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày dự kiến lắp không đúng định dạng")
-    .optional()
-    .nullable(),
-  detailRequirement: z
-    .string()
-    .max(1000, "Ghi chú tối đa 1000 ký tự")
-    .optional()
-    .nullable(),
-  // Admin-only fields (validated by permission layer)
-  treatmentDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày điều trị không đúng định dạng")
-    .optional(),
-  orderType: z
-    .enum(["Làm mới", "Bảo hành"], {
-      message: "Loại đơn hàng không hợp lệ",
-    })
-    .optional(),
-  sentById: z.string().uuid("ID nhân viên gửi mẫu không hợp lệ").optional(),
-  sendDate: z.string().datetime("Ngày gửi không đúng định dạng").optional(),
-  returnDate: z
-    .string()
-    .datetime("Ngày nhận mẫu không đúng định dạng")
-    .optional()
-    .nullable(),
-  receivedById: z
-    .string()
-    .uuid("ID nhân viên nhận mẫu không hợp lệ")
-    .optional()
-    .nullable(),
+
+/**
+ * Labo Order Request Base Schema (BACKEND - for API)
+ * Base schema for Create/Update requests from client → server
+ */
+const LaboOrderRequestBaseSchema = LaboOrderCommonFieldsSchema.extend({
+  customerId: z.string().uuid("Khách hàng không hợp lệ"),
 });
 
 /**
- * Update Labo Order Form Schema
- * Dùng ở: Form update (React Hook Form)
+ * Create Labo Order Request Schema (BACKEND - API)
+ * Dùng ở: Server Action createLaboOrderAction
+ */
+export const CreateLaboOrderRequestSchema = LaboOrderRequestBaseSchema.extend({
+  quantity: z.number().int().min(1).max(100).default(1),
+}).superRefine(validateLaboOrderConditionalFields);
+
+export type CreateLaboOrderRequest = z.infer<
+  typeof CreateLaboOrderRequestSchema
+>;
+
+/**
+ * Update Labo Order Form Schema (FRONTEND ONLY)
+ * Dùng ở: UpdateLaboOrderModal với React Hook Form + zodResolver
  * Date fields là strings để tương thích với DatePicker
- * Admin can edit: treatmentDate, orderType, sentById, sendDate, returnDate
+ * Admin can edit: treatmentDate, orderType, sentById, sentDate, returnDate
  * Employee can edit: quantity, expectedFitDate, detailRequirement only
  */
-export const UpdateLaboOrderFormSchema = z.object({
-  // Basic fields (Employee + Admin)
-  quantity: z
-    .number({ message: "Vui lòng nhập số lượng" })
-    .int("Số lượng phải là số nguyên")
-    .positive("Số lượng phải lớn hơn 0")
-    .max(100, "Số lượng tối đa là 100"),
-  expectedFitDate: z
-    .string({ message: "Vui lòng chọn ngày hẹn lắp" })
-    .min(1, "Vui lòng chọn ngày hẹn lắp"),
-  detailRequirement: z
-    .string()
-    .max(1000, "Ghi chú tối đa 1000 ký tự")
-    .optional(),
+export const UpdateLaboOrderFormSchema = LaboOrderCommonFieldsSchema.extend({
   // Admin-only fields
-  treatmentDate: z.string().min(1, "Vui lòng chọn ngày điều trị"),
-  orderType: z.enum(["Làm mới", "Bảo hành"], {
-    message: "Loại đơn hàng không hợp lệ",
-  }),
-  sentById: z.string().uuid("ID nhân viên gửi mẫu không hợp lệ"),
-  sendDate: z.string().min(1, "Vui lòng chọn ngày gửi mẫu"),
+  sentDate: z.string().optional(),
   returnDate: z.string().optional().nullable(),
   receivedById: z
     .string()
     .uuid("ID nhân viên nhận mẫu không hợp lệ")
     .optional()
     .nullable(),
-});
+})
+  .partial()
+  .superRefine(validateLaboOrderConditionalFields);
+
+export type UpdateLaboOrderFormData = z.infer<typeof UpdateLaboOrderFormSchema>;
 
 /**
- * Daily Labo Order Response Schema
- * Dùng ở: API GET /api/v1/labo-orders/daily
- * Bao gồm nested objects (customer, doctor, supplier, laboItem)
+ * Update Labo Order Request Schema (BACKEND - API)
+ * Dùng ở: Server Action updateLaboOrderAction
+ * Chỉ cho phép cập nhật một số fields
+ * Admin can edit: treatmentDate, orderType, sentById, sentDate, returnDate + all basic fields
+ * Employee can edit: quantity, expectedFitDate, detailRequirement only
  */
-export const DailyLaboOrderResponseSchema = z.object({
+export const UpdateLaboOrderRequestSchema = LaboOrderRequestBaseSchema.extend({
+  id: z.string().uuid("ID đơn hàng không hợp lệ").optional(), // For service layer
+  // Admin-only fields
+  sentDate: z.coerce.date().optional(),
+  returnDate: z.coerce.date().optional().nullable(),
+  receivedById: z.string().uuid().optional().nullable(),
+})
+  .partial()
+  .superRefine(validateLaboOrderConditionalFields);
+
+export type UpdateLaboOrderRequest = z.infer<
+  typeof UpdateLaboOrderRequestSchema
+>;
+
+/**
+ * ============================================================================
+ * QUERY SCHEMAS
+ * ============================================================================
+ */
+
+/**
+ * Get Daily Labo Orders Query Schema (BACKEND)
+ * Validate URL query params cho GET /api/v1/labo-orders/daily
+ * Supports both daily view (date + type) and customer view (customerId)
+ */
+export const GetDailyLaboOrdersQuerySchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không đúng định dạng YYYY-MM-DD")
+    .optional(), // Optional when customerId is provided
+  type: z
+    .enum(["sent", "returned"], {
+      message: 'Loại hiển thị phải là "sent" hoặc "returned"',
+    })
+    .optional(), // Optional when customerId is provided
+  clinicId: z.string().uuid("ID phòng khám không hợp lệ").optional(),
+  customerId: z.string().uuid("ID khách hàng không hợp lệ").optional(), // NEW: Filter by customer
+});
+
+export type GetDailyLaboOrdersQuery = z.infer<
+  typeof GetDailyLaboOrdersQuerySchema
+>;
+
+/**
+ * Receive Labo Order Request Schema
+ * Dùng ở: Server Action receiveLaboOrderAction
+ */
+export const ReceiveLaboOrderRequestSchema = z.object({
+  orderId: z.string().uuid("ID đơn hàng không hợp lệ"),
+});
+
+export type ReceiveLaboOrderRequest = z.infer<
+  typeof ReceiveLaboOrderRequestSchema
+>;
+
+/**
+ * ============================================================================
+ * RESPONSE SCHEMAS
+ * ============================================================================
+ */
+
+/**
+ * Labo Order Response Schema
+ * Full response với relations
+ */
+export const LaboOrderResponseSchema = z.object({
   id: z.string().uuid(),
   customerId: z.string().uuid(),
   doctorId: z.string().uuid(),
-  laboServiceId: z.string().uuid(), // Link to pricing record (audit trail)
+  laboServiceId: z.string().uuid(),
   supplierId: z.string().uuid(),
   laboItemId: z.string().uuid(),
   clinicId: z.string().uuid(),
 
   // Treatment Info
-  treatmentDate: z.string(), // Date string YYYY-MM-DD
-  orderType: z.string(), // "lam-moi" | "bao-hanh"
+  treatmentDate: z.string(),
+  orderType: z.enum(ORDER_TYPES),
 
   // Pricing snapshot
   unitPrice: z.number(),
@@ -201,7 +268,7 @@ export const DailyLaboOrderResponseSchema = z.object({
   warranty: z.string(),
 
   // Dates
-  sendDate: z.string().datetime(), // ISO datetime string
+  sentDate: z.string().datetime(),
   returnDate: z.string().datetime().nullable(),
   expectedFitDate: z.string().nullable(),
 
@@ -216,7 +283,7 @@ export const DailyLaboOrderResponseSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 
-  // Nested objects
+  // Relations
   customer: z.object({
     id: z.string().uuid(),
     fullName: z.string(),
@@ -238,7 +305,6 @@ export const DailyLaboOrderResponseSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
     serviceGroup: z.string(),
-    serviceGroupLabel: z.string().optional(), // Will be resolved by frontend from MasterData
     unit: z.string(),
   }),
 
@@ -247,7 +313,6 @@ export const DailyLaboOrderResponseSchema = z.object({
       id: z.string().uuid(),
       fullName: z.string(),
     })
-    .nullable()
     .optional(),
 
   receivedBy: z
@@ -255,8 +320,7 @@ export const DailyLaboOrderResponseSchema = z.object({
       id: z.string().uuid(),
       fullName: z.string(),
     })
-    .nullable()
-    .optional(),
+    .nullable(),
 
   createdBy: z
     .object({
@@ -273,43 +337,35 @@ export const DailyLaboOrderResponseSchema = z.object({
     })
     .nullable()
     .optional(),
+
+  clinic: z
+    .object({
+      id: z.string().uuid(),
+      clinicCode: z.string(),
+      name: z.string(),
+    })
+    .optional(),
 });
+
+export type LaboOrderResponse = z.infer<typeof LaboOrderResponseSchema>;
 
 /**
- * Get Daily Labo Orders Query Schema
- * Dùng ở: API GET /api/v1/labo-orders/daily
+ * Labo Orders Daily Response Schema
+ * Response for daily view với statistics summary
  */
-export const GetDailyLaboOrdersQuerySchema = z.object({
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không đúng định dạng YYYY-MM-DD"),
-  type: z.enum(["sent", "returned"]),
-  clinicId: z.string().uuid("ID phòng khám không hợp lệ").optional(),
+export const LaboOrdersDailyResponseSchema = z.object({
+  items: z.array(LaboOrderResponseSchema),
+  count: z.number(),
+  statistics: z.object({
+    total: z.number(),
+    sent: z.number(),
+    returned: z.number(),
+    totalCost: z.number(),
+    warrantyOrders: z.number(),
+    newOrders: z.number(),
+  }),
 });
 
-/**
- * Receive Labo Order Request Schema
- * Dùng ở: Server Action receiveLaboOrderAction
- */
-export const ReceiveLaboOrderRequestSchema = z.object({
-  orderId: z.string().uuid("ID đơn hàng không hợp lệ"),
-});
-
-/** Types */
-export type CreateLaboOrderRequest = z.infer<
-  typeof CreateLaboOrderRequestSchema
->;
-export type CreateLaboOrderFormData = z.infer<typeof CreateLaboOrderFormSchema>;
-export type UpdateLaboOrderRequest = z.infer<
-  typeof UpdateLaboOrderRequestSchema
->;
-export type UpdateLaboOrderFormData = z.infer<typeof UpdateLaboOrderFormSchema>;
-export type DailyLaboOrderResponse = z.infer<
-  typeof DailyLaboOrderResponseSchema
->;
-export type GetDailyLaboOrdersQuery = z.infer<
-  typeof GetDailyLaboOrdersQuerySchema
->;
-export type ReceiveLaboOrderRequest = z.infer<
-  typeof ReceiveLaboOrderRequestSchema
+export type LaboOrdersDailyResponse = z.infer<
+  typeof LaboOrdersDailyResponseSchema
 >;

@@ -101,49 +101,94 @@ export const laboOrderRepo = {
   /**
    * Get daily labo orders (sent or returned on specific date)
    * Used for Daily View - Collapsible Tables
+   * Returns items + count + statistics
    */
   async getDailyLaboOrders(params: {
-    date: string; // YYYY-MM-DD format
-    type: "sent" | "returned";
+    date?: string; // YYYY-MM-DD format (optional when customerId provided)
+    type?: "sent" | "returned"; // Optional when customerId provided
     clinicId?: string;
+    customerId?: string; // NEW: Filter by customer for customer detail view
   }) {
-    const { date, type, clinicId } = params;
-
-    // Convert YYYY-MM-DD string to Date range (start of day to end of day)
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    const { date, type, clinicId, customerId } = params;
 
     // Build where conditions
     const where: Prisma.LaboOrderWhereInput = {
       ...(clinicId && { clinicId }),
+      ...(customerId && { customerId }), // NEW: Filter by customer
     };
 
-    if (type === "sent") {
-      where.sendDate = {
-        gte: startOfDay,
-        lte: endOfDay,
-      };
-    } else {
-      where.returnDate = {
-        gte: startOfDay,
-        lte: endOfDay,
-      };
+    // Date filters (only apply if date and type provided - daily view)
+    if (date && type) {
+      // Convert YYYY-MM-DD string to Date range (start of day to end of day)
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      if (type === "sent") {
+        where.sentDate = {
+          gte: startOfDay,
+          lte: endOfDay,
+        };
+      } else {
+        where.returnDate = {
+          gte: startOfDay,
+          lte: endOfDay,
+        };
+      }
     }
 
     // Fetch orders with nested relations
     const items = await prisma.laboOrder.findMany({
       where,
       include: includeFullLaboOrder,
-      orderBy:
-        type === "sent"
-          ? { createdAt: "desc" } // Sent orders: newest first
-          : { returnDate: "asc" }, // Returned orders: earliest first
+      orderBy: customerId
+        ? { treatmentDate: "desc" } // Customer view: newest treatment first
+        : type === "sent"
+        ? { createdAt: "desc" } // Sent orders: newest first
+        : { returnDate: "asc" }, // Returned orders: earliest first
     });
 
-    return { items, total: items.length };
+    // Calculate statistics (only for daily view)
+    const total = items.length;
+    let sent = 0;
+    let returned = 0;
+
+    if (date && type) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      sent = items.filter(
+        (o) => o.sentDate >= startOfDay && o.sentDate <= endOfDay
+      ).length;
+      returned = items.filter(
+        (o) =>
+          o.returnDate && o.returnDate >= startOfDay && o.returnDate <= endOfDay
+      ).length;
+    }
+
+    const totalCost = items.reduce((sum, o) => sum + o.totalCost, 0);
+    const warrantyOrders = items.filter(
+      (o) => o.orderType === "Bảo hành"
+    ).length;
+    const newOrders = items.filter((o) => o.orderType === "Làm mới").length;
+
+    return {
+      items,
+      count: total,
+      statistics: {
+        total,
+        sent,
+        returned,
+        totalCost,
+        warrantyOrders,
+        newOrders,
+      },
+    };
   },
 
   /**
@@ -181,7 +226,7 @@ export const laboOrderRepo = {
         totalCost: data.totalCost,
         warranty: data.warranty,
 
-        // Dates (sendDate auto-set to now() at database level)
+        // Dates (sentDate auto-set to now() at database level)
         expectedFitDate: data.expectedFitDate
           ? new Date(data.expectedFitDate)
           : null,
@@ -219,8 +264,8 @@ export const laboOrderRepo = {
       }
     }
 
-    if (data.sendDate !== undefined) {
-      updateData.sendDate = new Date(data.sendDate);
+    if (data.sentDate !== undefined) {
+      updateData.sentDate = new Date(data.sentDate);
     }
 
     if (data.expectedFitDate !== undefined) {

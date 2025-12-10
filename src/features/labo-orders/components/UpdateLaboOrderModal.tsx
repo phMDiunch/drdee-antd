@@ -24,7 +24,7 @@ import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmploy
 import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
 import { useLaboItems } from "@/features/labo-items/hooks/useLaboItems";
 import type {
-  DailyLaboOrderResponse,
+  LaboOrderResponse,
   UpdateLaboOrderRequest,
   UpdateLaboOrderFormData,
 } from "@/shared/validation/labo-order.schema";
@@ -36,7 +36,7 @@ dayjs.locale("vi");
 type Props = {
   open: boolean;
   confirmLoading?: boolean;
-  order: DailyLaboOrderResponse;
+  order: LaboOrderResponse;
   onCancel: () => void;
   onSubmit: (id: string, payload: UpdateLaboOrderRequest) => void;
 };
@@ -97,7 +97,7 @@ export function UpdateLaboOrderModal({
       treatmentDate: dayjs(order.treatmentDate).format("YYYY-MM-DD"),
       orderType: order.orderType as "Làm mới" | "Bảo hành",
       sentById: order.sentById,
-      sendDate: dayjs(order.sendDate).format("YYYY-MM-DD HH:mm"),
+      sentDate: dayjs(order.sentDate).format("YYYY-MM-DD HH:mm"),
       receivedById: order.receivedById || null,
     }),
     [order]
@@ -111,7 +111,6 @@ export function UpdateLaboOrderModal({
   } = useForm<UpdateLaboOrderFormData>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(UpdateLaboOrderFormSchema) as any,
-    mode: "onBlur",
     defaultValues,
   });
 
@@ -135,16 +134,16 @@ export function UpdateLaboOrderModal({
     // Admin can edit additional fields
     if (isAdmin) {
       payload.returnDate = formData.returnDate
-        ? dayjs(formData.returnDate).toISOString()
+        ? (dayjs(formData.returnDate).toISOString() as unknown as Date)
         : null;
       payload.treatmentDate = dayjs(formData.treatmentDate).format(
         "YYYY-MM-DD"
       );
       payload.orderType = formData.orderType;
       payload.sentById = formData.sentById;
-      payload.sendDate = formData.sendDate
-        ? dayjs(formData.sendDate).toISOString()
-        : dayjs(order.sendDate).toISOString();
+      payload.sentDate = dayjs(
+        formData.sentDate || order.sentDate
+      ).toISOString() as unknown as Date;
       payload.receivedById = formData.receivedById || null;
     }
 
@@ -307,7 +306,7 @@ export function UpdateLaboOrderModal({
 
           <Col xs={24} lg={8}>
             <Controller
-              name="sendDate"
+              name="sentDate"
               control={control}
               render={({ field, fieldState }) => (
                 <Form.Item
@@ -431,17 +430,13 @@ export function UpdateLaboOrderModal({
                   help={fieldState.error?.message}
                 >
                   <Select
-                    {...field}
-                    options={doctorOptions}
+                    value={field.value || undefined}
+                    onChange={(value) => field.onChange(value || null)}
                     showSearch
-                    filterOption={(input, option) =>
-                      (option?.label ?? "")
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                    disabled={!isAdmin}
-                    style={{ color: "rgba(0, 0, 0, 0.85)" }}
                     placeholder="Chọn người nhận mẫu"
+                    optionFilterProp="label"
+                    options={doctorOptions}
+                    disabled={!isAdmin}
                     allowClear
                   />
                 </Form.Item>

@@ -5,9 +5,11 @@ export * from "./components/LaboOrderStatistics";
 export * from "./components/LaboOrderTable";
 export * from "./components/LaboOrderFilters";
 export * from "./components/CreateLaboOrderModal";
+export * from "./components/UpdateLaboOrderModal";
 
 // Hooks
 export * from "./hooks/useLaboOrdersDaily";
+export * from "./hooks/useLaboOrdersByCustomer";
 export * from "./hooks/useCreateLaboOrder";
 export * from "./hooks/useUpdateLaboOrder";
 export * from "./hooks/useDeleteLaboOrder";

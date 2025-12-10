@@ -42,8 +42,8 @@ export default function DetailPanel({
     return [
       {
         title: "Ngày gửi",
-        dataIndex: "sendDate",
-        key: "sendDate",
+        dataIndex: "sentDate",
+        key: "sentDate",
         width: 110,
         fixed: "left",
         render: (value) => dayjs(value).format("DD/MM/YYYY"),

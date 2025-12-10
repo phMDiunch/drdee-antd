@@ -7,8 +7,12 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
  * GET /api/v1/labo-orders/daily - Get daily labo orders (sent or returned)
- * Query params: date (YYYY-MM-DD), type ('sent' | 'returned'), clinicId (optional)
- * Used by: useLaboOrdersDaily() hook
+ * Query params:
+ *   - date (YYYY-MM-DD, optional when customerId provided)
+ *   - type ('sent' | 'returned', optional when customerId provided)
+ *   - clinicId (optional)
+ *   - customerId (optional, for customer detail view)
+ * Used by: useLaboOrdersDaily() hook, useLaboOrdersByCustomer() hook
  * Validation: Handled by service layer (GetDailyLaboOrdersQuerySchema)
  * Cache: No cache (transactional data - always fresh)
  */
@@ -17,11 +21,7 @@ export async function GET(req: Request) {
     const user = await getSessionUser();
 
     const { searchParams } = new URL(req.url);
-    const query = {
-      date: searchParams.get("date") ?? undefined,
-      type: searchParams.get("type") ?? undefined,
-      clinicId: searchParams.get("clinicId") ?? undefined,
-    };
+    const query = Object.fromEntries(searchParams);
 
     const data = await laboOrderService.getDailyLaboOrders(user, query);
 
