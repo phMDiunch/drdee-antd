@@ -63,9 +63,9 @@ const LaboOrderCommonFieldsSchema = z.object({
  */
 const validateLaboOrderConditionalFields = (
   data: {
-    treatmentDate?: string;
-    expectedFitDate?: string | null;
-    returnDate?: string | null;
+    treatmentDate?: string | Date;
+    expectedFitDate?: string | Date | null;
+    returnDate?: string | Date | null;
     receivedById?: string | null;
     quantity?: number;
   },
