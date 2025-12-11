@@ -235,7 +235,17 @@ export const laboOrderService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy đơn hàng labo", 404);
     }
 
-    // Use permission file for validation
+    // Filter updates based on user role using permission file
+    const filteredUpdates = laboOrderPermissions.filterUpdatableFields(
+      {
+        role: currentUser.role,
+        employeeId: currentUser.employeeId,
+        clinicId: currentUser.clinicId,
+      },
+      updates as Record<string, unknown>
+    );
+
+    // Validate permission
     try {
       laboOrderPermissions.validateUpdate(
         {
@@ -243,13 +253,11 @@ export const laboOrderService = {
           employeeId: currentUser.employeeId,
           clinicId: currentUser.clinicId,
         },
-        existing,
         {
-          ...updates,
-          // Convert Date to string for permission validation
-          sentDate: updates.sentDate?.toISOString(),
-          returnDate: updates.returnDate?.toISOString() ?? null,
-        }
+          returnDate: existing.returnDate,
+          clinicId: existing.clinic?.id ?? null,
+        },
+        filteredUpdates
       );
     } catch (error) {
       throw new ServiceError(
@@ -261,59 +269,25 @@ export const laboOrderService = {
       );
     }
 
-    // Prepare update input
+    // Prepare update input with filtered updates
     const updateData: LaboOrderUpdateInput = {
+      ...filteredUpdates,
       updatedById: currentUser.employeeId,
     };
 
-    // Basic fields (Employee + Admin)
-    if (updates.quantity !== undefined) {
-      updateData.quantity = updates.quantity;
-      // Recalculate totalCost based on orderType
-      const currentOrderType = updates.orderType ?? existing.orderType;
+    // Recalculate totalCost if quantity or orderType changed
+    if (
+      filteredUpdates.quantity !== undefined ||
+      filteredUpdates.orderType !== undefined
+    ) {
+      const currentQuantity =
+        (filteredUpdates.quantity as number | undefined) ?? existing.quantity;
+      const currentOrderType =
+        (filteredUpdates.orderType as string | undefined) ?? existing.orderType;
       updateData.totalCost =
         currentOrderType === "Bảo hành"
           ? 0
-          : existing.unitPrice * updates.quantity;
-    }
-
-    if (updates.expectedFitDate !== undefined) {
-      updateData.expectedFitDate = updates.expectedFitDate ?? null;
-    }
-
-    if (updates.detailRequirement !== undefined) {
-      updateData.detailRequirement = updates.detailRequirement ?? null;
-    }
-
-    // Admin-only fields (permission already validated above)
-    if (updates.treatmentDate !== undefined) {
-      updateData.treatmentDate = updates.treatmentDate;
-    }
-
-    if (updates.orderType !== undefined) {
-      updateData.orderType = updates.orderType;
-      // Recalculate totalCost when orderType changes
-      const currentQuantity = updates.quantity ?? existing.quantity;
-      updateData.totalCost =
-        updates.orderType === "Bảo hành"
-          ? 0
           : existing.unitPrice * currentQuantity;
-    }
-
-    if (updates.sentById !== undefined) {
-      updateData.sentById = updates.sentById;
-    }
-
-    if (updates.sentDate !== undefined) {
-      updateData.sentDate = updates.sentDate;
-    }
-
-    if (updates.returnDate !== undefined) {
-      updateData.returnDate = updates.returnDate ?? null;
-    }
-
-    if (updates.receivedById !== undefined) {
-      updateData.receivedById = updates.receivedById ?? null;
     }
 
     const updated = await laboOrderRepo.update(id!, updateData);

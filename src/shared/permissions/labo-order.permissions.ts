@@ -246,6 +246,46 @@ export const laboOrderPermissions = {
   },
 
   /**
+   * Filter updates to only include fields that the user is allowed to edit
+   * Returns a new object with only the allowed fields (excluding undefined values)
+   *
+   * Admin can edit all fields:
+   * - quantity, expectedFitDate, detailRequirement (basic fields)
+   * - treatmentDate, orderType, sentById, sentDate (admin-only fields)
+   * - returnDate, receivedById (admin-only fields)
+   *
+   * Employee can only edit:
+   * - quantity, expectedFitDate, detailRequirement
+   */
+  filterUpdatableFields(
+    user: PermissionUser | null | undefined,
+    updates: Record<string, unknown>
+  ): Record<string, unknown> {
+    const filtered: Record<string, unknown> = {};
+
+    // Admin: Can update all fields
+    if (isAdmin(user)) {
+      // Copy all fields that are defined
+      Object.keys(updates).forEach((key) => {
+        if (updates[key] !== undefined) {
+          filtered[key] = updates[key];
+        }
+      });
+      return filtered;
+    }
+
+    // Employee: Can only update basic fields
+    const allowedFields = ["quantity", "expectedFitDate", "detailRequirement"];
+    allowedFields.forEach((key) => {
+      if (updates[key] !== undefined) {
+        filtered[key] = updates[key];
+      }
+    });
+
+    return filtered;
+  },
+
+  /**
    * Validate update fields based on permission level
    * Throws error if not allowed
    *
@@ -260,17 +300,7 @@ export const laboOrderPermissions = {
   validateUpdate(
     user: PermissionUser | null | undefined,
     existing: LaboOrderForPermission,
-    updates: {
-      quantity?: number;
-      expectedFitDate?: string | null;
-      detailRequirement?: string | null;
-      treatmentDate?: string; // Admin only
-      orderType?: string; // Admin only
-      sentById?: string; // Admin only
-      sentDate?: string; // Admin only
-      returnDate?: string | null; // Admin only
-      receivedById?: string | null; // Admin only
-    }
+    updates: Record<string, unknown>
   ): void {
     const permission = this.canEdit(user, existing);
 

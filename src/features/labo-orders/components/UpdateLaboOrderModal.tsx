@@ -472,29 +472,36 @@ export function UpdateLaboOrderModal({
           </Col>
         </Row>
 
-        {/* Metadata */}
-        <Descriptions bordered size="small" column={2} style={{ marginTop: 8 }}>
-          <Descriptions.Item label="Đơn giá">
-            {order.unitPrice.toLocaleString("vi-VN")} đ
-          </Descriptions.Item>
-          <Descriptions.Item label="Bảo hành">
-            {order.warranty.replace(/-/g, " ")}
-          </Descriptions.Item>
-          <Descriptions.Item label="Tạo bởi">
-            {order.createdBy?.fullName || "System"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Tạo lúc">
-            {dayjs(order.createdAt).format("DD/MM/YYYY HH:mm")}
-          </Descriptions.Item>
-          <Descriptions.Item label="Cập nhật bởi">
-            {order.updatedBy?.fullName || "—"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Cập nhật lúc">
-            {order.updatedAt
-              ? dayjs(order.updatedAt).format("DD/MM/YYYY HH:mm")
-              : "—"}
-          </Descriptions.Item>
-        </Descriptions>
+        {/* Metadata - Admin only */}
+        {isAdmin && (
+          <Descriptions
+            bordered
+            size="small"
+            column={2}
+            style={{ marginTop: 8 }}
+          >
+            <Descriptions.Item label="Đơn giá">
+              {order.unitPrice.toLocaleString("vi-VN")} đ
+            </Descriptions.Item>
+            <Descriptions.Item label="Bảo hành">
+              {order.warranty.replace(/-/g, " ")}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tạo bởi">
+              {order.createdBy?.fullName || "System"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tạo lúc">
+              {dayjs(order.createdAt).format("DD/MM/YYYY HH:mm")}
+            </Descriptions.Item>
+            <Descriptions.Item label="Cập nhật bởi">
+              {order.updatedBy?.fullName || "—"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Cập nhật lúc">
+              {order.updatedAt
+                ? dayjs(order.updatedAt).format("DD/MM/YYYY HH:mm")
+                : "—"}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
       </Form>
     </Modal>
   );
