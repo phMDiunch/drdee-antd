@@ -46,8 +46,6 @@ export async function getLaboReportDetailApi(
     month: params.month,
     tab: params.tab,
     key: params.key,
-    page: params.page.toString(),
-    pageSize: params.pageSize.toString(),
   };
   if (params.clinicId) {
     queryParams.clinicId = params.clinicId;

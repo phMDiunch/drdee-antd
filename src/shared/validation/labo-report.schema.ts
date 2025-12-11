@@ -1,35 +1,44 @@
 import { z } from "zod";
 
-// ================================
-// Query Schemas
-// ================================
+// ============================================================================
+// QUERY SCHEMAS (Request)
+// ============================================================================
 
+/**
+ * Query schema for summary endpoint
+ * GET /api/v1/reports/labo/summary
+ */
 export const GetLaboReportSummaryQuerySchema = z.object({
-  month: z.string().regex(/^\d{4}-\d{2}$/), // YYYY-MM
-  clinicId: z.string().optional(),
-});
-
-export const GetLaboReportDetailQuerySchema = z.object({
-  month: z.string().regex(/^\d{4}-\d{2}$/),
-  clinicId: z.string().optional(),
-  tab: z.enum(["daily", "supplier", "doctor", "service"]),
-  key: z.string(), // date | supplierId | doctorId | serviceId
-  page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().default(20),
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Month must be in YYYY-MM format"),
+  clinicId: z.string().optional(), // Admin: optional, Employee: enforced in backend
 });
 
 export type GetLaboReportSummaryQuery = z.infer<
   typeof GetLaboReportSummaryQuerySchema
 >;
+
+/**
+ * Query schema for detail endpoint
+ * GET /api/v1/reports/labo/detail
+ */
+export const GetLaboReportDetailQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Month must be in YYYY-MM format"),
+  clinicId: z.string().optional(), // Admin: optional, Employee: enforced in backend
+  tab: z.enum(["daily", "supplier", "doctor", "service"]),
+  key: z.string(), // date | supplierId | doctorId | serviceId
+});
+
 export type GetLaboReportDetailQuery = z.infer<
   typeof GetLaboReportDetailQuerySchema
 >;
 
-// ================================
-// Response Schemas
-// ================================
+// ============================================================================
+// RESPONSE SCHEMAS
+// ============================================================================
 
-// KPI Data
+/**
+ * KPI metrics response
+ */
 export const LaboKpiDataSchema = z.object({
   totalOrders: z.number(),
   totalCost: z.number(),
@@ -43,7 +52,11 @@ export const LaboKpiDataSchema = z.object({
   previousMonthCost: z.number().nullable(),
 });
 
-// Daily Data (by returnDate - ngày nhận mẫu)
+export type LaboKpiData = z.infer<typeof LaboKpiDataSchema>;
+
+/**
+ * Daily data row (by returnDate - ngày nhận mẫu)
+ */
 export const DailyLaboDataSchema = z.object({
   id: z.string(), // date as YYYY-MM-DD
   date: z.string(), // DD/MM/YYYY display
@@ -53,7 +66,11 @@ export const DailyLaboDataSchema = z.object({
   // NOTE: No rank field (daily không có ranking)
 });
 
-// Supplier Data
+export type DailyLaboData = z.infer<typeof DailyLaboDataSchema>;
+
+/**
+ * Supplier data row
+ */
 export const SupplierLaboDataSchema = z.object({
   id: z.string(),
   supplierId: z.string(),
@@ -64,7 +81,11 @@ export const SupplierLaboDataSchema = z.object({
   rank: z.number(), // 1, 2, 3...
 });
 
-// Doctor Data (sentBy)
+export type SupplierLaboData = z.infer<typeof SupplierLaboDataSchema>;
+
+/**
+ * Doctor data row (sentBy)
+ */
 export const DoctorLaboDataSchema = z.object({
   id: z.string(),
   doctorId: z.string(),
@@ -75,7 +96,11 @@ export const DoctorLaboDataSchema = z.object({
   rank: z.number(),
 });
 
-// Service Data (laboService)
+export type DoctorLaboData = z.infer<typeof DoctorLaboDataSchema>;
+
+/**
+ * Service data row (laboService)
+ */
 export const ServiceLaboDataSchema = z.object({
   id: z.string(),
   serviceId: z.string(),
@@ -88,7 +113,15 @@ export const ServiceLaboDataSchema = z.object({
   rank: z.number(),
 });
 
-// Detail Record (for drill-down panel)
+export type ServiceLaboData = z.infer<typeof ServiceLaboDataSchema>;
+
+// ============================================================================
+// DETAIL PANEL SCHEMAS
+// ============================================================================
+
+/**
+ * Single labo order detail record for detail panel
+ */
 export const LaboOrderDetailRecordSchema = z.object({
   id: z.string(),
   sentDate: z.string(), // ISO date
@@ -109,33 +142,41 @@ export const LaboOrderDetailRecordSchema = z.object({
   treatmentDateDisplay: z.string().nullable(),
 });
 
-// Summary Response
-export const LaboReportSummaryResponseSchema = z.object({
-  kpi: LaboKpiDataSchema,
-  summaryTabs: z.object({
-    byDate: z.array(DailyLaboDataSchema),
-    bySupplier: z.array(SupplierLaboDataSchema),
-    byDoctor: z.array(DoctorLaboDataSchema),
-    byService: z.array(ServiceLaboDataSchema),
-  }),
+export type LaboOrderDetailRecord = z.infer<typeof LaboOrderDetailRecordSchema>;
+
+/**
+ * Summary tabs data (aggregated)
+ */
+export const LaboSummaryTabsDataSchema = z.object({
+  byDate: z.array(DailyLaboDataSchema),
+  bySupplier: z.array(SupplierLaboDataSchema),
+  byDoctor: z.array(DoctorLaboDataSchema),
+  byService: z.array(ServiceLaboDataSchema),
 });
 
-// Detail Response
+export type LaboSummaryTabsData = z.infer<typeof LaboSummaryTabsDataSchema>;
+
+/**
+ * Full summary response (KPI + tabs)
+ */
+export const LaboReportSummaryResponseSchema = z.object({
+  kpi: LaboKpiDataSchema,
+  summaryTabs: LaboSummaryTabsDataSchema,
+});
+
+export type LaboReportSummaryResponse = z.infer<
+  typeof LaboReportSummaryResponseSchema
+>;
+
+/**
+ * Detail panel data response
+ */
 export const LaboReportDetailResponseSchema = z.object({
   records: z.array(LaboOrderDetailRecordSchema),
   totalRecords: z.number(),
   totalCost: z.number(),
 });
 
-export type LaboKpiData = z.infer<typeof LaboKpiDataSchema>;
-export type DailyLaboData = z.infer<typeof DailyLaboDataSchema>;
-export type SupplierLaboData = z.infer<typeof SupplierLaboDataSchema>;
-export type DoctorLaboData = z.infer<typeof DoctorLaboDataSchema>;
-export type ServiceLaboData = z.infer<typeof ServiceLaboDataSchema>;
-export type LaboOrderDetailRecord = z.infer<typeof LaboOrderDetailRecordSchema>;
-export type LaboReportSummaryResponse = z.infer<
-  typeof LaboReportSummaryResponseSchema
->;
 export type LaboReportDetailResponse = z.infer<
   typeof LaboReportDetailResponseSchema
 >;

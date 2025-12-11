@@ -3,70 +3,22 @@ import type {
   DailyRevenueData,
   SourceRevenueData,
   DepartmentRevenueData,
+  ServiceGroupRevenueData,
   ServiceRevenueData,
   DoctorRevenueData,
   PaymentDetailRecord,
 } from "@/shared/validation/revenue-report.schema";
-import type { RawPaymentDetail } from "@/server/repos/revenue-report.repo";
+import type {
+  RawKpiData,
+  RawDailyData,
+  RawSourceData,
+  RawDepartmentData,
+  RawServiceGroupData,
+  RawServiceData,
+  RawDoctorData,
+  revenueReportRepo,
+} from "@/server/repos/revenue-report.repo";
 import { CUSTOMER_SOURCES } from "@/features/customers/constants";
-import dayjs from "dayjs";
-
-/**
- * Input types from Repository layer
- */
-type RawKpiData = {
-  totalRevenue: number;
-  cash: number;
-  cardRegular: number;
-  cardVisa: number;
-  transfer: number;
-  totalRevenueGrowthMoM: number | null;
-  cashPercentage: number;
-  cardRegularPercentage: number;
-  cardVisaPercentage: number;
-  transferPercentage: number;
-  previousMonthRevenue: number;
-};
-
-type RawDailyData = {
-  date: string;
-  cash: number;
-  cardRegular: number;
-  cardVisa: number;
-  transfer: number;
-  totalRevenue: number;
-};
-
-type RawSourceData = {
-  source: string;
-  voucherCount: number;
-  customerCount: number;
-  totalRevenue: number;
-};
-
-type RawDepartmentData = {
-  department: string;
-  totalRevenue: number;
-  paymentPercentage: number;
-  totalPaid: number;
-  totalFinalPrice: number;
-};
-
-type RawServiceData = {
-  serviceId: string;
-  serviceName: string;
-  serviceGroup: string | null;
-  totalRevenue: number;
-  paymentPercentage: number;
-  totalPaid: number;
-  totalFinalPrice: number;
-};
-
-type RawDoctorData = {
-  doctorId: string;
-  doctorName: string;
-  revenue: number;
-};
 
 /**
  * Chuyển đổi dữ liệu KPI từ repo sang response format
@@ -101,7 +53,7 @@ export function mapDailyData(
 ): DailyRevenueData[] {
   return dailyData.map((d) => ({
     id: d.date,
-    date: dayjs(d.date).format("DD/MM/YYYY"),
+    date: new Date(d.date).toLocaleDateString("vi-VN"),
     cash: d.cash,
     cardRegular: d.cardRegular,
     cardVisa: d.cardVisa,
@@ -164,6 +116,28 @@ export function mapDepartmentData(
 }
 
 /**
+ * Chuyển đổi dữ liệu theo nhóm dịch vụ từ repo sang response format
+ * Bao gồm payment percentage (aggregate)
+ */
+export function mapServiceGroupData(
+  serviceGroupData: RawServiceGroupData[],
+  totalRevenue: number
+): ServiceGroupRevenueData[] {
+  return serviceGroupData.map((sg) => ({
+    id: sg.serviceGroup,
+    serviceGroup: sg.serviceGroup,
+    totalRevenue: sg.totalRevenue,
+    percentageOfTotal:
+      totalRevenue > 0
+        ? Math.round((sg.totalRevenue / totalRevenue) * 1000) / 10
+        : 0,
+    paymentPercentage: sg.paymentPercentage,
+    totalPaid: sg.totalPaid,
+    totalFinalPrice: sg.totalFinalPrice,
+  }));
+}
+
+/**
  * Chuyển đổi dữ liệu theo dịch vụ từ repo sang response format
  * Bao gồm payment percentage (aggregate)
  */
@@ -209,7 +183,9 @@ export function mapDoctorData(
  * Bao gồm payment percentage cho từng record
  */
 export function mapDetailRecords(
-  paymentDetails: RawPaymentDetail[],
+  paymentDetails: Awaited<
+    ReturnType<typeof revenueReportRepo.queryAllPaymentDetails>
+  >,
   paymentAggregations: Map<string, number>
 ): PaymentDetailRecord[] {
   return paymentDetails.map((detail) => {
@@ -221,9 +197,8 @@ export function mapDetailRecords(
     return {
       id: detail.id,
       paymentDate: detail.paymentVoucher.paymentDate.toISOString(),
-      paymentDateDisplay: dayjs(detail.paymentVoucher.paymentDate).format(
-        "DD/MM/YYYY"
-      ),
+      paymentDateDisplay:
+        detail.paymentVoucher.paymentDate.toLocaleDateString("vi-VN"),
       serviceName: detail.consultedService.dentalService.name,
       customerName: detail.consultedService.customer.fullName,
       customerCode: detail.consultedService.customer.customerCode || "N/A",

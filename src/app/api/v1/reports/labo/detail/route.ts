@@ -6,7 +6,7 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
  * GET /api/v1/reports/labo/detail - Get labo report detail records
- * Query params: month, clinicId, tab, key, page, pageSize
+ * Query params: month, clinicId, tab, key
  * Used by: useLaboReportDetail()
  * Validation: Handled by service layer
  * Cache: No server cache (transactional data)
@@ -24,8 +24,6 @@ export async function GET(req: Request) {
         | "doctor"
         | "service",
       key: searchParams.get("key") || "",
-      page: parseInt(searchParams.get("page") || "1", 10),
-      pageSize: parseInt(searchParams.get("pageSize") || "20", 10),
     };
 
     const data = await laboReportService.getDetail(user, query);

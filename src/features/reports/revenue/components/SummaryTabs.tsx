@@ -6,6 +6,7 @@ import type {
   DailyRevenueData,
   SourceRevenueData,
   DepartmentRevenueData,
+  ServiceGroupRevenueData,
   ServiceRevenueData,
   DoctorRevenueData,
 } from "@/shared/validation/revenue-report.schema";
@@ -13,6 +14,7 @@ import type { TabType } from "../hooks/useRevenueDetail";
 import DailyRevenueTable from "./DailyRevenueTable";
 import SourceRevenueTable from "./SourceRevenueTable";
 import DepartmentRevenueTable from "./DepartmentRevenueTable";
+import ServiceGroupRevenueTable from "./ServiceGroupRevenueTable";
 import ServiceRevenueTable from "./ServiceRevenueTable";
 import DoctorRevenueTable from "./DoctorRevenueTable";
 
@@ -64,6 +66,19 @@ export default function SummaryTabs({
             loading={loading}
             onRowClick={(record: DepartmentRevenueData) =>
               onRowSelect("department", record.id)
+            }
+          />
+        ),
+      },
+      {
+        key: "serviceGroup",
+        label: "Theo nhóm dịch vụ",
+        children: (
+          <ServiceGroupRevenueTable
+            data={data.byServiceGroup}
+            loading={loading}
+            onRowClick={(record: ServiceGroupRevenueData) =>
+              onRowSelect("serviceGroup", record.id)
             }
           />
         ),

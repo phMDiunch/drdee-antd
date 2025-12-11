@@ -1,6 +1,5 @@
 import { ServiceError } from "@/server/services/errors";
 import type { UserCore } from "@/shared/types/user";
-import dayjs from "dayjs";
 import type {
   GetLaboReportSummaryQuery,
   GetLaboReportDetailQuery,
@@ -59,25 +58,31 @@ export const laboReportService = {
       clinicId: validatedQuery.clinicId,
     };
 
-    // Gọi DB 1 lần duy nhất để lấy tất cả orders
-    const [orders, prevMonthData] = await Promise.all([
+    // Gọi DB 2 lần song song (current month + previous month)
+    const [orders, prevMonthOrders] = await Promise.all([
       laboReportRepo.queryAllOrders(params),
       (async () => {
-        const prevMonth = dayjs(params.month)
-          .subtract(1, "month")
-          .format("YYYY-MM");
-        const prevOrders = await laboReportRepo.queryAllOrders({
-          month: prevMonth,
+        const [year, monthNum] = params.month.split("-").map(Number);
+        const prevMonth = new Date(year, monthNum - 2, 1);
+        const prevYear = prevMonth.getFullYear();
+        const prevMonthNum = prevMonth.getMonth() + 1;
+        const prevMonthStr = `${prevYear}-${prevMonthNum
+          .toString()
+          .padStart(2, "0")}`;
+        return laboReportRepo.queryAllOrders({
+          month: prevMonthStr,
           clinicId: params.clinicId,
         });
-        return {
-          orders: prevOrders.length,
-          cost: prevOrders.reduce((sum, o) => sum + o.totalCost, 0),
-        };
       })(),
     ]);
 
-    // Tính toán tất cả dimensions từ data có sẵn (không query DB thêm)
+    // Tính previous month data từ orders có sẵn
+    const prevMonthData = {
+      orders: prevMonthOrders.length,
+      cost: prevMonthOrders.reduce((sum, o) => sum + o.totalCost, 0),
+    };
+
+    // Compute tất cả dimensions từ data có sẵn - KHÔNG query DB thêm
     const kpiData = laboReportRepo.computeKpiData(
       orders,
       prevMonthData.orders,
@@ -88,21 +93,16 @@ export const laboReportService = {
     const doctorData = laboReportRepo.computeDoctorData(orders);
     const serviceData = laboReportRepo.computeServiceData(orders);
 
-    // Chuyển đổi dữ liệu bằng mapper functions
-    const kpi = mapKpiData(kpiData);
+    // Map to response format
     const totalCost = kpiData.totalCost;
-    const byDate = mapDailyData(dailyData, totalCost);
-    const bySupplier = mapSupplierData(supplierData, totalCost);
-    const byDoctor = mapDoctorData(doctorData, totalCost);
-    const byService = mapServiceData(serviceData, totalCost);
 
     return {
-      kpi,
+      kpi: mapKpiData(kpiData),
       summaryTabs: {
-        byDate,
-        bySupplier,
-        byDoctor,
-        byService,
+        byDate: mapDailyData(dailyData, totalCost),
+        bySupplier: mapSupplierData(supplierData, totalCost),
+        byDoctor: mapDoctorData(doctorData, totalCost),
+        byService: mapServiceData(serviceData, totalCost),
       },
     };
   },
@@ -139,25 +139,26 @@ export const laboReportService = {
     }
     const validatedQuery = parsed.data;
 
-    const params = {
+    // Query TẤT CẢ orders trong tháng (1 lần duy nhất)
+    const allOrders = await laboReportRepo.queryAllOrders({
       month: validatedQuery.month,
       clinicId: validatedQuery.clinicId,
-      tab: validatedQuery.tab,
-      key: validatedQuery.key,
-      page: validatedQuery.page,
-      pageSize: validatedQuery.pageSize,
-    };
+    });
 
-    // Lấy dữ liệu chi tiết
-    const { records, total } = await laboReportRepo.getDetailRecords(params);
+    // Filter detail records từ data có sẵn (không query DB)
+    const filteredOrders = laboReportRepo.filterDetailsByTabAndKey(
+      allOrders,
+      validatedQuery.tab,
+      validatedQuery.key
+    );
 
     // Chuyển đổi sang định dạng response bằng mapper
-    const mappedRecords = mapDetailRecords(records);
-    const totalCost = records.reduce((sum, r) => sum + r.totalCost, 0);
+    const mappedRecords = mapDetailRecords(filteredOrders);
+    const totalCost = filteredOrders.reduce((sum, r) => sum + r.totalCost, 0);
 
     return {
       records: mappedRecords,
-      totalRecords: total,
+      totalRecords: filteredOrders.length,
       totalCost,
     };
   },

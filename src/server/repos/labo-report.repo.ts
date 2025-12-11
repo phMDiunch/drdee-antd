@@ -1,40 +1,41 @@
 import { prisma } from "@/services/prisma/prisma";
-import dayjs from "dayjs";
 
 // ================================
 // Types for Raw Data (from Prisma)
 // ================================
 
-export type RawKpiData = {
+export interface RawKpiData {
   totalOrders: number;
   totalCost: number;
+  totalOrdersGrowthMoM: number | null;
+  totalCostGrowthMoM: number | null;
   previousMonthOrders: number | null;
   previousMonthCost: number | null;
-};
+}
 
-export type RawDailyData = {
+export interface RawDailyData {
   date: Date;
   orderCount: number;
   totalCost: number;
-};
+}
 
-export type RawSupplierData = {
+export interface RawSupplierData {
   supplierId: string;
   supplierShortName: string | null;
   orderCount: number;
   totalCost: number;
   rank: number;
-};
+}
 
-export type RawDoctorData = {
+export interface RawDoctorData {
   doctorId: string;
   doctorName: string;
   orderCount: number;
   totalCost: number;
   rank: number;
-};
+}
 
-export type RawServiceData = {
+export interface RawServiceData {
   serviceId: string;
   serviceName: string;
   supplierShortName: string | null;
@@ -42,24 +43,7 @@ export type RawServiceData = {
   orderCount: number;
   totalCost: number;
   rank: number;
-};
-
-export type RawDetailRecord = {
-  id: string;
-  sentDate: Date;
-  returnDate: Date | null;
-  customerName: string;
-  customerCode: string | null;
-  customerId: string;
-  doctorName: string;
-  serviceName: string | null;
-  supplierShortName: string | null;
-  itemName: string;
-  orderType: string;
-  quantity: number;
-  totalCost: number;
-  treatmentDate: Date | null;
-};
+}
 
 // ================================
 // Query Parameters
@@ -70,41 +54,47 @@ type BaseQueryParams = {
   clinicId?: string;
 };
 
-type DetailQueryParams = BaseQueryParams & {
-  tab: "daily" | "supplier" | "doctor" | "service";
-  key: string;
-  page: number;
-  pageSize: number;
-};
-
 // ================================
 // Repository
 // ================================
 
 export const laboReportRepo = {
-  // ========== Public Methods ==========
-
   /**
-   * Helper: Lấy TẤT CẢ orders trong tháng (1 lần query duy nhất)
+   * Query TẤT CẢ orders trong tháng (1 lần query duy nhất)
    * Với đầy đủ relations cần thiết cho tất cả dimensions
    */
   async queryAllOrders(params: BaseQueryParams) {
-    const { startDate, endDate } = getMonthDateRange(params.month);
+    const { startDate, endDate } = this.getMonthDateRange(params.month);
     const whereClause = buildWhereClause(startDate, endDate, params.clinicId);
 
     const orders = await prisma.laboOrder.findMany({
       where: whereClause,
       select: {
+        id: true,
+        sentDate: true,
         returnDate: true,
+        orderType: true,
+        quantity: true,
         totalCost: true,
+        treatmentDate: true,
         supplierId: true,
         doctorId: true,
         laboServiceId: true,
+        customer: {
+          select: {
+            id: true,
+            fullName: true,
+            customerCode: true,
+          },
+        },
         supplier: {
           select: { shortName: true },
         },
         doctor: {
           select: { fullName: true },
+        },
+        laboItem: {
+          select: { name: true },
         },
         laboService: {
           select: {
@@ -129,9 +119,22 @@ export const laboReportRepo = {
     const totalOrders = orders.length;
     const totalCost = orders.reduce((sum, o) => sum + o.totalCost, 0);
 
+    // Calculate growth
+    const totalOrdersGrowthMoM =
+      previousMonthOrders && previousMonthOrders > 0
+        ? ((totalOrders - previousMonthOrders) / previousMonthOrders) * 100
+        : null;
+
+    const totalCostGrowthMoM =
+      previousMonthCost && previousMonthCost > 0
+        ? ((totalCost - previousMonthCost) / previousMonthCost) * 100
+        : null;
+
     return {
       totalOrders,
       totalCost,
+      totalOrdersGrowthMoM,
+      totalCostGrowthMoM,
       previousMonthOrders,
       previousMonthCost,
     };
@@ -150,7 +153,7 @@ export const laboReportRepo = {
     for (const order of orders) {
       if (!order.returnDate) continue; // Skip orders chưa nhận mẫu
 
-      const dateKey = dayjs(order.returnDate).format("YYYY-MM-DD");
+      const dateKey = order.returnDate.toISOString().split("T")[0];
       const existing = grouped.get(dateKey) || { count: 0, cost: 0 };
       grouped.set(dateKey, {
         count: existing.count + 1,
@@ -328,107 +331,50 @@ export const laboReportRepo = {
   },
 
   /**
-   * Get detail records for drill-down panel
-   * Base filter: returnDate trong tháng
-   * Daily tab: Thêm filter chính xác ngày returnDate
+   * Filter detail records by tab/key từ data có sẵn (không query DB)
    */
-  async getDetailRecords(
-    params: DetailQueryParams
-  ): Promise<{ records: RawDetailRecord[]; total: number }> {
-    const { startDate, endDate } = getMonthDateRange(params.month);
-    let whereClause = buildWhereClause(startDate, endDate, params.clinicId);
+  filterDetailsByTabAndKey(
+    orders: Awaited<ReturnType<typeof this.queryAllOrders>>,
+    tab: string,
+    key: string
+  ) {
+    switch (tab) {
+      case "daily": {
+        const targetDate = new Date(key).toISOString().split("T")[0];
+        return orders.filter((order) => {
+          if (!order.returnDate) return false;
+          return order.returnDate.toISOString().split("T")[0] === targetDate;
+        });
+      }
 
-    // Additional filter by dimension
-    if (params.tab === "daily") {
-      const targetDate = new Date(params.key);
-      // Ghi đè returnDate với ngày cụ thể (thay vì range cả tháng)
-      whereClause = {
-        ...whereClause,
-        returnDate: {
-          gte: dayjs(targetDate).startOf("day").toDate(),
-          lte: dayjs(targetDate).endOf("day").toDate(),
-        },
-      };
-    } else if (params.tab === "supplier") {
-      whereClause = { ...whereClause, supplierId: params.key };
-    } else if (params.tab === "doctor") {
-      whereClause = { ...whereClause, doctorId: params.key };
-    } else if (params.tab === "service") {
-      whereClause = { ...whereClause, laboServiceId: params.key };
+      case "supplier":
+        return orders.filter((order) => order.supplierId === key);
+
+      case "doctor":
+        return orders.filter((order) => order.doctorId === key);
+
+      case "service":
+        return orders.filter(
+          (order) => order.laboServiceId === key && order.laboServiceId !== null
+        );
+
+      default:
+        return [];
     }
-
-    const [records, total] = await Promise.all([
-      prisma.laboOrder.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          sentDate: true,
-          returnDate: true,
-          orderType: true,
-          quantity: true,
-          totalCost: true,
-          treatmentDate: true,
-          customer: {
-            select: {
-              id: true,
-              fullName: true,
-              customerCode: true,
-            },
-          },
-          doctor: {
-            select: { fullName: true },
-          },
-          supplier: {
-            select: { shortName: true },
-          },
-          laboItem: {
-            select: { name: true },
-          },
-          laboService: {
-            select: {
-              laboItem: { select: { name: true } },
-            },
-          },
-        },
-        skip: (params.page - 1) * params.pageSize,
-        take: params.pageSize,
-        orderBy: { sentDate: "desc" },
-      }),
-      prisma.laboOrder.count({ where: whereClause }),
-    ]);
-
-    return {
-      records: records.map((r) => ({
-        id: r.id,
-        sentDate: r.sentDate,
-        returnDate: r.returnDate,
-        customerName: r.customer.fullName,
-        customerCode: r.customer.customerCode,
-        customerId: r.customer.id,
-        doctorName: r.doctor.fullName,
-        serviceName: r.laboService?.laboItem.name || null,
-        supplierShortName: r.supplier.shortName,
-        itemName: r.laboItem.name,
-        orderType: r.orderType,
-        quantity: r.quantity,
-        totalCost: r.totalCost,
-        treatmentDate: r.treatmentDate,
-      })),
-      total,
-    };
   },
 
-  // ========== Private Helpers ==========
-};
+  /**
+   * Helper: Get date range for a given month
+   */
+  getMonthDateRange(month: string) {
+    const [year, monthNum] = month.split("-").map(Number);
+    const startDate = new Date(year, monthNum - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
 
-/**
- * Parse month string to date range
- */
-function getMonthDateRange(month: string) {
-  const startDate = dayjs(month).startOf("month").toDate();
-  const endDate = dayjs(month).endOf("month").toDate();
-  return { startDate, endDate };
-}
+    return { startDate, endDate };
+  },
+};
 
 /**
  * Build where clause for base filter

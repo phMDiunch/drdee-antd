@@ -1,72 +1,106 @@
 import { prisma } from "@/services/prisma/prisma";
 
-/**
- * Revenue Report Repository
- * Data access layer for revenue reports
- * Uses PaymentVoucherDetail as data source (filter by paymentDate)
- * Payment methods: "Tiền mặt", "Quẹt thẻ thường", "Quẹt thẻ Visa", "Chuyển khoản"
- * (defined in @/shared/validation/payment-voucher.schema)
- */
+// ================================
+// Types for Raw Data (from Prisma)
+// ================================
 
 /**
- * Raw payment detail with full relations
+ * KPI metrics with payment method breakdown and growth
  */
-export interface RawPaymentDetail {
-  id: string;
-  amount: number;
-  paymentMethod: string;
-  consultedServiceId: string;
-  paymentVoucher: {
-    id: string;
-    paymentDate: Date;
-    customerId: string;
-  };
-  consultedService: {
-    id: string;
-    finalPrice: number;
-    toothPositions: string[] | null;
-    quantity: number;
-    dentalService: {
-      id: string;
-      name: string;
-      serviceGroup: string | null;
-      department: string | null;
-    };
-    customer: {
-      id: string;
-      fullName: string;
-      customerCode: string | null;
-      source: string | null;
-    };
-    treatingDoctor: {
-      id: string;
-      fullName: string;
-    } | null;
-  };
+export interface RawKpiData {
+  totalRevenue: number;
+  cash: number;
+  cardRegular: number;
+  cardVisa: number;
+  transfer: number;
+  totalRevenueGrowthMoM: number | null;
+  cashPercentage: number;
+  cardRegularPercentage: number;
+  cardVisaPercentage: number;
+  transferPercentage: number;
+  previousMonthRevenue: number | null;
 }
 
 /**
- * Payment aggregation by consultedServiceId
+ * Daily revenue breakdown by payment method
  */
-export interface PaymentAggregation {
-  consultedServiceId: string;
+export interface RawDailyData {
+  date: string;
+  cash: number;
+  cardRegular: number;
+  cardVisa: number;
+  transfer: number;
+  totalRevenue: number;
+}
+
+/**
+ * Revenue breakdown by customer source
+ */
+export interface RawSourceData {
+  source: string;
+  voucherCount: number;
+  customerCount: number;
+  totalRevenue: number;
+}
+
+/**
+ * Revenue breakdown by department with payment percentage
+ */
+export interface RawDepartmentData {
+  department: string;
+  totalRevenue: number;
+  paymentPercentage: number;
   totalPaid: number;
+  totalFinalPrice: number;
 }
+
+/**
+ * Revenue breakdown by service group with payment percentage
+ */
+export interface RawServiceGroupData {
+  serviceGroup: string;
+  totalRevenue: number;
+  paymentPercentage: number;
+  totalPaid: number;
+  totalFinalPrice: number;
+}
+
+/**
+ * Revenue breakdown by dental service with payment percentage
+ */
+export interface RawServiceData {
+  serviceId: string;
+  serviceName: string;
+  serviceGroup: string | null;
+  totalRevenue: number;
+  paymentPercentage: number;
+  totalPaid: number;
+  totalFinalPrice: number;
+}
+
+/**
+ * Revenue breakdown by treating doctor
+ */
+export interface RawDoctorData {
+  doctorId: string;
+  doctorName: string;
+  revenue: number;
+}
+
+// ================================
+// Repository
+// ================================
 
 export const revenueReportRepo = {
-  // ========================================================================
-  // PUBLIC API METHODS
-  // ========================================================================
-
   /**
-   * Helper: Query TẤT CẢ payment details trong tháng (1 lần duy nhất)
+   * Query TẤT CẢ payment details trong tháng (1 lần duy nhất)
    * Với đầy đủ relations cần thiết cho tất cả dimensions
    */
   async queryAllPaymentDetails(
     startDate: Date,
     endDate: Date,
     clinicId: string | undefined
-  ): Promise<RawPaymentDetail[]> {
+  ) {
     const paymentDetails = await prisma.paymentVoucherDetail.findMany({
       where: {
         paymentVoucher: {
@@ -118,16 +152,16 @@ export const revenueReportRepo = {
       },
     });
 
-    return paymentDetails as unknown as RawPaymentDetail[];
+    return paymentDetails;
   },
 
   /**
    * Compute KPI metrics từ data có sẵn (không query DB)
    */
-  computeKpiMetrics(
-    paymentDetails: RawPaymentDetail[],
+  computeKpiData(
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>,
     previousMonthRevenue: number
-  ) {
+  ): RawKpiData {
     let cash = 0;
     let cardRegular = 0;
     let cardVisa = 0;
@@ -186,7 +220,9 @@ export const revenueReportRepo = {
   /**
    * Compute daily breakdown từ data có sẵn (không query DB)
    */
-  computeDailyData(paymentDetails: RawPaymentDetail[]) {
+  computeDailyData(
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>
+  ): RawDailyData[] {
     const dateMap = new Map<
       string,
       {
@@ -239,7 +275,9 @@ export const revenueReportRepo = {
   /**
    * Compute source breakdown từ data có sẵn (không query DB)
    */
-  computeSourceData(paymentDetails: RawPaymentDetail[]) {
+  computeSourceData(
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>
+  ): RawSourceData[] {
     const sourceMap = new Map<
       string,
       {
@@ -282,7 +320,7 @@ export const revenueReportRepo = {
    * Helper for service/department payment percentage
    */
   computePaymentAggregations(
-    paymentDetails: RawPaymentDetail[]
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>
   ): Map<string, number> {
     const aggregations = new Map<string, number>();
 
@@ -299,9 +337,9 @@ export const revenueReportRepo = {
    * Compute service breakdown từ data có sẵn (không query DB)
    */
   computeServiceData(
-    paymentDetails: RawPaymentDetail[],
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>,
     paymentAggregations: Map<string, number>
-  ) {
+  ): RawServiceData[] {
     const serviceMap = new Map<
       string,
       {
@@ -376,9 +414,9 @@ export const revenueReportRepo = {
    * Compute department breakdown từ data có sẵn (không query DB)
    */
   computeDepartmentData(
-    paymentDetails: RawPaymentDetail[],
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>,
     paymentAggregations: Map<string, number>
-  ) {
+  ): RawDepartmentData[] {
     const departmentMap = new Map<
       string | null,
       {
@@ -442,9 +480,80 @@ export const revenueReportRepo = {
   },
 
   /**
+   * Compute service group breakdown từ data có sẵn (không query DB)
+   */
+  computeServiceGroupData(
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>,
+    paymentAggregations: Map<string, number>
+  ): RawServiceGroupData[] {
+    const serviceGroupMap = new Map<
+      string | null,
+      {
+        serviceGroup: string | null;
+        revenue: number;
+        consultedServices: Map<
+          string,
+          { totalPaid: number; finalPrice: number }
+        >;
+      }
+    >();
+
+    paymentDetails.forEach((detail) => {
+      const serviceGroup = detail.consultedService.dentalService.serviceGroup;
+      const consultedServiceId = detail.consultedServiceId;
+      const finalPrice = detail.consultedService.finalPrice;
+
+      const existing = serviceGroupMap.get(serviceGroup) || {
+        serviceGroup,
+        revenue: 0,
+        consultedServices: new Map(),
+      };
+
+      existing.revenue += detail.amount;
+
+      // Track consulted services for payment percentage
+      if (!existing.consultedServices.has(consultedServiceId)) {
+        const totalPaid = paymentAggregations.get(consultedServiceId) || 0;
+        existing.consultedServices.set(consultedServiceId, {
+          totalPaid,
+          finalPrice,
+        });
+      }
+
+      serviceGroupMap.set(serviceGroup, existing);
+    });
+
+    return Array.from(serviceGroupMap.entries())
+      .map(([serviceGroup, data]) => {
+        // Calculate aggregate payment percentage
+        let totalPaid = 0;
+        let totalFinalPrice = 0;
+
+        data.consultedServices.forEach((cs) => {
+          totalPaid += cs.totalPaid;
+          totalFinalPrice += cs.finalPrice;
+        });
+
+        const paymentPercentage =
+          totalFinalPrice > 0 ? (totalPaid / totalFinalPrice) * 100 : 0;
+
+        return {
+          serviceGroup: serviceGroup || "Không rõ nhóm",
+          totalRevenue: data.revenue,
+          paymentPercentage: Math.round(paymentPercentage * 10) / 10,
+          totalPaid,
+          totalFinalPrice,
+        };
+      })
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+  },
+
+  /**
    * Compute doctor breakdown từ data có sẵn (không query DB)
    */
-  computeDoctorData(paymentDetails: RawPaymentDetail[]) {
+  computeDoctorData(
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>
+  ): RawDoctorData[] {
     const doctorMap = new Map<
       string,
       {
@@ -475,10 +584,10 @@ export const revenueReportRepo = {
    * Filter detail records by tab/key từ data có sẵn (không query DB)
    */
   filterDetailsByTabAndKey(
-    paymentDetails: RawPaymentDetail[],
+    paymentDetails: Awaited<ReturnType<typeof this.queryAllPaymentDetails>>,
     tab: string,
     key: string
-  ): RawPaymentDetail[] {
+  ) {
     switch (tab) {
       case "daily":
         return paymentDetails.filter(
@@ -503,6 +612,12 @@ export const revenueReportRepo = {
         return paymentDetails.filter((detail) => {
           const dept = detail.consultedService.dentalService.department;
           return key === "null" ? dept === null : dept === key;
+        });
+
+      case "serviceGroup":
+        return paymentDetails.filter((detail) => {
+          const group = detail.consultedService.dentalService.serviceGroup;
+          return key === "Không rõ nhóm" ? group === null : group === key;
         });
 
       case "service":

@@ -1,8 +1,12 @@
 export const LABO_REPORT_QUERY_KEYS = {
   summary: (month: string, clinicId?: string) =>
     ["labo-report", "summary", month, clinicId] as const,
-  detail: (tab: string, key: string, month: string, clinicId?: string) =>
-    ["labo-report", "detail", tab, key, month, clinicId] as const,
+  detail: (
+    tab: string | null,
+    key: string | null,
+    month: string,
+    clinicId?: string
+  ) => ["labo-report", "detail", tab, key, month, clinicId] as const,
 } as const;
 
 export const LABO_REPORT_MESSAGES = {

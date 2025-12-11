@@ -16,6 +16,7 @@ import {
   mapDailyData,
   mapSourceData,
   mapDepartmentData,
+  mapServiceGroupData,
   mapServiceData,
   mapDoctorData,
   mapDetailRecords,
@@ -92,13 +93,17 @@ export const revenueReportService = {
     // Compute tất cả dimensions từ data có sẵn - KHÔNG query DB thêm
     const paymentAggregations =
       revenueReportRepo.computePaymentAggregations(paymentDetails);
-    const kpiData = revenueReportRepo.computeKpiMetrics(
+    const kpiData = revenueReportRepo.computeKpiData(
       paymentDetails,
       previousMonthRevenue
     );
     const dailyData = revenueReportRepo.computeDailyData(paymentDetails);
     const sourceData = revenueReportRepo.computeSourceData(paymentDetails);
     const departmentData = revenueReportRepo.computeDepartmentData(
+      paymentDetails,
+      paymentAggregations
+    );
+    const serviceGroupData = revenueReportRepo.computeServiceGroupData(
       paymentDetails,
       paymentAggregations
     );
@@ -117,6 +122,7 @@ export const revenueReportService = {
         byDate: mapDailyData(dailyData, totalRevenue),
         bySource: mapSourceData(sourceData, totalRevenue),
         byDepartment: mapDepartmentData(departmentData, totalRevenue),
+        byServiceGroup: mapServiceGroupData(serviceGroupData, totalRevenue),
         byService: mapServiceData(serviceData, totalRevenue),
         byDoctor: mapDoctorData(doctorData, totalRevenue),
       },

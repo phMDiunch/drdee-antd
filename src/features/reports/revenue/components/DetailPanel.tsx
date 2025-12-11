@@ -138,6 +138,7 @@ export default function DetailPanel({
     daily: "ngày",
     source: "nguồn",
     department: "bộ môn",
+    serviceGroup: "nhóm dịch vụ",
     service: "dịch vụ",
     doctor: "bác sĩ điều trị",
   };

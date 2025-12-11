@@ -1,11 +1,10 @@
-import dayjs from "dayjs";
 import type {
   RawKpiData,
   RawDailyData,
   RawSupplierData,
   RawDoctorData,
   RawServiceData,
-  RawDetailRecord,
+  laboReportRepo,
 } from "@/server/repos/labo-report.repo";
 import type {
   LaboKpiData,
@@ -21,24 +20,17 @@ import type {
  * Không sort, không ranking
  */
 export function mapKpiData(raw: RawKpiData): LaboKpiData {
-  // Tính MoM growth
-  const totalOrdersGrowthMoM =
-    raw.previousMonthOrders && raw.previousMonthOrders > 0
-      ? ((raw.totalOrders - raw.previousMonthOrders) /
-          raw.previousMonthOrders) *
-        100
-      : null;
-
-  const totalCostGrowthMoM =
-    raw.previousMonthCost && raw.previousMonthCost > 0
-      ? ((raw.totalCost - raw.previousMonthCost) / raw.previousMonthCost) * 100
-      : null;
-
   return {
     totalOrders: raw.totalOrders,
     totalCost: raw.totalCost,
-    totalOrdersGrowthMoM,
-    totalCostGrowthMoM,
+    totalOrdersGrowthMoM:
+      raw.totalOrdersGrowthMoM !== null
+        ? Math.round(raw.totalOrdersGrowthMoM * 10) / 10
+        : null,
+    totalCostGrowthMoM:
+      raw.totalCostGrowthMoM !== null
+        ? Math.round(raw.totalCostGrowthMoM * 10) / 10
+        : null,
     previousMonthOrders: raw.previousMonthOrders,
     previousMonthCost: raw.previousMonthCost,
   };
@@ -53,11 +45,12 @@ export function mapDailyData(
   totalCost: number
 ): DailyLaboData[] {
   return raw.map((item) => ({
-    id: dayjs(item.date).format("YYYY-MM-DD"),
-    date: dayjs(item.date).format("DD/MM/YYYY"),
+    id: item.date.toISOString().split("T")[0],
+    date: item.date.toLocaleDateString("vi-VN"),
     orderCount: item.orderCount,
     totalCost: item.totalCost,
-    percentage: totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0,
+    percentage:
+      totalCost > 0 ? Math.round((item.totalCost / totalCost) * 1000) / 10 : 0,
   }));
 }
 
@@ -75,7 +68,8 @@ export function mapSupplierData(
     supplierShortName: item.supplierShortName,
     orderCount: item.orderCount,
     totalCost: item.totalCost,
-    percentage: totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0,
+    percentage:
+      totalCost > 0 ? Math.round((item.totalCost / totalCost) * 1000) / 10 : 0,
     rank: item.rank,
   }));
 }
@@ -94,7 +88,8 @@ export function mapDoctorData(
     doctorName: item.doctorName,
     orderCount: item.orderCount,
     totalCost: item.totalCost,
-    percentage: totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0,
+    percentage:
+      totalCost > 0 ? Math.round((item.totalCost / totalCost) * 1000) / 10 : 0,
     rank: item.rank,
   }));
 }
@@ -115,38 +110,39 @@ export function mapServiceData(
     itemName: item.itemName,
     orderCount: item.orderCount,
     totalCost: item.totalCost,
-    percentage: totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0,
+    percentage:
+      totalCost > 0 ? Math.round((item.totalCost / totalCost) * 1000) / 10 : 0,
     rank: item.rank,
   }));
 }
 
 /**
- * Transform detail records
+ * Transform detail records (nested structure, không flatten)
  */
 export function mapDetailRecords(
-  raw: RawDetailRecord[]
+  raw: Awaited<ReturnType<typeof laboReportRepo.queryAllOrders>>
 ): LaboOrderDetailRecord[] {
   return raw.map((item) => ({
     id: item.id,
     sentDate: item.sentDate.toISOString(),
-    sentDateDisplay: dayjs(item.sentDate).format("DD/MM/YYYY"),
+    sentDateDisplay: item.sentDate.toLocaleDateString("vi-VN"),
     returnDate: item.returnDate ? item.returnDate.toISOString() : null,
     returnDateDisplay: item.returnDate
-      ? dayjs(item.returnDate).format("DD/MM/YYYY")
+      ? item.returnDate.toLocaleDateString("vi-VN")
       : null,
-    customerName: item.customerName,
-    customerCode: item.customerCode,
-    customerId: item.customerId,
-    doctorName: item.doctorName,
-    serviceName: item.serviceName || "N/A",
-    supplierShortName: item.supplierShortName,
-    itemName: item.itemName,
+    customerName: item.customer.fullName,
+    customerCode: item.customer.customerCode,
+    customerId: item.customer.id,
+    doctorName: item.doctor.fullName,
+    serviceName: item.laboService?.laboItem.name || "N/A",
+    supplierShortName: item.supplier.shortName,
+    itemName: item.laboItem.name,
     orderType: item.orderType,
     quantity: item.quantity,
     totalCost: item.totalCost,
     treatmentDate: item.treatmentDate ? item.treatmentDate.toISOString() : null,
     treatmentDateDisplay: item.treatmentDate
-      ? dayjs(item.treatmentDate).format("DD/MM/YYYY")
+      ? item.treatmentDate.toLocaleDateString("vi-VN")
       : null,
   }));
 }

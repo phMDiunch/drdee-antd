@@ -3,40 +3,25 @@ import { Card, Tabs } from "antd";
 import type { TabsProps } from "antd";
 import SummaryTable from "./SummaryTable";
 import type {
+  LaboSummaryTabsData,
   DailyLaboData,
   SupplierLaboData,
   DoctorLaboData,
   ServiceLaboData,
 } from "@/shared/validation/labo-report.schema";
+import type { TabType } from "../hooks/useLaboReportDetail";
 
-type Tab = "supplier" | "doctor" | "service" | "daily";
-
-type DimensionData =
-  | DailyLaboData
-  | SupplierLaboData
-  | DoctorLaboData
-  | ServiceLaboData;
-
-type Props = {
-  activeTab: Tab;
-  onChange: (tab: Tab) => void;
-  data: {
-    byDate: DailyLaboData[];
-    bySupplier: SupplierLaboData[];
-    byDoctor: DoctorLaboData[];
-    byService: ServiceLaboData[];
-  };
+interface SummaryTabsProps {
+  data: LaboSummaryTabsData;
   loading?: boolean;
-  onRowClick: (record: DimensionData) => void;
-};
+  onRowSelect: (tab: TabType, rowId: string) => void;
+}
 
 export default function SummaryTabs({
-  activeTab,
-  onChange,
   data,
   loading,
-  onRowClick,
-}: Props) {
+  onRowSelect,
+}: SummaryTabsProps) {
   const items: TabsProps["items"] = useMemo(
     () => [
       {
@@ -46,7 +31,9 @@ export default function SummaryTabs({
           <SummaryTable
             dataSource={data.byDate}
             loading={loading}
-            onRowClick={onRowClick}
+            onRowClick={(record: DailyLaboData) =>
+              onRowSelect("daily", record.id)
+            }
             dimension="daily"
           />
         ),
@@ -58,7 +45,9 @@ export default function SummaryTabs({
           <SummaryTable
             dataSource={data.bySupplier}
             loading={loading}
-            onRowClick={onRowClick}
+            onRowClick={(record: SupplierLaboData) =>
+              onRowSelect("supplier", record.supplierId)
+            }
             dimension="supplier"
           />
         ),
@@ -70,7 +59,9 @@ export default function SummaryTabs({
           <SummaryTable
             dataSource={data.byDoctor}
             loading={loading}
-            onRowClick={onRowClick}
+            onRowClick={(record: DoctorLaboData) =>
+              onRowSelect("doctor", record.doctorId)
+            }
             dimension="doctor"
           />
         ),
@@ -82,22 +73,20 @@ export default function SummaryTabs({
           <SummaryTable
             dataSource={data.byService}
             loading={loading}
-            onRowClick={onRowClick}
+            onRowClick={(record: ServiceLaboData) =>
+              onRowSelect("service", record.serviceId)
+            }
             dimension="service"
           />
         ),
       },
     ],
-    [data, loading, onRowClick]
+    [data, loading, onRowSelect]
   );
 
   return (
-    <Card>
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => onChange(key as Tab)}
-        items={items}
-      />
+    <Card variant="borderless">
+      <Tabs defaultActiveKey="daily" items={items} />
     </Card>
   );
 }

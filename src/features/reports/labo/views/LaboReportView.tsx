@@ -1,34 +1,25 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { Alert } from "antd";
-import dayjs, { Dayjs } from "dayjs";
+import { useState } from "react";
+import { Spin, Alert } from "antd";
+import dayjs from "dayjs";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 import { useClinics } from "@/features/clinics";
 import PageHeaderWithMonthNav from "@/shared/components/PageHeaderWithMonthNav";
+import { useLaboReportSummary } from "../hooks/useLaboReportSummary";
+import {
+  useLaboReportDetail,
+  type TabType,
+} from "../hooks/useLaboReportDetail";
 import LaboReportStats from "../components/LaboReportStats";
 import SummaryTabs from "../components/SummaryTabs";
 import DetailPanel from "../components/DetailPanel";
-import { useLaboReportSummary } from "../hooks/useLaboReportSummary";
-import { useLaboReportDetail } from "../hooks/useLaboReportDetail";
-import type {
-  DailyLaboData,
-  SupplierLaboData,
-  DoctorLaboData,
-  ServiceLaboData,
-} from "@/shared/validation/labo-report.schema";
-
-type DimensionData =
-  | DailyLaboData
-  | SupplierLaboData
-  | DoctorLaboData
-  | ServiceLaboData;
 
 export default function LaboReportView() {
   const { user } = useCurrentUser();
-  const { data: clinics } = useClinics(true); // Get active clinics
+  const { data: clinics } = useClinics(true);
 
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs>(dayjs());
+  const [selectedMonth, setSelectedMonth] = useState(dayjs());
   const [filters, setFilters] = useState<{
     month: string;
     clinicId?: string;
@@ -37,122 +28,85 @@ export default function LaboReportView() {
     clinicId: user?.clinicId || undefined,
   });
 
-  const [activeTab, setActiveTab] = useState<
-    "supplier" | "doctor" | "service" | "daily"
-  >("daily");
   const [selectedRow, setSelectedRow] = useState<{
-    key: string;
+    tab: TabType | null;
+    key: string | null;
     label: string;
-  } | null>(null);
-  const [detailPage, setDetailPage] = useState(1);
-
-  // Query summary data
-  const { data, isLoading, error } = useLaboReportSummary(filters);
-
-  // Query detail data when row is selected
-  const { data: detailData, isLoading: isLoadingDetail } = useLaboReportDetail({
-    ...filters,
-    tab: activeTab,
-    key: selectedRow?.key ?? "",
-    page: detailPage,
-    pageSize: 20,
+  }>({
+    tab: null,
+    key: null,
+    label: "",
   });
 
-  // Handler for filter changes
-  const handleFilterChange = useCallback(
-    (newFilters: Partial<typeof filters>) => {
-      setFilters((prev) => ({ ...prev, ...newFilters }));
-      setSelectedRow(null);
-      setDetailPage(1);
-    },
-    []
+  const { data, isLoading, error } = useLaboReportSummary(filters);
+  const { data: detailData, isLoading: detailLoading } = useLaboReportDetail(
+    selectedRow.tab,
+    selectedRow.key,
+    filters
   );
 
-  const handleMonthChange = useCallback(
-    (date: Dayjs | null) => {
-      if (date) {
-        setSelectedMonth(date);
-        handleFilterChange({ month: date.format("YYYY-MM") });
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+    setSelectedRow({
+      tab: null,
+      key: null,
+      label: "",
+    });
+  };
+
+  const handleMonthChange = (date: dayjs.Dayjs | null) => {
+    if (date) {
+      setSelectedMonth(date);
+      handleFilterChange({ month: date.format("YYYY-MM") });
+    }
+  };
+
+  const handleClinicChange = (clinicId: string | undefined) => {
+    handleFilterChange({ clinicId });
+  };
+
+  const handleRowSelect = (tab: TabType, rowId: string) => {
+    let label = rowId;
+    if (data) {
+      switch (tab) {
+        case "daily": {
+          const daily = data.summaryTabs.byDate.find((d) => d.id === rowId);
+          label = daily?.date || rowId;
+          break;
+        }
+        case "supplier": {
+          const supplier = data.summaryTabs.bySupplier.find(
+            (s) => s.supplierId === rowId
+          );
+          label = supplier?.supplierShortName || rowId;
+          break;
+        }
+        case "doctor": {
+          const doctor = data.summaryTabs.byDoctor.find(
+            (d) => d.doctorId === rowId
+          );
+          label = doctor?.doctorName || rowId;
+          break;
+        }
+        case "service": {
+          const service = data.summaryTabs.byService.find(
+            (s) => s.serviceId === rowId
+          );
+          label = service?.serviceName || rowId;
+          break;
+        }
       }
-    },
-    [handleFilterChange]
-  );
+    }
 
-  const handleClinicChange = useCallback(
-    (clinicId: string | undefined) => {
-      handleFilterChange({ clinicId });
-    },
-    [handleFilterChange]
-  );
+    setSelectedRow({ tab, key: rowId, label });
+  };
 
-  // Handler for tab change
-  const handleTabChange = useCallback(
-    (key: "supplier" | "doctor" | "service" | "daily") => {
-      setActiveTab(key);
-      setSelectedRow(null); // Clear selection on tab change
-      setDetailPage(1);
-    },
-    []
-  );
-
-  // Handler for row click to select and trigger detail query
-  const handleRowClick = useCallback(
-    (record: DimensionData) => {
-      let key: string;
-      let label: string;
-
-      if (activeTab === "daily") {
-        const dailyRecord = record as DailyLaboData;
-        key = dailyRecord.id;
-        label = dailyRecord.date;
-      } else if (activeTab === "supplier") {
-        const supplierRecord = record as SupplierLaboData;
-        key = supplierRecord.supplierId;
-        label = supplierRecord.supplierShortName || "N/A";
-      } else if (activeTab === "doctor") {
-        const doctorRecord = record as DoctorLaboData;
-        key = doctorRecord.doctorId;
-        label = doctorRecord.doctorName;
-      } else {
-        const serviceRecord = record as ServiceLaboData;
-        key = serviceRecord.serviceId;
-        label = serviceRecord.serviceName;
-      }
-
-      setSelectedRow({ key, label });
-      setDetailPage(1); // Reset to first page on new selection
-    },
-    [activeTab]
-  );
-
-  // Handler for detail pagination
-  const handleDetailPageChange = useCallback((page: number) => {
-    setDetailPage(page);
-  }, []);
-
-  // Filter clinics based on user role
   const filteredClinics =
     user?.role === "admin"
       ? clinics || []
       : clinics?.filter((c) => c.id === user?.clinicId) || [];
 
-  // Show clinic filter only for admin with multiple clinics
   const showClinicFilter = user?.role === "admin" && filteredClinics.length > 1;
-
-  // Determine which data to show based on active tab
-  const summaryTabsData = data
-    ? {
-        byDate: data.summaryTabs.byDate,
-        bySupplier: data.summaryTabs.bySupplier,
-        byDoctor: data.summaryTabs.byDoctor,
-        byService: data.summaryTabs.byService,
-      }
-    : {
-        byDate: [],
-        bySupplier: [],
-        byDoctor: [],
-        byService: [],
-      };
 
   if (error) {
     return (
@@ -178,25 +132,29 @@ export default function LaboReportView() {
         loading={isLoading}
       />
 
-      <LaboReportStats data={data?.kpi} loading={isLoading} />
+      {isLoading ? (
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <Spin size="large" />
+        </div>
+      ) : data ? (
+        <>
+          <LaboReportStats data={data.kpi} loading={isLoading} />
 
-      <SummaryTabs
-        activeTab={activeTab}
-        onChange={handleTabChange}
-        data={summaryTabsData}
-        loading={isLoading}
-        onRowClick={handleRowClick}
-      />
+          <SummaryTabs
+            data={data.summaryTabs}
+            loading={isLoading}
+            onRowSelect={handleRowSelect}
+          />
 
-      <DetailPanel
-        activeTab={activeTab}
-        selectedRowLabel={selectedRow?.label}
-        data={detailData}
-        loading={isLoadingDetail}
-        currentPage={detailPage}
-        pageSize={20}
-        onPageChange={handleDetailPageChange}
-      />
+          <DetailPanel
+            activeTab={selectedRow.tab}
+            selectedRowLabel={selectedRow.label}
+            data={detailData}
+            loading={detailLoading}
+            filters={filters}
+          />
+        </>
+      ) : null}
     </>
   );
 }

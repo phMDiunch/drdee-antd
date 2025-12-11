@@ -1,8 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Card, Table, Typography, Space, Tag, Empty } from "antd";
+import { Card, Table, Typography, Space, Tag, Empty, Button } from "antd";
+import { InfoCircleOutlined, FileExcelOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { LaboOrderDetailRecord } from "@/shared/validation/labo-report.schema";
+import type { TabType } from "../hooks/useLaboReportDetail";
+import { exportLaboDetailToExcel } from "../utils/exportToExcel";
+import { useNotify } from "@/shared/hooks/useNotify";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -15,7 +19,7 @@ const getOrderTypeColor = (orderType: string): string => {
 };
 
 interface DetailPanelProps {
-  activeTab?: "daily" | "supplier" | "doctor" | "service" | null;
+  activeTab?: TabType | null;
   selectedRowLabel?: string;
   data?: {
     records: LaboOrderDetailRecord[];
@@ -23,9 +27,10 @@ interface DetailPanelProps {
     totalCost: number;
   } | null;
   loading?: boolean;
-  currentPage?: number;
-  pageSize?: number;
-  onPageChange?: (page: number, pageSize: number) => void;
+  filters?: {
+    month: string;
+    clinicId?: string;
+  };
 }
 
 export default function DetailPanel({
@@ -33,11 +38,30 @@ export default function DetailPanel({
   selectedRowLabel,
   data,
   loading,
-  currentPage = 1,
-  pageSize = 20,
-  onPageChange,
+  filters,
 }: DetailPanelProps) {
-  // Fixed columns for detail table
+  const notify = useNotify();
+
+  const handleExportExcel = useCallback(async () => {
+    if (!data || !data.records.length) {
+      notify.warning("Không có dữ liệu để xuất");
+      return;
+    }
+
+    try {
+      const filename = `bao-cao-labo-chi-tiet-${
+        filters?.month || dayjs().format("YYYY-MM")
+      }.xlsx`;
+
+      await exportLaboDetailToExcel(data.records, filename);
+
+      notify.success("Xuất Excel thành công");
+    } catch (error) {
+      console.error("Export error:", error);
+      notify.error(error, { fallback: "Xuất Excel thất bại" });
+    }
+  }, [data, filters, notify]);
+
   const columns = useMemo<ColumnsType<LaboOrderDetailRecord>>(() => {
     return [
       {
@@ -115,83 +139,88 @@ export default function DetailPanel({
     ];
   }, []);
 
-  const tabLabels = {
+  const tabLabels: Record<TabType, string> = {
     daily: "ngày",
     supplier: "xưởng",
     doctor: "bác sĩ",
     service: "dịch vụ",
   };
 
-  // Show empty state when no data selected
   const showEmptyState = !activeTab || !selectedRowLabel;
 
   return (
     <Card
       variant="borderless"
       title={
-        <Text strong>
-          {showEmptyState
-            ? "Chi tiết đơn hàng"
-            : `Chi tiết ${tabLabels[activeTab]}: ${selectedRowLabel}`}
-        </Text>
+        <Space>
+          <Text strong>
+            {showEmptyState
+              ? "Chi tiết đơn hàng"
+              : `Chi tiết ${tabLabels[activeTab]}: ${selectedRowLabel}`}
+          </Text>
+        </Space>
+      }
+      extra={
+        !showEmptyState && data?.records.length ? (
+          <Button
+            type="primary"
+            icon={<FileExcelOutlined />}
+            onClick={handleExportExcel}
+            loading={loading}
+          >
+            Xuất Excel
+          </Button>
+        ) : null
       }
     >
-      {!showEmptyState && (
-        <div style={{ marginBottom: 16 }}>
-          <Space size="large">
-            <Text>
-              <Text type="secondary">Tổng số:</Text>{" "}
-              <Text strong>{data?.totalRecords || 0}</Text> đơn hàng
-            </Text>
-            <Text>
-              <Text type="secondary">Tổng chi phí:</Text>{" "}
-              <Text strong style={{ color: "#1890ff" }}>
-                {(data?.totalCost || 0).toLocaleString()} ₫
+      {showEmptyState ? (
+        <Empty
+          image={
+            <InfoCircleOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+          }
+          description={
+            <div style={{ textAlign: "center" }}>
+              <Text type="secondary">Chưa có dữ liệu chi tiết</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Vui lòng chọn một dòng trong bảng tổng hợp bên trên
               </Text>
-            </Text>
-          </Space>
-        </div>
-      )}
+            </div>
+          }
+        />
+      ) : (
+        <>
+          <div style={{ marginBottom: 16 }}>
+            <Space size="large">
+              <Text>
+                <Text type="secondary">Tổng số:</Text>{" "}
+                <Text strong>{data?.totalRecords || 0}</Text> đơn hàng
+              </Text>
+              <Text>
+                <Text type="secondary">Tổng chi phí:</Text>{" "}
+                <Text strong style={{ color: "#1890ff" }}>
+                  {(data?.totalCost || 0).toLocaleString()} ₫
+                </Text>
+              </Text>
+            </Space>
+          </div>
 
-      <Table
-        columns={columns}
-        dataSource={data?.records || []}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: 1000 }}
-        pagination={
-          showEmptyState
-            ? false
-            : {
-                current: currentPage,
-                pageSize: pageSize,
-                total: data?.totalRecords || 0,
-                showSizeChanger: false,
-                showTotal: (total) => `Tổng ${total} đơn hàng`,
-                onChange: onPageChange,
-              }
-        }
-        size="small"
-        bordered
-        locale={{
-          emptyText: (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <Space direction="vertical" size="small">
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Chưa có dữ liệu chi tiết
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Vui lòng chọn một dòng trong bảng tổng hợp bên trên để xem
-                    chi tiết
-                  </Text>
-                </Space>
-              }
-            />
-          ),
-        }}
-      />
+          <Table
+            size="small"
+            bordered
+            columns={columns}
+            dataSource={data?.records || []}
+            rowKey="id"
+            loading={loading}
+            scroll={{ x: 1300 }}
+            pagination={{
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} đơn hàng`,
+              pageSizeOptions: [10, 20, 50, 100],
+            }}
+          />
+        </>
+      )}
     </Card>
   );
 }
