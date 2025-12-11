@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Table, Tag, Progress, Typography } from "antd";
+import { Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type {
   DailyLaboData,
@@ -27,19 +27,17 @@ function RankingTag({ rank, percentage }: RankingTagProps) {
   // Medals for top 3
   const medals = ["🥇", "🥈", "🥉"];
   const colors = ["gold", "cyan", "green"];
-
-  if (rank <= 3) {
-    return (
-      <Tag color={colors[rank - 1]}>
-        {medals[rank - 1]} #{rank} ({percentage.toFixed(1)}%)
-      </Tag>
-    );
-  }
+  const color = rank <= 3 ? colors[rank - 1] : "default";
 
   return (
-    <Tag color="default">
-      #{rank} ({percentage.toFixed(1)}%)
-    </Tag>
+    <div style={{ textAlign: "center" }}>
+      <Tag color={color}>
+        {rank <= 3 ? medals[rank - 1] : ""} #{rank}
+      </Tag>
+      <div style={{ fontSize: 12, color: "#8c8c8c", marginTop: 4 }}>
+        {percentage.toFixed(1)}%
+      </div>
+    </div>
   );
 }
 
@@ -143,26 +141,6 @@ export default function SummaryTable<T extends DimensionData>({
       }
     );
 
-    // Percentage column (only for ranked dimensions)
-    if (hasRanking) {
-      baseColumns.push({
-        title: "Tỷ trọng",
-        dataIndex: "percentage",
-        key: "percentage",
-        width: 200,
-        render: (value: number) => (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Progress
-              percent={value}
-              size="small"
-              style={{ flex: 1, marginBottom: 0 }}
-              format={(percent) => `${percent?.toFixed(1)}%`}
-            />
-          </div>
-        ),
-      });
-    }
-
     return baseColumns;
   }, [dimension, hasRanking]);
 
@@ -197,14 +175,6 @@ export default function SummaryTable<T extends DimensionData>({
         {totals.totalCost.toLocaleString()} ₫
       </Text>
     );
-
-    if (hasRanking) {
-      row.percentage = (
-        <Text strong style={{ fontWeight: 600 }}>
-          100%
-        </Text>
-      );
-    }
 
     return row;
   }, [dataSource, dimension, hasRanking, totals]);

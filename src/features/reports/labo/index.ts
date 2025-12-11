@@ -11,5 +11,8 @@ export { default as DetailPanel } from "./components/DetailPanel";
 export * from "./hooks/useLaboReportSummary";
 export * from "./hooks/useLaboReportDetail";
 
+// Utils
+export { exportLaboDetailToExcel } from "./utils/exportToExcel";
+
 // Constants
 export * from "./constants";

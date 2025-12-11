@@ -23,13 +23,13 @@ export async function exportRevenueDetailToExcel(
 
   // Add metadata header if provided
   if (metadata) {
-    worksheet.mergeCells("A1:G1");
+    worksheet.mergeCells("A1:J1");
     const titleCell = worksheet.getCell("A1");
     titleCell.value = metadata.title;
     titleCell.font = { bold: true, size: 14 };
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
 
-    worksheet.mergeCells("A2:G2");
+    worksheet.mergeCells("A2:J2");
     const infoCell = worksheet.getCell("A2");
     infoCell.value = `Tháng: ${metadata.month} | Chi nhánh: ${
       metadata.clinic || "Tất cả"
@@ -50,7 +50,8 @@ export async function exportRevenueDetailToExcel(
     { key: "serviceName", width: 35 },
     { key: "toothPositions", width: 15 },
     { key: "quantity", width: 10 },
-    { key: "customer", width: 25 },
+    { key: "customerName", width: 25 },
+    { key: "customerCode", width: 12 },
     { key: "treatingDoctor", width: 20 },
     { key: "amount", width: 16 },
     { key: "paymentPercentage", width: 18 },
@@ -63,7 +64,8 @@ export async function exportRevenueDetailToExcel(
     "Dịch vụ",
     "Vị trí răng",
     "Số lượng",
-    "Khách hàng (Mã)",
+    "Khách hàng",
+    "Mã KH",
     "Bác sĩ điều trị",
     "Số tiền thu",
     "% thanh toán",
@@ -86,7 +88,8 @@ export async function exportRevenueDetailToExcel(
       serviceName: record.serviceName,
       toothPositions: record.toothPositions?.join(", ") || "-",
       quantity: record.quantity,
-      customer: `${record.customerName} (${record.customerCode})`,
+      customerName: record.customerName,
+      customerCode: record.customerCode || "N/A",
       treatingDoctor: record.treatingDoctorName || "-",
       amount: record.amount,
       paymentPercentage: `${record.paymentPercentage.toFixed(1)}%`,
@@ -96,7 +99,7 @@ export async function exportRevenueDetailToExcel(
   // Format amount column for all data rows
   const lastRow = worksheet.lastRow;
   if (lastRow) {
-    const amountColIndex = 8; // "amount" column (updated from 6 to 8)
+    const amountColIndex = 9; // "amount" column
     for (let i = 2; i <= lastRow.number; i++) {
       const cell = worksheet.getCell(i, amountColIndex);
       cell.numFmt = '#,##0" ₫"';

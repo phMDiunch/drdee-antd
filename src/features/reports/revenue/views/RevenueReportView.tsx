@@ -76,15 +76,31 @@ export default function RevenueReportView() {
           label = source?.source || rowId;
           break;
         }
+        case "department": {
+          const department = data.summaryTabs.byDepartment.find(
+            (d) => d.id === rowId
+          );
+          label = department?.department || rowId;
+          break;
+        }
+        case "serviceGroup": {
+          const serviceGroup = data.summaryTabs.byServiceGroup.find(
+            (sg) => sg.id === rowId
+          );
+          label = serviceGroup?.serviceGroup || rowId;
+          break;
+        }
         case "service": {
           const service = data.summaryTabs.byService.find(
-            (s) => s.id === rowId
+            (s) => s.serviceId === rowId
           );
           label = service?.serviceName || rowId;
           break;
         }
         case "doctor": {
-          const doctor = data.summaryTabs.byDoctor.find((d) => d.id === rowId);
+          const doctor = data.summaryTabs.byDoctor.find(
+            (d) => d.doctorId === rowId
+          );
           label = doctor?.doctorName || rowId;
           break;
         }

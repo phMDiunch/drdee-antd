@@ -25,11 +25,11 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 export async function getRevenueSummaryApi(
   params: GetRevenueSummaryQuery
 ): Promise<RevenueSummaryResponse> {
-  const query = new URLSearchParams();
-  query.set("month", params.month);
+  const queryParams: Record<string, string> = { month: params.month };
   if (params.clinicId) {
-    query.set("clinicId", params.clinicId);
+    queryParams.clinicId = params.clinicId;
   }
+  const query = new URLSearchParams(queryParams);
 
   const res = await fetch(`/api/v1/reports/revenue/summary?${query}`);
   const json = await res.json();
@@ -55,13 +55,15 @@ export async function getRevenueSummaryApi(
 export async function getRevenueDetailApi(
   params: GetRevenueDetailQuery
 ): Promise<RevenueDetailResponse> {
-  const query = new URLSearchParams();
-  query.set("month", params.month);
+  const queryParams: Record<string, string> = {
+    month: params.month,
+    tab: params.tab,
+    key: params.key,
+  };
   if (params.clinicId) {
-    query.set("clinicId", params.clinicId);
+    queryParams.clinicId = params.clinicId;
   }
-  query.set("tab", params.tab);
-  query.set("key", params.key);
+  const query = new URLSearchParams(queryParams);
 
   const res = await fetch(`/api/v1/reports/revenue/detail?${query}`);
   const json = await res.json();

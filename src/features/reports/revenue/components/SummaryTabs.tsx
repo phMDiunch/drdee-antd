@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Card, Tabs } from "antd";
 import type { TabsProps } from "antd";
+import SummaryTable from "./SummaryTable";
 import type {
   RevenueSummaryTabsData,
   DailyRevenueData,
@@ -11,12 +12,6 @@ import type {
   DoctorRevenueData,
 } from "@/shared/validation/revenue-report.schema";
 import type { TabType } from "../hooks/useRevenueDetail";
-import DailyRevenueTable from "./DailyRevenueTable";
-import SourceRevenueTable from "./SourceRevenueTable";
-import DepartmentRevenueTable from "./DepartmentRevenueTable";
-import ServiceGroupRevenueTable from "./ServiceGroupRevenueTable";
-import ServiceRevenueTable from "./ServiceRevenueTable";
-import DoctorRevenueTable from "./DoctorRevenueTable";
 
 interface SummaryTabsProps {
   data: RevenueSummaryTabsData;
@@ -35,12 +30,13 @@ export default function SummaryTabs({
         key: "daily",
         label: "Theo ngày",
         children: (
-          <DailyRevenueTable
-            data={data.byDate}
+          <SummaryTable
+            dataSource={data.byDate}
             loading={loading}
             onRowClick={(record: DailyRevenueData) =>
               onRowSelect("daily", record.id)
             }
+            dimension="daily"
           />
         ),
       },
@@ -48,12 +44,13 @@ export default function SummaryTabs({
         key: "source",
         label: "Theo nguồn",
         children: (
-          <SourceRevenueTable
-            data={data.bySource}
+          <SummaryTable
+            dataSource={data.bySource}
             loading={loading}
             onRowClick={(record: SourceRevenueData) =>
               onRowSelect("source", record.id)
             }
+            dimension="source"
           />
         ),
       },
@@ -61,12 +58,13 @@ export default function SummaryTabs({
         key: "department",
         label: "Theo bộ môn",
         children: (
-          <DepartmentRevenueTable
-            data={data.byDepartment}
+          <SummaryTable
+            dataSource={data.byDepartment}
             loading={loading}
             onRowClick={(record: DepartmentRevenueData) =>
               onRowSelect("department", record.id)
             }
+            dimension="department"
           />
         ),
       },
@@ -74,12 +72,13 @@ export default function SummaryTabs({
         key: "serviceGroup",
         label: "Theo nhóm dịch vụ",
         children: (
-          <ServiceGroupRevenueTable
-            data={data.byServiceGroup}
+          <SummaryTable
+            dataSource={data.byServiceGroup}
             loading={loading}
             onRowClick={(record: ServiceGroupRevenueData) =>
               onRowSelect("serviceGroup", record.id)
             }
+            dimension="serviceGroup"
           />
         ),
       },
@@ -87,12 +86,13 @@ export default function SummaryTabs({
         key: "service",
         label: "Theo dịch vụ",
         children: (
-          <ServiceRevenueTable
-            data={data.byService}
+          <SummaryTable
+            dataSource={data.byService}
             loading={loading}
             onRowClick={(record: ServiceRevenueData) =>
-              onRowSelect("service", record.id)
+              onRowSelect("service", record.serviceId)
             }
+            dimension="service"
           />
         ),
       },
@@ -100,12 +100,13 @@ export default function SummaryTabs({
         key: "doctor",
         label: "Theo bác sĩ điều trị",
         children: (
-          <DoctorRevenueTable
-            data={data.byDoctor}
+          <SummaryTable
+            dataSource={data.byDoctor}
             loading={loading}
             onRowClick={(record: DoctorRevenueData) =>
-              onRowSelect("doctor", record.id)
+              onRowSelect("doctor", record.doctorId)
             }
+            dimension="doctor"
           />
         ),
       },

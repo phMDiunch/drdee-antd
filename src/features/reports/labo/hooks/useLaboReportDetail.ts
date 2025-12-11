@@ -15,25 +15,28 @@ export function useLaboReportDetail(
   key: string | null,
   filters: { month: string; clinicId?: string }
 ) {
-  const { month, clinicId } = filters;
-
   return useQuery({
-    queryKey: LABO_REPORT_QUERY_KEYS.detail(tab, key, month, clinicId),
+    queryKey: LABO_REPORT_QUERY_KEYS.detail(
+      tab,
+      key,
+      filters.month,
+      filters.clinicId
+    ),
     queryFn: () => {
       if (!tab || !key) throw new Error("Tab and key are required");
 
       const params: GetLaboReportDetailQuery = {
-        month,
-        clinicId,
+        month: filters.month,
+        clinicId: filters.clinicId,
         tab,
         key,
       };
 
       return getLaboReportDetailApi(params);
     },
-    staleTime: calculateStaleTime(month),
+    staleTime: calculateStaleTime(filters.month),
     gcTime: 5 * 60 * 60 * 1000, // 5 hours
     refetchOnWindowFocus: true,
-    enabled: !!tab && !!key && !!month,
+    enabled: !!tab && !!key && !!filters.month,
   });
 }

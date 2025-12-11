@@ -5,15 +5,19 @@ import { ServiceError } from "@/server/services/errors";
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
- * GET /api/v1/reports/labo/detail - Get labo report detail records
- * Query params: month, clinicId, tab, key
- * Used by: useLaboReportDetail()
- * Validation: Handled by service layer
- * Cache: No server cache (transactional data)
+ * GET /api/v1/reports/labo/detail
+ * Query params: month (YYYY-MM), clinicId (optional), tab, key
+ * Used by: useLaboReportDetail hook
+ * Validation: Handled by service layer (Zod)
+ * Cache: No cache (transactional data)
  */
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const query = {
       month: searchParams.get("month") || "",
@@ -28,15 +32,19 @@ export async function GET(req: Request) {
 
     const data = await laboReportService.getDetail(user, query);
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, {
+      status: 200,
+    });
   } catch (e: unknown) {
+    console.error("[API] GET /api/v1/reports/labo/detail error:", e);
+
     if (e instanceof ServiceError) {
       return NextResponse.json(
         { error: e.message, code: e.code },
         { status: e.httpStatus }
       );
     }
-    console.error("[GET /api/v1/reports/labo/detail]", e);
+
     return NextResponse.json(
       { error: COMMON_MESSAGES.SERVER_ERROR },
       { status: 500 }

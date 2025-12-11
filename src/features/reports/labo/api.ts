@@ -1,3 +1,9 @@
+// src/features/reports/labo/api.ts
+/**
+ * Labo Report API Client
+ * Consolidated API functions for labo report operations
+ */
+
 import type {
   GetLaboReportSummaryQuery,
   GetLaboReportDetailQuery,
@@ -12,6 +18,9 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
  * Get labo report summary (KPI + 4 dimension tabs)
+ * GET /api/v1/reports/labo/summary
+ * @param params - Query parameters (month, clinicId)
+ * @returns Labo summary with KPI cards and summary tabs data
  */
 export async function getLaboReportSummaryApi(
   params: GetLaboReportSummaryQuery
@@ -37,7 +46,10 @@ export async function getLaboReportSummaryApi(
 }
 
 /**
- * Get labo report detail records (drill-down)
+ * Get labo report detail records for a specific tab/key
+ * GET /api/v1/reports/labo/detail
+ * @param params - Query parameters (month, clinicId, tab, key)
+ * @returns List of labo order detail records for the selected summary row
  */
 export async function getLaboReportDetailApi(
   params: GetLaboReportDetailQuery

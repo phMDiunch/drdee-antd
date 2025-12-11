@@ -25,6 +25,8 @@ export async function GET(req: Request) {
       tab: (searchParams.get("tab") || "") as
         | "daily"
         | "source"
+        | "department"
+        | "serviceGroup"
         | "service"
         | "doctor",
       key: searchParams.get("key") || "",

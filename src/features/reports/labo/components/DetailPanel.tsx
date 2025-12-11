@@ -125,7 +125,15 @@ export default function DetailPanel({
         render: (value) => <Text>{value}</Text>,
       },
       {
-        title: "Giá",
+        title: "Đơn giá",
+        dataIndex: "unitPrice",
+        key: "unitPrice",
+        width: 120,
+        align: "right",
+        render: (value) => <Text>{value.toLocaleString()} ₫</Text>,
+      },
+      {
+        title: "Thành tiền",
         dataIndex: "totalCost",
         key: "totalCost",
         width: 120,

@@ -137,6 +137,7 @@ export const LaboOrderDetailRecordSchema = z.object({
   itemName: z.string(),
   orderType: z.string(), // "Làm mới" | "Bảo hành"
   quantity: z.number(),
+  unitPrice: z.number(),
   totalCost: z.number(),
   treatmentDate: z.string().nullable(),
   treatmentDateDisplay: z.string().nullable(),

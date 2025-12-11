@@ -139,6 +139,7 @@ export function mapDetailRecords(
     itemName: item.laboItem.name,
     orderType: item.orderType,
     quantity: item.quantity,
+    unitPrice: item.unitPrice,
     totalCost: item.totalCost,
     treatmentDate: item.treatmentDate ? item.treatmentDate.toISOString() : null,
     treatmentDateDisplay: item.treatmentDate

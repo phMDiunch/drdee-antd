@@ -75,6 +75,7 @@ export const laboReportRepo = {
         returnDate: true,
         orderType: true,
         quantity: true,
+        unitPrice: true,
         totalCost: true,
         treatmentDate: true,
         supplierId: true,

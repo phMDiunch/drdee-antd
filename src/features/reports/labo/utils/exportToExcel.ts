@@ -23,13 +23,13 @@ export async function exportLaboDetailToExcel(
 
   // Add metadata header if provided
   if (metadata) {
-    worksheet.mergeCells("A1:H1");
+    worksheet.mergeCells("A1:K1");
     const titleCell = worksheet.getCell("A1");
     titleCell.value = metadata.title;
     titleCell.font = { bold: true, size: 14 };
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
 
-    worksheet.mergeCells("A2:H2");
+    worksheet.mergeCells("A2:K2");
     const infoCell = worksheet.getCell("A2");
     infoCell.value = `Tháng: ${metadata.month} | Chi nhánh: ${
       metadata.clinic || "Tất cả"
@@ -47,12 +47,14 @@ export async function exportLaboDetailToExcel(
   worksheet.columns = [
     { key: "stt", width: 5 },
     { key: "sentDate", width: 14 },
-    { key: "customer", width: 25 },
+    { key: "customerName", width: 25 },
+    { key: "customerCode", width: 12 },
     { key: "doctorName", width: 20 },
     { key: "supplierShortName", width: 20 },
     { key: "serviceName", width: 30 },
     { key: "orderType", width: 15 },
     { key: "quantity", width: 10 },
+    { key: "unitPrice", width: 16 },
     { key: "totalCost", width: 16 },
   ];
 
@@ -60,13 +62,15 @@ export async function exportLaboDetailToExcel(
   const headerRow = worksheet.addRow([
     "STT",
     "Ngày gửi",
-    "Khách hàng (Mã)",
+    "Khách hàng",
+    "Mã KH",
     "Bác sĩ",
     "Xưởng",
     "Dịch vụ",
     "Loại đơn hàng",
     "Số lượng",
-    "Giá",
+    "Đơn giá",
+    "Thành tiền",
   ]);
 
   // Style header row
@@ -82,24 +86,27 @@ export async function exportLaboDetailToExcel(
   records.forEach((record, index) => {
     worksheet.addRow({
       stt: index + 1,
-      sentDate: record.sentDate,
-      customer: `${record.customerName} (${record.customerCode || "N/A"})`,
+      sentDate: record.sentDateDisplay,
+      customerName: record.customerName,
+      customerCode: record.customerCode || "N/A",
       doctorName: record.doctorName,
       supplierShortName: record.supplierShortName || "-",
       serviceName: record.serviceName,
       orderType: record.orderType,
       quantity: record.quantity,
+      unitPrice: record.unitPrice,
       totalCost: record.totalCost,
     });
   });
 
-  // Format cost column for all data rows
+  // Format currency columns for all data rows
   const lastRow = worksheet.lastRow;
   if (lastRow) {
-    const costColIndex = 9; // "totalCost" column
+    const unitPriceColIndex = 10; // "unitPrice" column
+    const totalCostColIndex = 11; // "totalCost" column
     for (let i = 2; i <= lastRow.number; i++) {
-      const cell = worksheet.getCell(i, costColIndex);
-      cell.numFmt = '#,##0" ₫"';
+      worksheet.getCell(i, unitPriceColIndex).numFmt = '#,##0" ₫"';
+      worksheet.getCell(i, totalCostColIndex).numFmt = '#,##0" ₫"';
     }
   }
 

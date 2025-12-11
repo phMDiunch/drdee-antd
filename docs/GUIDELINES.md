@@ -469,16 +469,33 @@ React Query Hooks
 ```typescript
 // src/features/customers/api.ts
 export async function getCustomersApi(params?: GetCustomersQuery) {
-  const query = new URLSearchParams(params as any);
+  const queryParams: Record<string, string> = {};
+  if (params?.search) queryParams.search = params.search;
+  if (params?.page) queryParams.page = params.page.toString();
+  const query = new URLSearchParams(queryParams);
+
   const res = await fetch(`/api/v1/customers?${query}`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
+  }
+
+  const parsed = CustomersListResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new Error("Danh sách khách hàng không hợp lệ.");
+  }
+
+  return parsed.data;
 }
 
 export async function getCustomerDetailApi(id: string) {
   const res = await fetch(`/api/v1/customers/${id}`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
+  const parsed = CustomerDetailResponseSchema.safeParse(json);
+  if (!parsed.success) throw new Error("Dữ liệu không hợp lệ.");
+  return parsed.data;
 }
 ```
 
@@ -487,6 +504,10 @@ export async function getCustomerDetailApi(id: string) {
 - ✅ CHỈ queries (GET): `getCustomersApi()`, `getCustomerDetailApi()`, `searchCustomersApi()`
 - ❌ KHÔNG có mutations: Không có `createCustomerApi()`, `updateCustomerApi()`, `deleteCustomerApi()`
 - ✅ Mutations → import Server Actions trực tiếp: `import { createCustomerAction } from "@/server/actions/customer.actions"`
+- ✅ Type-safe query params: `Record<string, string>` (không dùng `as any`)
+- ✅ Structured error: Parse `json?.error || COMMON_MESSAGES.UNKNOWN_ERROR`
+- ✅ Zod validation: `safeParse(json)` tại API boundary
+- ✅ Clear error messages tiếng Việt
 
 ### 4.2. React Query Hooks (`src/features/<features>/hooks/`)
 
