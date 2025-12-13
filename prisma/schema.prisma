@@ -230,6 +230,10 @@ model DentalService {
 model Customer {
   id String @id @default(uuid())
 
+  // ⭐ NEW: Customer Type & First Visit
+  type           String // "LEAD" | "CUSTOMER" (controlled by app)
+  firstVisitDate DateTime? @db.Timestamptz // When customer first visited clinic
+
   // Thông tin cơ bản
   fullName String // Họ tên
   dob      DateTime? @db.Date // Ngày sinh
@@ -253,6 +257,7 @@ model Customer {
   source            String? // Nguồn khách
   sourceNotes       String? // Ghi chú nguồn
   serviceOfInterest String? // Dịch vụ quan tâm (một giá trị duy nhất)
+  note              String? // ⭐ NEW: Ghi chú chung
 
   // Metadata  
   createdById String // ID của người tạo
@@ -292,6 +297,7 @@ model Customer {
   // 🚀 Performance Indexes
   @@index([clinicId, createdAt]) // Optimize: Daily view - customers by clinic & date
   @@index([phone]) // Optimize: Search by phone number
+  // @@index([type, clinicId, createdAt]) // ⭐ NEW: Optimize queries filtering by type (LEAD vs CUSTOMER)
 }
 
 model Appointment {
