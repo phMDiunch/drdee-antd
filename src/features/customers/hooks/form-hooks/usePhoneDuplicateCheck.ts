@@ -23,6 +23,7 @@ export function usePhoneDuplicateCheck({
   );
 
   // Filter out current customer in edit mode to avoid false positive duplicate warning
+  // Also separate LEAD vs CUSTOMER duplicates
   const actualPhoneDup = useMemo(() => {
     // In edit mode, ignore duplicate if it's the current customer
     if (mode === "edit" && initialData && phoneDup) {
@@ -31,8 +32,14 @@ export function usePhoneDuplicateCheck({
     return phoneDup;
   }, [phoneDup, mode, initialData]);
 
+  // Separate duplicate into LEAD vs CUSTOMER
+  const isLeadDuplicate = actualPhoneDup?.type === "LEAD";
+  const isCustomerDuplicate = actualPhoneDup?.type === "CUSTOMER";
+
   return {
     phoneDup,
     actualPhoneDup,
+    isLeadDuplicate,
+    isCustomerDuplicate,
   };
 }

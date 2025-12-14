@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { AutoComplete, Spin, Typography } from "antd";
+import { AutoComplete, Spin, Typography, Tag } from "antd";
 import { useRouter } from "next/navigation";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useCustomerSearch } from "@/features/customers";
@@ -50,6 +50,11 @@ export default function GlobalSearch({
         >
           <div>
             <Text strong>{customer.fullName}</Text>
+            {customer.type === "LEAD" && (
+              <Tag color="blue" style={{ marginLeft: 8 }}>
+                LEAD
+              </Tag>
+            )}
             {customer.customerCode && (
               <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
                 {customer.customerCode}

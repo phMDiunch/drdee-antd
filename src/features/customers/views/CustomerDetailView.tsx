@@ -12,6 +12,7 @@ import {
   Typography,
   Spin,
   Tag,
+  Button,
 } from "antd";
 import {
   UserOutlined,
@@ -33,6 +34,8 @@ import TreatmentCareTab from "../components/detail-tabs/TreatmentCareTab";
 import LaboOrdersTab from "../components/detail-tabs/LaboOrdersTab";
 import PaymentsTab from "../components/detail-tabs/PaymentsTab";
 import FinancialSummaryCard from "../components/FinancialSummaryCard";
+import ConvertLeadModal from "../components/ConvertLeadModal";
+import { useConvertLead } from "@/features/leads/hooks/useLeadMutations";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -50,6 +53,9 @@ export default function CustomerDetailView({
   customerId,
 }: CustomerDetailViewProps) {
   const [activeTab, setActiveTab] = useState<string>("info");
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+
+  const convertLeadMutation = useConvertLead();
 
   const {
     data: customer,
@@ -203,6 +209,18 @@ export default function CustomerDetailView({
                     <span style={{ marginLeft: 8, fontSize: "20px" }}>🎂</span>
                   )}
                 </Text>
+                {customer.type === "LEAD" && (
+                  <>
+                    <Tag color="orange">LEAD</Tag>
+                    <Button
+                      type="primary"
+                      size="small"
+                      onClick={() => setIsConvertModalOpen(true)}
+                    >
+                      Chuyển thành Khách hàng
+                    </Button>
+                  </>
+                )}
               </Space>
 
               <Space>
@@ -324,6 +342,30 @@ export default function CustomerDetailView({
           ]}
         />
       </Card>
+
+      {/* Convert Lead Modal */}
+      {customer.type === "LEAD" && (
+        <ConvertLeadModal
+          open={isConvertModalOpen}
+          onCancel={() => setIsConvertModalOpen(false)}
+          onSubmit={async (data, leadId) => {
+            await convertLeadMutation.mutateAsync({ id: leadId, data });
+            setIsConvertModalOpen(false);
+            refetch();
+          }}
+          lead={{
+            id: customer.id,
+            phone: customer.phone,
+            fullName: customer.fullName,
+            city: customer.city || null,
+            source: customer.source || null,
+            sourceEmployee: customer.sourceEmployee,
+            sourceCustomer: customer.sourceCustomer,
+            serviceOfInterest: customer.serviceOfInterest || null,
+            sourceNotes: customer.sourceNotes || null,
+          }}
+        />
+      )}
     </Space>
   );
 }

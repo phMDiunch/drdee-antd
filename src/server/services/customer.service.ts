@@ -21,6 +21,51 @@ import {
 import { customerPermissions } from "@/shared/permissions/customer.permissions";
 
 /**
+ * Populate source relations (employee or customer) based on source type and sourceNotes
+ * Reusable helper for getById and listDaily operations
+ */
+async function populateSourceRelations(customer: {
+  source: string | null;
+  sourceNotes: string | null;
+}) {
+  let sourceEmployee = null;
+  let sourceCustomer = null;
+
+  // Populate sourceEmployee if source = 'employee_referral'
+  if (customer.source === "employee_referral" && customer.sourceNotes) {
+    const employeeId = customer.sourceNotes.trim();
+    if (employeeId) {
+      const employee = await employeeRepo.findById(employeeId);
+      if (employee) {
+        sourceEmployee = {
+          id: employee.id,
+          fullName: employee.fullName,
+          phone: employee.phone,
+        };
+      }
+    }
+  }
+
+  // Populate sourceCustomer if source = 'customer_referral'
+  if (customer.source === "customer_referral" && customer.sourceNotes) {
+    const sourceCustomerId = customer.sourceNotes.trim();
+    if (sourceCustomerId) {
+      const sourceCustomerData = await customerRepo.findById(sourceCustomerId);
+      if (sourceCustomerData) {
+        sourceCustomer = {
+          id: sourceCustomerData.id,
+          customerCode: sourceCustomerData.customerCode,
+          fullName: sourceCustomerData.fullName,
+          phone: sourceCustomerData.phone,
+        };
+      }
+    }
+  }
+
+  return { sourceEmployee, sourceCustomer };
+}
+
+/**
  * Generate customer code according to requirements: ${prefix}-${YY}${MM}-${NNN}
  * prefix ∈ { MK, TDT, DN } (clinic codes)
  */
@@ -116,7 +161,18 @@ export const customerService = {
     if (data.phone) {
       const existingPhone = await customerRepo.findByPhone(data.phone);
       if (existingPhone) {
-        throw new ServiceError("PHONE_EXISTS", "Số điện thoại đã tồn tại", 409);
+        if (existingPhone.type === "LEAD") {
+          throw new ServiceError(
+            "PHONE_IS_LEAD",
+            "Số điện thoại này đã là Lead. Vui lòng chuyển đổi Lead thành Customer trước",
+            409
+          );
+        }
+        throw new ServiceError(
+          "PHONE_EXISTS",
+          "Số điện thoại đã tồn tại trong danh sách Khách hàng",
+          409
+        );
       }
     }
 
@@ -154,7 +210,9 @@ export const customerService = {
 
       const customer = await customerRepo.create({
         ...data,
+        type: "CUSTOMER", // New customer is always type CUSTOMER (not LEAD)
         customerCode,
+        firstVisitDate: new Date(), // ⭐ NEW: Set first visit date
         createdById: currentUser.employeeId!,
         updatedById: currentUser.employeeId!,
       });
@@ -304,14 +362,24 @@ export const customerService = {
       appointmentDateEnd: includeAppointments ? todayEnd : undefined,
     });
 
-    // When includeAppointments, items already have todayAppointment from repo
-    // Don't map through mapCustomerToResponse as it strips extra fields
-    const items = includeAppointments
-      ? result.items // Return raw with todayAppointment
-      : result.items.map(mapCustomerToResponse);
+    // Populate source relations for each customer
+    const itemsWithSources = await Promise.all(
+      result.items.map(async (customer) => {
+        const { sourceEmployee, sourceCustomer } =
+          await populateSourceRelations(customer);
+        const mapped = includeAppointments
+          ? customer // Keep todayAppointment field
+          : mapCustomerToResponse(customer);
+        return {
+          ...mapped,
+          sourceEmployee,
+          sourceCustomer,
+        };
+      })
+    );
 
     return {
-      items,
+      items: itemsWithSources,
       count: result.count,
     };
   },

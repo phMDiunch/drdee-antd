@@ -75,6 +75,7 @@ export function useCustomerFormOptions({
         customerCode: "", // primaryContact doesn't have customerCode in response
         fullName: initialData.primaryContact.fullName,
         phone: initialData.primaryContact.phone,
+        type: "CUSTOMER" as const, // primaryContact is always a CUSTOMER
       });
     }
 

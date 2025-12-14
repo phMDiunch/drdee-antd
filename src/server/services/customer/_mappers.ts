@@ -11,6 +11,7 @@ type CustomerWithRelations = Customer & {
 export function mapCustomerToResponse(row: CustomerWithRelations) {
   return {
     id: row.id,
+    type: row.type,
     fullName: row.fullName,
     createdById: row.createdById,
     updatedById: row.updatedById,
@@ -19,6 +20,9 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
 
     // Nullable fields - backward compatibility with old data
     customerCode: row.customerCode,
+    firstVisitDate: row.firstVisitDate
+      ? row.firstVisitDate.toISOString()
+      : null,
     dob: row.dob ? row.dob.toISOString() : null, // Convert Date to ISO string or null
     gender: row.gender,
     phone: row.phone,
@@ -32,6 +36,7 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
     source: row.source,
     sourceNotes: row.sourceNotes,
     serviceOfInterest: row.serviceOfInterest,
+    note: row.note,
     clinicId: row.clinicId,
 
     // Nested objects - giữ nguyên cấu trúc quan hệ, bao gồm id

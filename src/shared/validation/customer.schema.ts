@@ -61,6 +61,7 @@ const CustomerCommonFieldsSchema = z.object({
   // Optional fields
   occupation: z.string().trim().optional().nullable(),
   sourceNotes: z.string().trim().optional().nullable(),
+  note: z.string().trim().optional().nullable(), // ⭐ NEW: General notes
 });
 
 /**
@@ -193,6 +194,7 @@ export const CustomerResponseSchema = z.object({
   // Core fields - always required
   id: z.string().uuid(),
   fullName: z.string(),
+  type: z.string(), // ⭐ NEW: "LEAD" | "CUSTOMER"
   createdById: z.string().uuid(),
   updatedById: z.string().uuid(),
   createdAt: z.string().datetime(),
@@ -200,6 +202,7 @@ export const CustomerResponseSchema = z.object({
 
   // Nullable fields - backward compatibility
   customerCode: z.string().nullable(),
+  firstVisitDate: z.string().datetime().nullable(), // ⭐ NEW: First visit date
   dob: z.string().datetime().nullable(), // NULLABLE - data cũ có thể null
   gender: z.string().nullable(), // NULLABLE - data cũ có thể null
   phone: z.string().nullable(),
@@ -213,6 +216,7 @@ export const CustomerResponseSchema = z.object({
   source: z.string().nullable(), // NULLABLE - data cũ có thể null
   sourceNotes: z.string().nullable(),
   serviceOfInterest: z.string().nullable(), // NULLABLE - data cũ có thể null
+  note: z.string().nullable(), // ⭐ NEW: General notes
   clinicId: z.string().uuid().nullable(), // NULLABLE - data cũ có thể null
 
   // Nested objects - bao gồm cả id để dễ dàng reference
@@ -364,6 +368,27 @@ export const CustomerDailyResponseSchema = CustomerResponseSchema.extend({
     })
     .nullable()
     .optional(),
+
+  // Source Employee relation (conditional - only when source = 'employee_referral')
+  sourceEmployee: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+      phone: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+
+  // Source Customer relation (conditional - only when source = 'customer_referral')
+  sourceCustomer: z
+    .object({
+      id: z.string().uuid(),
+      fullName: z.string(),
+      phone: z.string().nullable(),
+      customerCode: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 /**
@@ -388,13 +413,14 @@ export const SearchQuerySchema = z.object({
 /**
  * Search Item Schema (BACKEND - API Response Item)
  * Dùng ở: Response item structure cho search results
- * Chứa thông tin: id, customerCode, fullName, phone (nullable)
+ * Chứa thông tin: id, customerCode, fullName, phone (nullable), type
  */
 export const SearchItemSchema = z.object({
   id: z.string().uuid(),
   customerCode: z.string().nullable(),
   fullName: z.string(),
   phone: z.string().nullable(),
+  type: z.enum(["LEAD", "CUSTOMER"]),
 });
 
 /**

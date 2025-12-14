@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Form,
@@ -8,16 +8,13 @@ import {
   Input,
   Select,
   DatePicker,
-  Typography,
-  Button,
-  Spin,
   Radio,
+  Spin,
 } from "antd";
-import Link from "next/link";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import viVN from "antd/es/date-picker/locale/vi_VN";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   SERVICES_OF_INTEREST,
@@ -27,19 +24,15 @@ import {
   type CustomerSource,
 } from "@/features/customers/constants";
 import provinces from "@/data/vietnamAdministrativeUnits.json";
+import { useCustomersSearch } from "@/features/customers/hooks/useCustomerSearch";
+import { useClinics } from "@/features/clinics";
+import { useWorkingEmployees } from "@/features/employees";
+import { useCurrentUser } from "@/shared/providers";
 import {
-  usePhoneDuplicateCheck,
-  useCustomerFormOptions,
-} from "@/features/customers";
-import { useCurrentUser } from "@/shared/providers/user-provider";
-
-// Import schemas and types
-import {
-  CreateCustomerFormSchema,
-  type CreateCustomerFormData,
-  type CreateCustomerRequest,
-  type CustomerDetailResponse,
-} from "@/shared/validation/customer.schema";
+  ConvertLeadRequestSchema,
+  type ConvertLeadRequest,
+} from "@/shared/validation/lead.schema";
+import type { LeadResponse } from "@/shared/validation/lead.schema";
 
 // Define type for provinces data
 type Province = {
@@ -50,11 +43,30 @@ type Province = {
 type Props = {
   open: boolean;
   confirmLoading?: boolean;
-  selectedClinicId?: string; // From clinic tabs (admin only)
-  mode?: "create" | "edit"; // Mode for create or edit
-  initialData?: CustomerDetailResponse; // Initial data for edit mode
+  lead:
+    | (Pick<
+        LeadResponse,
+        | "id"
+        | "phone"
+        | "fullName"
+        | "city"
+        | "source"
+        | "sourceEmployee"
+        | "sourceCustomer"
+      > &
+        Partial<
+          Pick<
+            LeadResponse,
+            | "district"
+            | "primaryContactId"
+            | "primaryContactRole"
+            | "serviceOfInterest"
+            | "sourceNotes"
+          >
+        >)
+    | null; // Lead data to convert
   onCancel: () => void;
-  onSubmit: (payload: CreateCustomerRequest, customerId?: string) => void;
+  onSubmit: (payload: ConvertLeadRequest, leadId: string) => void;
 };
 
 const GENDERS = [
@@ -64,12 +76,10 @@ const GENDERS = [
 
 dayjs.locale("vi");
 
-export default function CustomerFormModal({
+export default function ConvertLeadModal({
   open,
-  selectedClinicId,
   confirmLoading,
-  mode = "create",
-  initialData,
+  lead,
   onCancel,
   onSubmit,
 }: Props) {
@@ -78,162 +88,219 @@ export default function CustomerFormModal({
 
   // Determine clinic settings based on user role
   const isAdmin = currentUser?.role === "admin";
-  const defaultClinicId = selectedClinicId || currentUser?.clinicId || "";
-  // Admin can change clinicId in edit mode (customer clinic transfer)
-  // Employee cannot change clinicId at all
+  const defaultClinicId = currentUser?.clinicId || "";
+  // Admin can change clinicId in convert (customer clinic assignment)
+  // Employee can only convert to their own clinic
   const clinicIdDisabled = !isAdmin;
 
-  // Get default form values - MEMOIZED to prevent infinite loop in useEffect
+  // Search states
+  const [pcQuery, setPcQuery] = useState("");
+  const [custQuery, setCustQuery] = useState("");
+
+  // Get default form values from lead data
   const defaultValues = useMemo(() => {
-    if (mode === "edit" && initialData) {
+    if (lead) {
       return {
-        fullName: initialData.fullName,
-        dob: initialData.dob || "",
-        gender: initialData.gender || "",
-        phone: initialData.phone,
-        email: initialData.email,
-        address: initialData.address || "",
-        city: initialData.city || "",
-        district: initialData.district || "",
-        primaryContactRole: initialData.primaryContactRole,
-        primaryContactId: initialData.primaryContactId,
-        occupation: initialData.occupation,
-        source: initialData.source || "",
-        sourceNotes: initialData.sourceNotes,
-        serviceOfInterest: initialData.serviceOfInterest || "",
-        clinicId: initialData.clinicId || "",
-        note: initialData.note || "",
+        fullName: lead.fullName || "",
+        dob: "",
+        gender: "",
+        phone: lead.phone || "",
+        primaryContactId: lead.primaryContactId || null,
+        primaryContactRole: lead.primaryContactRole || null,
+        address: "",
+        city: lead.city || "",
+        district: lead.district || "",
+        email: "",
+        occupation: null,
+        clinicId: defaultClinicId, // Default to user's clinic
+        serviceOfInterest: lead.serviceOfInterest || "",
+        source: lead.source || "",
+        sourceNotes: lead.sourceNotes || null,
+        note: "",
       };
     }
-
     return {
       fullName: "",
       dob: "",
       gender: "",
-      phone: null,
-      email: null,
+      phone: "",
+      primaryContactId: null,
+      primaryContactRole: null,
       address: "",
       city: "",
       district: "",
-      primaryContactRole: null,
-      primaryContactId: null,
+      email: "",
       occupation: null,
+      clinicId: defaultClinicId,
+      serviceOfInterest: "",
       source: "",
       sourceNotes: null,
-      serviceOfInterest: "",
-      clinicId: defaultClinicId || "",
       note: "",
     };
-  }, [mode, defaultClinicId, initialData]);
+  }, [lead, defaultClinicId]);
+
+  // Initialize react-hook-form
+  type FormData = {
+    fullName: string;
+    dob: string;
+    gender: string;
+    phone: string;
+    primaryContactId: string | null;
+    primaryContactRole: string | null;
+    address: string;
+    city: string;
+    district: string;
+    email: string | null;
+    occupation: string | null;
+    clinicId: string;
+    serviceOfInterest: string;
+    source: string;
+    sourceNotes: string | null;
+    note: string;
+  };
 
   const {
     control,
     handleSubmit,
-    setValue,
     watch,
+    setValue,
     reset,
     formState: { isSubmitting },
-  } = useForm<CreateCustomerFormData>({
-    resolver: zodResolver(CreateCustomerFormSchema),
+  } = useForm<FormData>({
+    resolver: zodResolver(
+      ConvertLeadRequestSchema
+    ) as unknown as Resolver<FormData>,
     mode: "onBlur",
     reValidateMode: "onChange",
-    shouldUnregister: true,
     defaultValues,
   });
 
-  const phone = watch("phone") || "";
+  // Reset form when lead changes
+  useEffect(() => {
+    if (lead) {
+      reset(defaultValues);
+    }
+  }, [lead, defaultValues, reset]);
+
+  // Watch fields
+  const cityValue = watch("city");
   const sourceValue = watch("source");
   const sourceMeta: CustomerSource | undefined = useMemo(
     () => CUSTOMER_SOURCES.find((s) => s.value === sourceValue),
     [sourceValue]
   );
 
-  // Use phone duplicate check hook
-  const { actualPhoneDup, isLeadDuplicate, isCustomerDuplicate } =
-    usePhoneDuplicateCheck({
-      phone,
-      mode,
-      initialData,
-    });
-
-  // Use form options hook
-  const {
-    primaryContactOptions,
-    employeeOptions,
-    customerSourceOptions,
-    clinicOptions,
-    getDistrictOptions,
-    pcQuery,
-    setPcQuery,
-    custQuery,
-    setCustQuery,
-    pcFetching,
-    custFetching,
-    setSelectedPhoneDup,
-  } = useCustomerFormOptions({
-    mode,
-    initialData,
-    actualPhoneDup,
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    reset(defaultValues);
-    setSelectedPhoneDup(null); // Clear selected phoneDup on modal open
-  }, [open, reset, defaultValues, setSelectedPhoneDup]);
-
-  // Handle phone duplicate selection as primary contact
-  const handleSelectDuplicateAsContact = useCallback(() => {
-    if (actualPhoneDup) {
-      setSelectedPhoneDup(actualPhoneDup); // Store actualPhoneDup before clearing phone
-      setValue("phone", ""); // Clear phone to avoid duplicate
-      setValue("primaryContactId", actualPhoneDup.id);
-      // Don't auto-fill primaryContactRole as per requirements
-    }
-  }, [actualPhoneDup, setValue, setSelectedPhoneDup]);
-
-  const onValid = (formData: CreateCustomerFormData) => {
-    // Convert form data to API payload format
-    const payload: CreateCustomerRequest = {
-      ...formData,
-      dob: dayjs(formData.dob, "YYYY-MM-DD").startOf("day").toDate(),
-    };
-
-    // Pass customerId if in edit mode
-    if (mode === "edit" && initialData) {
-      onSubmit(payload, initialData.id);
-    } else {
-      onSubmit(payload);
-    }
-  };
-
-  // Derive district options based on selected city
-  const citySelected = watch("city");
-  const districtOptions = useMemo(
-    () => getDistrictOptions(citySelected),
-    [citySelected, getDistrictOptions]
+  // Get clinic options
+  const { data: clinicsData } = useClinics();
+  const clinicOptions = useMemo(
+    () =>
+      clinicsData?.map((clinic: { id: string; clinicCode: string }) => ({
+        label: clinic.clinicCode,
+        value: clinic.id,
+      })) || [],
+    [clinicsData]
   );
 
+  // Get primary contact options
+  const { data: primaryContactData, isFetching: pcFetching } =
+    useCustomersSearch({
+      q: pcQuery,
+      limit: 10,
+      requirePhone: true,
+    });
+
+  const primaryContactOptions = useMemo(
+    () => primaryContactData || [],
+    [primaryContactData]
+  );
+
+  // Get employee options for source notes
+  const { data: employeesData } = useWorkingEmployees();
+  const employeeOptions = useMemo(() => {
+    const options = (employeesData ?? []).map((emp) => ({
+      label: emp.fullName,
+      value: emp.id,
+    }));
+
+    // Merge initial sourceEmployee from lead if exists and not in options
+    if (
+      lead?.sourceEmployee &&
+      !options.some((opt) => opt.value === lead.sourceEmployee!.id)
+    ) {
+      options.unshift({
+        label: lead.sourceEmployee.fullName,
+        value: lead.sourceEmployee.id,
+      });
+    }
+
+    return options;
+  }, [employeesData, lead]);
+
+  // Get customer options for source notes
+  const { data: customerSourceData, isFetching: custFetching } =
+    useCustomersSearch({
+      q: custQuery,
+      limit: 10,
+      requirePhone: false,
+    });
+
+  const customerSourceOptions = useMemo(() => {
+    const options = (customerSourceData ?? []).map((c) => ({
+      label: `${c.fullName} — ${c.phone || "—"}`,
+      value: c.id,
+    }));
+
+    // Merge initial sourceCustomer from lead if exists and not in options
+    if (
+      lead?.sourceCustomer &&
+      !options.some((opt) => opt.value === lead.sourceCustomer!.id)
+    ) {
+      options.unshift({
+        label: `${lead.sourceCustomer.fullName} — ${
+          lead.sourceCustomer.phone ?? "—"
+        }`,
+        value: lead.sourceCustomer.id,
+      });
+    }
+
+    return options;
+  }, [customerSourceData, lead]);
+
+  // Get district options based on selected city
+  const districtOptions = useMemo(() => {
+    if (!cityValue) return [];
+    const province = (provinces as Province[]).find(
+      (p) => p.name === cityValue
+    );
+    return (
+      province?.districts.map((d) => ({ label: d.name, value: d.name })) || []
+    );
+  }, [cityValue]);
+
+  // Handle form submission
+  const onValid = useCallback(
+    (data: FormData) => {
+      if (!lead?.id) return;
+
+      // Transform dob string to Date for backend
+      const payload: ConvertLeadRequest = {
+        ...data,
+        dob: data.dob ? new Date(data.dob) : null,
+      };
+
+      onSubmit(payload, lead.id);
+    },
+    [lead, onSubmit]
+  );
+
+  // Get source label
   return (
     <Modal
-      title={
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          {mode === "edit"
-            ? "Cập nhật thông tin khách hàng"
-            : "Thêm khách hàng"}
-        </div>
-      }
+      title="Chuyển đổi Lead thành Khách hàng"
       open={open}
       onCancel={onCancel}
       onOk={handleSubmit(onValid)}
       confirmLoading={confirmLoading || isSubmitting}
-      okButtonProps={{ disabled: isLeadDuplicate }}
       width="65%"
       styles={{
         content: { maxHeight: "85vh" },
@@ -241,9 +308,11 @@ export default function CustomerFormModal({
       }}
       destroyOnHidden
       maskClosable={false}
+      okText="Chuyển đổi"
+      cancelText="Hủy"
     >
       <Form layout="vertical" requiredMark>
-        {/* H1 */}
+        {/* H1: Họ và tên | Ngày sinh | Giới tính */}
         <Row gutter={12}>
           <Col xs={24} lg={12}>
             <Controller
@@ -272,7 +341,6 @@ export default function CustomerFormModal({
               render={({ field, fieldState }) => (
                 <Form.Item
                   label="Ngày sinh"
-                  required
                   validateStatus={fieldState.error ? "error" : ""}
                   help={fieldState.error?.message}
                 >
@@ -307,7 +375,7 @@ export default function CustomerFormModal({
           </Col>
         </Row>
 
-        {/* H2 */}
+        {/* H2: Số điện thoại | Người liên hệ chính | Người liên hệ là */}
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
@@ -321,58 +389,10 @@ export default function CustomerFormModal({
                 >
                   <Input
                     {...field}
-                    value={field.value ?? ""}
                     placeholder="VD: 0912345678"
                     maxLength={10}
-                    onChange={(e) => {
-                      const digits = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 10);
-                      field.onChange(digits);
-                    }}
+                    disabled
                   />
-                  {isCustomerDuplicate && actualPhoneDup && (
-                    <div style={{ marginTop: 4 }}>
-                      <Typography.Text
-                        type="danger"
-                        style={{ display: "block" }}
-                      >
-                        SĐT đã tồn tại: {actualPhoneDup.customerCode || "—"} -{" "}
-                        {actualPhoneDup.fullName}
-                      </Typography.Text>
-                      <Button
-                        type="link"
-                        size="small"
-                        style={{ padding: 0, height: "auto", marginTop: 2 }}
-                        onClick={handleSelectDuplicateAsContact}
-                      >
-                        Chọn người này làm người liên hệ chính
-                      </Button>
-                    </div>
-                  )}
-                  {isLeadDuplicate && actualPhoneDup && (
-                    <div style={{ marginTop: 4 }}>
-                      <div>
-                        <Typography.Text type="danger">
-                          ⚠️ Số điện thoại này là của Lead:{" "}
-                          {actualPhoneDup.fullName}
-                        </Typography.Text>
-                        {" — "}
-                        <Link
-                          href={`/customers/${actualPhoneDup.id}`}
-                          target="_blank"
-                        >
-                          Xem thông tin
-                        </Link>
-                      </div>
-                      <Typography.Text
-                        style={{ display: "block", fontSize: 12, marginTop: 4 }}
-                      >
-                        Vui lòng chuyển đổi Lead thành Customer hoặc sử dụng SĐT
-                        khác
-                      </Typography.Text>
-                    </div>
-                  )}
                 </Form.Item>
               )}
             />
@@ -393,7 +413,6 @@ export default function CustomerFormModal({
                     allowClear
                     onSearch={(v) => setPcQuery(v)}
                     filterOption={false}
-                    // optionLabelProp="label"
                     options={primaryContactOptions.map((i) => ({
                       label: `${i.fullName} — ${i.phone}`,
                       value: i.id,
@@ -438,7 +457,7 @@ export default function CustomerFormModal({
           </Col>
         </Row>
 
-        {/* H3 */}
+        {/* H3: Địa chỉ | Tỉnh/Thành phố | Quận/Huyện */}
         <Row gutter={12}>
           <Col xs={24} lg={12}>
             <Controller
@@ -475,10 +494,6 @@ export default function CustomerFormModal({
                       label: p.name,
                       value: p.name,
                     }))}
-                    onChange={(v) => {
-                      field.onChange(v);
-                      setValue("district", "");
-                    }}
                   />
                 </Form.Item>
               )}
@@ -500,7 +515,7 @@ export default function CustomerFormModal({
                     showSearch
                     placeholder="Chọn quận/huyện"
                     options={districtOptions}
-                    disabled={!citySelected}
+                    disabled={!cityValue}
                   />
                 </Form.Item>
               )}
@@ -508,7 +523,7 @@ export default function CustomerFormModal({
           </Col>
         </Row>
 
-        {/* H4 */}
+        {/* H4: Email | Nghề nghiệp | Chi nhánh */}
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
@@ -586,7 +601,7 @@ export default function CustomerFormModal({
           </Col>
         </Row>
 
-        {/* H5: 3 cột 1 hàng */}
+        {/* H5: Dịch vụ quan tâm | Nguồn khách | Ghi chú nguồn */}
         <Row gutter={12}>
           <Col xs={24} lg={8}>
             <Controller
@@ -633,7 +648,7 @@ export default function CustomerFormModal({
                     }))}
                     onChange={(v) => {
                       field.onChange(v);
-                      setValue("sourceNotes", undefined);
+                      setValue("sourceNotes", null);
                     }}
                   />
                 </Form.Item>

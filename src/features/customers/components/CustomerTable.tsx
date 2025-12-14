@@ -2,20 +2,23 @@
 "use client";
 
 import React from "react";
-import { Space, Table, Tag } from "antd";
+import { Space, Table, Tag, Typography } from "antd";
 import Link from "next/link";
+
+const { Text } = Typography;
 import type { ColumnsType } from "antd/es/table";
-import type {
-  CustomerResponse,
-  CustomerDailyResponse,
-} from "@/shared/validation/customer.schema";
-import { CUSTOMER_SOURCES, SERVICES_OF_INTEREST } from "../constants";
+import type { CustomerDailyResponse } from "@/shared/validation/customer.schema";
+import {
+  CUSTOMER_SOURCES,
+  SERVICES_OF_INTEREST,
+  PRIMARY_CONTACT_ROLES,
+} from "../constants";
 import { APPOINTMENT_STATUS_COLORS } from "@/features/appointments/constants";
 import dayjs from "dayjs";
 import QuickCheckInButton from "./QuickCheckInButton";
 
 type Props = {
-  data: CustomerResponse[] | CustomerDailyResponse[];
+  data: CustomerDailyResponse[];
   loading?: boolean;
   showCheckIn?: boolean;
   selectedDate?: string;
@@ -27,12 +30,17 @@ export default function CustomerTable({
   showCheckIn = false,
   selectedDate,
 }: Props) {
-  const columns: ColumnsType<CustomerResponse> = [
+  const columns: ColumnsType<CustomerDailyResponse> = [
     {
       title: "Mã KH",
       dataIndex: "customerCode",
       key: "customerCode",
       width: 140,
+      render: (code, r) => {
+        // ⭐ Handle NULL customerCode for LEADs
+        if (r.type === "LEAD") return "—";
+        return code || "—";
+      },
     },
     {
       title: "Họ tên",
@@ -55,9 +63,22 @@ export default function CustomerTable({
       render: (_, r) => {
         const contact = r.primaryContact;
         if (!contact?.fullName && !contact?.phone) return "—";
-        return `${contact.fullName ?? ""}${
-          contact.fullName && contact.phone ? " — " : ""
-        }${contact.phone ?? ""}`;
+
+        const name = contact.fullName ?? "";
+        const phone = contact.phone ?? "";
+        const roleValue = r.primaryContactRole ?? "";
+        const roleLabel =
+          PRIMARY_CONTACT_ROLES.find((role) => role.value === roleValue)
+            ?.label || roleValue;
+
+        return (
+          <Space direction="vertical" size={0}>
+            <div>
+              {name} — {phone}
+            </div>
+            {roleLabel && <div>({roleLabel})</div>}
+          </Space>
+        );
       },
     },
     {
@@ -81,10 +102,37 @@ export default function CustomerTable({
       },
     },
     {
-      title: "Thời gian tạo",
-      key: "createdAt",
-      width: 160,
-      render: (_, r) => dayjs(r.createdAt).format("DD/MM/YYYY HH:mm"),
+      title: "Chi tiết nguồn",
+      key: "sourceNotes",
+      width: 200,
+      render: (_, r) => {
+        // employee_referral: display sourceEmployee (always show phone for employee)
+        if (r.source === "employee_referral" && r.sourceEmployee) {
+          return `${r.sourceEmployee.fullName}${
+            r.sourceEmployee.phone ? ` — ${r.sourceEmployee.phone}` : ""
+          }`;
+        }
+
+        // customer_referral: display sourceCustomer (code if available, otherwise phone)
+        if (r.source === "customer_referral" && r.sourceCustomer) {
+          if (r.sourceCustomer.customerCode) {
+            return (
+              <Space direction="vertical" size={0}>
+                <div>{r.sourceCustomer.fullName}</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  ({r.sourceCustomer.customerCode})
+                </Text>
+              </Space>
+            );
+          }
+          return `${r.sourceCustomer.fullName}${
+            r.sourceCustomer.phone ? ` — ${r.sourceCustomer.phone}` : ""
+          }`;
+        }
+
+        // Other sources: display raw sourceNotes or "—"
+        return r.sourceNotes || "—";
+      },
     },
     {
       title: `Lịch hẹn hôm nay (${dayjs().format("DD/MM")})`,

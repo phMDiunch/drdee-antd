@@ -25,6 +25,12 @@ export const menuItems: MenuItem[] = [
     children: [{ key: "/employees", label: "Danh sách" }],
   },
   {
+    key: "leads",
+    icon: <UserOutlined />,
+    label: "Lead",
+    children: [{ key: "/leads/daily", label: "Theo ngày" }],
+  },
+  {
     key: "customers",
     icon: <UserOutlined />,
     label: "Khách hàng",

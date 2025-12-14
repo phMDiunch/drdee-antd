@@ -7,6 +7,8 @@ import type {
 } from "@/shared/validation/customer.schema";
 
 export type CustomerCreateInput = CreateCustomerRequest & {
+  type: string; // 🔒 Server-controlled: "LEAD" | "CUSTOMER"
+  firstVisitDate: Date; // 🔒 Server-controlled: Set to now() for new CUSTOMER
   createdById: string; // 🔒 Server-controlled: từ currentUser.employeeId
   updatedById: string; // 🔒 Server-controlled: từ currentUser.employeeId
   customerCode: string; // 🔒 Server-generated: theo quy tắc ${prefix}-${YY}${MM}-${NNN}
@@ -47,7 +49,9 @@ export const customerRepo = {
     const skip = (page - 1) * pageSize;
 
     // Build where conditions
-    const where: Prisma.CustomerWhereInput = {};
+    const where: Prisma.CustomerWhereInput = {
+      type: "CUSTOMER", // ⭐ Only CUSTOMER type (not LEAD)
+    };
 
     if (clinicId) {
       where.clinicId = clinicId;
@@ -145,6 +149,7 @@ export const customerRepo = {
 
     const items = await prisma.customer.findMany({
       where: {
+        type: "CUSTOMER", // ⭐ Only CUSTOMER type (not LEAD)
         clinicId,
         createdAt: { gte: dateStart, lt: dateEnd },
       },
@@ -209,8 +214,11 @@ export const customerRepo = {
    * based on sourceNotes field parsing
    */
   async findById(id: string) {
-    return prisma.customer.findUnique({
-      where: { id },
+    return prisma.customer.findFirst({
+      where: {
+        id,
+        // type: "CUSTOMER", // ⭐ Only CUSTOMER type (not LEAD)
+      },
       include: {
         clinic: {
           select: { id: true, clinicCode: true, name: true, colorCode: true },
@@ -242,11 +250,20 @@ export const customerRepo = {
 
   /**
    * Find customer by phone (for lookup/duplicate check)
+   * Searches both CUSTOMER and LEAD types
    */
   async findByPhone(phone: string) {
     return prisma.customer.findFirst({
-      where: { phone },
-      select: { id: true, customerCode: true, fullName: true, phone: true },
+      where: {
+        phone,
+      },
+      select: {
+        id: true,
+        customerCode: true,
+        fullName: true,
+        phone: true,
+        type: true,
+      },
     });
   },
 
@@ -255,7 +272,10 @@ export const customerRepo = {
    */
   async findByEmail(email: string) {
     return prisma.customer.findFirst({
-      where: { email },
+      where: {
+        email,
+        type: "CUSTOMER", // ⭐ Only CUSTOMER type (not LEAD)
+      },
       select: { id: true, customerCode: true, fullName: true, email: true },
     });
   },
@@ -270,6 +290,7 @@ export const customerRepo = {
   ) {
     return prisma.customer.findFirst({
       where: {
+        type: "CUSTOMER", // ⭐ Only CUSTOMER type (not LEAD)
         clinicId,
         customerCode: {
           startsWith: `${prefix}-${yearMonth}`,
@@ -283,6 +304,7 @@ export const customerRepo = {
   /**
    * Search customers globally by customerCode, fullName, or phone
    * - requirePhone: only return customers with phone
+   * - Includes both LEAD and CUSTOMER types for phone duplicate checking
    */
   async searchCustomers(params: {
     q: string;
@@ -310,6 +332,7 @@ export const customerRepo = {
         customerCode: true,
         fullName: true,
         phone: true,
+        type: true,
       },
       orderBy: { fullName: "asc" },
       take: limit,
