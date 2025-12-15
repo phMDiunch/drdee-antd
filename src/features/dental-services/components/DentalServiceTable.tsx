@@ -89,6 +89,34 @@ export default function DentalServiceTable({
       width: 160,
     },
     {
+      title: "Cần follow-up",
+      dataIndex: "requiresFollowUp",
+      render: (v: boolean) =>
+        v ? <Tag color="orange">Có</Tag> : <Tag color="default">Không</Tag>,
+      filters: [
+        { text: "Có", value: true },
+        { text: "Không", value: false },
+      ],
+      onFilter: (value, record) => record.requiresFollowUp === value,
+      width: 140,
+    },
+    {
+      title: "Loại TK thu",
+      dataIndex: "paymentAccountType",
+      render: (v: string) =>
+        v === "COMPANY" ? (
+          <Tag color="blue">Công ty</Tag>
+        ) : (
+          <Tag color="purple">Cá nhân</Tag>
+        ),
+      filters: [
+        { text: "Công ty", value: "COMPANY" },
+        { text: "Cá nhân", value: "PERSONAL" },
+      ],
+      onFilter: (value, record) => record.paymentAccountType === value,
+      width: 130,
+    },
+    {
       title: "Trạng thái",
       dataIndex: "archivedAt",
       render: (v: string | null | undefined) =>

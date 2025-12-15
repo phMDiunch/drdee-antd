@@ -31,6 +31,10 @@ export const DentalServiceBaseSchema = z.object({
   avgTreatmentMinutes: z.number().int().min(0).optional().nullable(),
   avgTreatmentSessions: z.number().int().min(0).optional().nullable(),
 
+  // Follow-up & Payment Configuration
+  requiresFollowUp: z.boolean(),
+  paymentAccountType: z.enum(["COMPANY", "PERSONAL"]),
+
   archivedAt: z.date().optional().nullable(),
 });
 
@@ -76,6 +80,8 @@ export const DentalServiceResponseSchema = z.object({
   origin: z.string().nullable().optional(),
   avgTreatmentMinutes: z.number().int().nullable().optional(),
   avgTreatmentSessions: z.number().int().nullable().optional(),
+  requiresFollowUp: z.boolean(),
+  paymentAccountType: z.enum(["COMPANY", "PERSONAL"]),
   archivedAt: z.string().datetime().nullable().optional(),
   createdById: z.string().uuid(),
   updatedById: z.string().uuid(),

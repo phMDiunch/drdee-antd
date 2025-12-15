@@ -2,7 +2,17 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { Modal, Form, Input, Row, Col, InputNumber, Select } from "antd";
+import {
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  InputNumber,
+  Select,
+  Switch,
+  Radio,
+} from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -48,6 +58,8 @@ const defaultValues: CreateDentalServiceRequest & { id?: string } = {
   origin: undefined,
   avgTreatmentMinutes: undefined,
   avgTreatmentSessions: undefined,
+  requiresFollowUp: false,
+  paymentAccountType: "PERSONAL" as const,
 };
 
 export default function DentalServiceFormModal({
@@ -85,6 +97,8 @@ export default function DentalServiceFormModal({
         origin: initial.origin ?? undefined,
         avgTreatmentMinutes: initial.avgTreatmentMinutes ?? undefined,
         avgTreatmentSessions: initial.avgTreatmentSessions ?? undefined,
+        requiresFollowUp: initial.requiresFollowUp,
+        paymentAccountType: initial.paymentAccountType,
       };
     }
     return defaultValues;
@@ -124,6 +138,8 @@ export default function DentalServiceFormModal({
         origin: values.origin,
         avgTreatmentMinutes: values.avgTreatmentMinutes,
         avgTreatmentSessions: values.avgTreatmentSessions,
+        requiresFollowUp: values.requiresFollowUp,
+        paymentAccountType: values.paymentAccountType,
       };
       onSubmit(payload);
     } else {
@@ -141,6 +157,8 @@ export default function DentalServiceFormModal({
         origin: values.origin,
         avgTreatmentMinutes: values.avgTreatmentMinutes,
         avgTreatmentSessions: values.avgTreatmentSessions,
+        requiresFollowUp: values.requiresFollowUp,
+        paymentAccountType: values.paymentAccountType,
       };
       onSubmit(payload);
     }
@@ -414,6 +432,73 @@ export default function DentalServiceFormModal({
                     style={{ width: "100%" }}
                     controls={false}
                   />
+                </Form.Item>
+              )}
+            />
+          </Col>
+          <Col xs={24} lg={8}>
+            <Controller
+              name="minPrice"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Giá tối thiểu (VND)"
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <InputNumber
+                    {...field}
+                    min={0}
+                    style={{ width: "100%" }}
+                    controls={false}
+                    formatter={(v) =>
+                      `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(v) => Number((v || "0").replace(/[^\d]/g, ""))}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+        </Row>
+
+        <Row gutter={12}>
+          <Col xs={24} lg={12}>
+            <Controller
+              name="requiresFollowUp"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Cần sale follow-up"
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                  tooltip="Dịch vụ này có cần nhân viên kinh doanh theo dõi sau khi bác sĩ tư vấn không?"
+                >
+                  <Switch
+                    checked={field.value}
+                    onChange={field.onChange}
+                    checkedChildren="Có"
+                    unCheckedChildren="Không"
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+          <Col xs={24} lg={12}>
+            <Controller
+              name="paymentAccountType"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Loại tài khoản thu tiền"
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                  tooltip="Dịch vụ này thu tiền vào tài khoản công ty hay cá nhân?"
+                >
+                  <Radio.Group {...field}>
+                    <Radio value="COMPANY">Tài khoản công ty</Radio>
+                    <Radio value="PERSONAL">Tài khoản cá nhân</Radio>
+                  </Radio.Group>
                 </Form.Item>
               )}
             />

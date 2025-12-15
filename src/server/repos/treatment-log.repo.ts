@@ -220,6 +220,11 @@ export const treatmentLogRepo = {
             consultedServices: {
               where: {
                 serviceStatus: "Đã chốt",
+                dentalService: {
+                  department: {
+                    not: "Nha phẩm", // Loại bỏ dịch vụ Nha phẩm
+                  },
+                },
               },
               select: {
                 id: true,
@@ -233,6 +238,9 @@ export const treatmentLogRepo = {
                     fullName: true,
                   },
                 },
+              },
+              orderBy: {
+                serviceConfirmDate: "desc", // Sắp xếp theo ngày chốt mới nhất trước
               },
             },
           },

@@ -211,6 +211,10 @@ model DentalService {
   avgTreatmentMinutes  Int? // Số phút điều trị trung bình
   avgTreatmentSessions Int? // Số buổi điều trị trung bình
 
+  // Follow-up & Payment Configuration
+  requiresFollowUp   Boolean @default(false) // Dịch vụ có cần sale follow-up không
+  paymentAccountType String  @default("PERSONAL") // "COMPANY" | "PERSONAL" - Thu bằng TK công ty hay cá nhân
+
   // Metadata
   archivedAt DateTime? @db.Timestamptz // Ngày dịch vụ ngừng hoạt động
   createdAt  DateTime  @default(now()) @db.Timestamptz // Ngày tạo
@@ -293,11 +297,11 @@ model Customer {
 
   // Liên kết đến đơn hàng labo
   laboOrders LaboOrder[]
+  // @@index([type, clinicId, createdAt]) // ⭐ NEW: Optimize queries filtering by type (LEAD vs CUSTOMER)
 
   // 🚀 Performance Indexes
   @@index([clinicId, createdAt]) // Optimize: Daily view - customers by clinic & date
   @@index([phone]) // Optimize: Search by phone number
-  // @@index([type, clinicId, createdAt]) // ⭐ NEW: Optimize queries filtering by type (LEAD vs CUSTOMER)
 }
 
 model Appointment {

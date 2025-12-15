@@ -26,6 +26,8 @@ export function mapDentalServiceToResponse(row: DentalServiceWithRelations) {
     origin: row.origin ?? null,
     avgTreatmentMinutes: row.avgTreatmentMinutes ?? null,
     avgTreatmentSessions: row.avgTreatmentSessions ?? null,
+    requiresFollowUp: row.requiresFollowUp,
+    paymentAccountType: row.paymentAccountType as "COMPANY" | "PERSONAL",
     archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
     createdById: row.createdById,
     updatedById: row.updatedById,

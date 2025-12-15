@@ -167,11 +167,10 @@ export default function CustomerInfoTab({
           {getDistrictLabel(customer.city, customer.district)}
         </Descriptions.Item>
 
-        <Descriptions.Item label="Nghề nghiệp" span={2}>
+        <Descriptions.Item label="Nghề nghiệp">
           {customer.occupation || "—"}
         </Descriptions.Item>
-
-        <Descriptions.Item label="Dịch vụ quan tâm" span={2}>
+        <Descriptions.Item label="Dịch vụ quan tâm">
           {getServiceLabel(customer.serviceOfInterest)}
         </Descriptions.Item>
 
@@ -186,12 +185,20 @@ export default function CustomerInfoTab({
           {customer.primaryContact
             ? `${customer.primaryContact.fullName} — ${
                 customer.primaryContact.phone || "—"
+              }${
+                customer.primaryContactRole
+                  ? ` (${customer.primaryContactRole})`
+                  : ""
               }`
             : "—"}
         </Descriptions.Item>
 
         <Descriptions.Item label="Phòng khám" span={2}>
           {customer.clinic?.name || "—"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Ghi chú" span={2}>
+          {customer.note || "—"}
         </Descriptions.Item>
 
         {/* Metadata */}

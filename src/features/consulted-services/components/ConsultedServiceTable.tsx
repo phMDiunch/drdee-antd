@@ -339,10 +339,6 @@ export default function ConsultedServiceTable({
         width: 110,
         fixed: "right",
         render: (_, record) => {
-          const editPermission = consultedServicePermissions.canEdit(
-            currentUser,
-            record
-          );
           const deletePermission = consultedServicePermissions.canDelete(
             currentUser,
             record
@@ -353,15 +349,13 @@ export default function ConsultedServiceTable({
               ? CONSULTED_SERVICE_MESSAGES.DELETE_CONFIRM_CONFIRMED
               : CONSULTED_SERVICE_MESSAGES.DELETE_CONFIRM_UNCONFIRMED;
 
+          // Remove unused editPermission variable since button is always enabled
           return (
             <Space size="small">
-              <Tooltip
-                title={editPermission.allowed ? "Sửa" : editPermission.reason}
-              >
+              <Tooltip title="Sửa">
                 <Button
                   icon={<EditOutlined />}
                   onClick={() => onEdit(record)}
-                  disabled={!editPermission.allowed}
                 />
               </Tooltip>
               <Popconfirm

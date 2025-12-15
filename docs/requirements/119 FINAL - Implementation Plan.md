@@ -70,7 +70,7 @@ model ConsultedService {
   sourceNotes  String?
 
   // ⭐ NEW: Pipeline stage (for Kanban)
-  stage String // "NEW" | "CONTACTED" | "CONSULTING" | "QUOTED" | "WON" | "LOST" (set by app)
+  stage String // "NEW" (Mới) | "CONTACTED" (Đã liên hệ) | "CONSULTING" (Đang tư vấn) | "QUOTED" (Đã báo giá) | "WON" (Thành công) | "LOST" (Thất bại)
 
   // ⭐ NEW: Multiple sale roles
   saleOnlineId String? // Sale Online (telesale)

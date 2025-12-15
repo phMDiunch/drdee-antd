@@ -67,6 +67,8 @@ export const dentalServiceService = {
       origin: parsed.data.origin ?? null,
       avgTreatmentMinutes: parsed.data.avgTreatmentMinutes ?? null,
       avgTreatmentSessions: parsed.data.avgTreatmentSessions ?? null,
+      requiresFollowUp: parsed.data.requiresFollowUp,
+      paymentAccountType: parsed.data.paymentAccountType,
       createdById: currentUser.employeeId,
       updatedById: currentUser.employeeId,
     };
@@ -115,6 +117,8 @@ export const dentalServiceService = {
       origin: parsed.data.origin ?? null,
       avgTreatmentMinutes: parsed.data.avgTreatmentMinutes ?? null,
       avgTreatmentSessions: parsed.data.avgTreatmentSessions ?? null,
+      requiresFollowUp: parsed.data.requiresFollowUp,
+      paymentAccountType: parsed.data.paymentAccountType,
       updatedById: currentUser.employeeId,
       archivedAt: parsed.data.archivedAt ?? existing.archivedAt,
     };
