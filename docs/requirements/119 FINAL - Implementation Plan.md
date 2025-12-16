@@ -12,15 +12,15 @@ Sau khi thảo luận với **Gemini** và **GitHub Copilot**, đã đạt đư�
 
 ### ✅ DECISIONS FINALIZED
 
-| Decision                 | Details                                                                  |
-| ------------------------ | ------------------------------------------------------------------------ |
-| **Source Tracking**      | Service-level (`ConsultedService.source`) instead of customer-level      |
-| **Lead + Customer**      | **MERGE into 1 model** with `type: "LEAD" \| "CUSTOMER"`                 |
-| **Follow-up Logic**      | **BY CUSTOMER** to avoid fragmentation, but link to `consultedServiceId` |
-| **Sales Opportunity**    | `ConsultedService` = Sales Opportunity/Deal                              |
-| **Kanban View**          | Display layer only (no separate Board/List/Card tables)                  |
-| **Appointment Type**     | Add enum: `CONSULTATION` vs `TREATMENT` vs `RE_EXAM`                     |
-| **Multiple Sales Roles** | `saleOnlineId`, `consultingSaleId`, `treatingDoctorId`                   |
+| Decision                 | Details                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| **Source Tracking**      | **Dual-level**: `Customer.source` (static) + `ConsultedService.source` (dynamic) |
+| **Lead + Customer**      | **MERGE into 1 model** with `type: "LEAD" \| "CUSTOMER"`                         |
+| **Follow-up Logic**      | **BY DEAL** (ConsultedService) with polymorphic activities                       |
+| **Sales Opportunity**    | `ConsultedService` = Sales Opportunity/Deal                                      |
+| **Kanban View**          | Display layer only (no separate Board/List/Card tables)                          |
+| **Appointment Type**     | Add enum: `CONSULTATION` vs `TREATMENT` vs `RE_EXAM`                             |
+| **Multiple Sales Roles** | `saleOnlineId`, `consultingSaleId`, `treatingDoctorId`                           |
 
 ---
 
@@ -33,23 +33,28 @@ Sau khi thảo luận với **Gemini** và **GitHub Copilot**, đã đạt đư�
 - ✅ Add `type: "LEAD" | "CUSTOMER"`
 - ✅ Make `customerCode` nullable (only for CUSTOMER)
 - ✅ Add `firstVisitDate: DateTime?` (ngày đến phòng khám lần đầu)
-- 🟡 Keep existing `source`, `sourceNotes`, `serviceOfInterest` (migrate later)
+- 🟡 Keep `source`, `sourceNotes`, `serviceOfInterest` nullable (source is static customer origin)
 
 ```prisma
 model Customer {
+  id String @id @default(uuid())
+
   // ⭐ NEW fields
   type           String    // "LEAD" | "CUSTOMER" (set by app)
   firstVisitDate DateTime? // Ngày đến phòng khám lần đầu
 
-  // 🟡 KEEP existing fields (migrate later)
-  customerCode       String?  @unique
-  source             String?  // Keep for now
-  sourceNotes        String?  // Keep for now
-  serviceOfInterest  String?  // Keep for now
+  // ⭐ Static customer origin (different from deal source)
+  customerCode         String?  @unique
+  source               String?  // Nguồn gốc ban đầu: "REFERRAL" | "WALK_IN" | "FACEBOOK" etc.
+  sourceNotes          String?  // Ghi chú về nguồn gốc
+  serviceOfInterest    String?  // Dịch vụ quan tâm ban đầu
 
   // ... other existing fields
+  consultedServices ConsultedService[]
+  activities        FollowUpActivity[]  // Activities chung về khách (không gắn deal cụ thể)
 
   @@index([type, clinicId, createdAt])
+  @@index([source, type])
 }
 ```
 
@@ -57,20 +62,27 @@ model Customer {
 
 **Key Changes:**
 
-- ✅ Add `source: String` (REQUIRED) - Nguồn của dịch vụ này
+- ✅ Add `source: String` (REQUIRED) - Nguồn của DEAL này (dynamic)
 - ✅ Add `sourceNotes: String?`
-- ✅ Add `stage: String` - For Kanban view
+- ✅ Add `stage: String` - Pipeline stage for Kanban view (also indicates active/completed for follow-up)
 - ✅ Add `saleOnlineId: String?` - Sale online (telesale)
-- ✅ Add `lostReason: String?` - Lý do thất bại
+- ✅ Add follow-up scheduling: `followUpPriority`, `nextFollowUpDate`
+- ✅ Add `lostReason: String?`, `lostDate: DateTime?` - Lost tracking
 
 ```prisma
 model ConsultedService {
-  // ⭐ NEW: Source per service
-  source       String  // REQUIRED
-  sourceNotes  String?
+  id String @id @default(uuid())
+
+  // ⭐ NEW: Source per deal (dynamic - campaign source, different from Customer.source)
+  source       String  // REQUIRED - Nguồn của DEAL này: "FACEBOOK_ADS_DEC" | "GOOGLE_SEARCH" | "ZALO" etc.
+  sourceNotes  String? // Ghi chú chi tiết về campaign
 
   // ⭐ NEW: Pipeline stage (for Kanban)
-  stage String // "NEW" (Mới) | "CONTACTED" (Đã liên hệ) | "CONSULTING" (Đang tư vấn) | "QUOTED" (Đã báo giá) | "WON" (Thành công) | "LOST" (Thất bại)
+  stage String // "NEW" | "CONTACTED" | "CONSULTING" | "QUOTED" | "WON" | "LOST"
+
+  // ⭐ NEW: Follow-up scheduling (stage đủ để biết active/completed)
+  followUpPriority    String?   // "HIGH" | "MEDIUM" | "LOW"
+  nextFollowUpDate    DateTime? // Ngày cần follow-up tiếp theo
 
   // ⭐ NEW: Multiple sale roles
   saleOnlineId String? // Sale Online (telesale)
@@ -81,12 +93,18 @@ model ConsultedService {
 
   // ⭐ NEW: Lost tracking
   lostReason  String?
+  lostDate    DateTime?
 
-  // ... existing fields
+  // ... other existing fields
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  activities FollowUpActivity[] // Lịch sử tương tác về DEAL này
 
   @@index([source, serviceStatus])
   @@index([stage, clinicId])
   @@index([saleOnlineId, stage])
+  @@index([stage, nextFollowUpDate]) // For follow-up queries: active deals with next date
 }
 ```
 
@@ -109,79 +127,48 @@ model Appointment {
 }
 ```
 
-### 4. CustomerFollowUp Model (NEW)
+### 4. FollowUpActivity Model (NEW)
 
 **Key Design:**
 
-- ✅ BY CUSTOMER (not by service) - Avoid fragmentation
-- ✅ Link to `consultedServiceId` - Track which service is being followed
-- ✅ Dual assignment: `assignedToSaleId` + `consultingDoctorId`
-- ✅ Auto-reassignment logic based on service sale/doctor
+- ✅ **Polymorphic relation**: Activity có thể gắn với Customer (chung) HOẶC ConsultedService (deal cụ thể)
+- ✅ Lưu lịch sử tương tác: call, SMS, Zalo, meeting, note
+- ✅ Track kết quả liên hệ và next action
+
+**Use cases:**
+
+- Activity gắn với **ConsultedService**: Gọi điện tư vấn về deal Niềng răng cụ thể
+- Activity gắn với **Customer**: Ghi chú chung về khách (VIP, yêu cầu đặc biệt, không liên quan deal cụ thể)
 
 ```prisma
-model CustomerFollowUp {
-  id String @id @default(uuid())
-
-  // BY CUSTOMER
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id])
-
-  // Link to service being followed
-  consultedServiceId String
-  consultedService   ConsultedService @relation(fields: [consultedServiceId], references: [id])
-
-  // Assignment (dual: sale + doctor)
-  assignedToSaleId     String?
-  consultingDoctorId   String?
-  manuallyReassigned   Boolean @default(false)
-
-  assignedToSale   Employee? @relation("FollowUpSale", fields: [assignedToSaleId], references: [id])
-  consultingDoctor Employee? @relation("FollowUpDoctor", fields: [consultingDoctorId], references: [id])
-
-  // Status & Priority
-  status   String // "pending" | "in_progress" | "success" | "give_up"
-  priority String @default("medium") // "high" | "medium" | "low"
-
-  // Dates
-  nextFollowUpDate DateTime?
-  completedAt      DateTime?
-
-  // Metadata
-  clinicId    String
-  clinic      Clinic @relation(fields: [clinicId], references: [id])
-  createdById String
-  updatedById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  archivedAt  DateTime?
-
-  createdBy Employee @relation("CreatedFollowUps", fields: [createdById], references: [id])
-  updatedBy Employee @relation("UpdatedFollowUps", fields: [updatedById], references: [id])
-
-  activities FollowUpActivity[]
-
-  @@index([customerId, status])
-  @@index([assignedToSaleId, status, nextFollowUpDate])
-  @@index([consultedServiceId])
-}
-
 model FollowUpActivity {
   id String @id @default(uuid())
 
-  followUpId String
-  followUp   CustomerFollowUp @relation(fields: [followUpId], references: [id])
+  // ⭐ Polymorphic relation: Gắn với Customer HOẶC ConsultedService
+  // Ít nhất 1 trong 2 phải có giá trị (validate ở app layer)
+  customerId         String?
+  consultedServiceId String?
 
-  activityType  String // "call" | "sms" | "zalo" | "meeting" | "note"
-  contactResult String? // "interested" | "callback_later" | "not_interested" | "no_contact"
-  notes         String // Có thể mention nhiều services
-  nextContactDate DateTime?
+  customer         Customer?         @relation(fields: [customerId], references: [id])
+  consultedService ConsultedService? @relation(fields: [consultedServiceId], references: [id])
 
+  // ⭐ Activity data
+  activityType  String   // "CALL" | "SMS" | "ZALO" | "MEETING" | "NOTE" | "EMAIL"
+  contactResult String?  // "INTERESTED" | "CALLBACK_LATER" | "NOT_INTERESTED" | "NO_CONTACT"
+  notes         String   // Nội dung chi tiết (có thể mention nhiều services)
+
+  // ⭐ Next action
+  nextContactDate DateTime? // Ngày cần liên hệ tiếp theo
+
+  // ⭐ Metadata
   createdById String
   createdBy   Employee @relation(fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
 
-  @@index([followUpId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([consultedServiceId, createdAt])
   @@index([nextContactDate])
+  @@index([activityType, createdAt])
 }
 ```
 
@@ -201,12 +188,11 @@ model FollowUpActivity {
 
 - [ ] Backup production database
 - [ ] Update `prisma/schema.prisma`:
-  - [ ] Update Customer model (add type, firstVisitDate, firstSource)
-  - [ ] Update ConsultedService model (add source, stage, saleOnlineId, etc.)
+  - [ ] Update Customer model (add type, firstVisitDate, rename source → profileSource)
+  - [ ] Update ConsultedService model (add source, stage, follow-up fields, saleOnlineId, etc.)
   - [ ] Update Appointment model (add type, consultedServiceId)
-  - [ ] Add CustomerFollowUp model
-  - [ ] Add FollowUpActivity model
-- [ ] Create migration: `npx prisma migrate dev --name service-based-tracking`
+  - [ ] Add FollowUpActivity model (polymorphic relation)
+- [ ] Create migration: `npx prisma migrate dev --name deal-centric-tracking`
 - [ ] Test migration on dev database
 - [ ] Write data migration script (see below)
 - [ ] Test data migration
@@ -227,6 +213,8 @@ ALTER TABLE "Customer"
   ADD COLUMN "type" TEXT,
   ADD COLUMN "firstVisitDate" TIMESTAMPTZ;
 
+-- Note: Keep existing 'source' and 'sourceNotes' columns as-is (no rename needed)
+
 -- Step 2: Customer - Set type for existing records
 UPDATE "Customer"
 SET
@@ -243,37 +231,41 @@ WHERE "customerCode" IS NULL;
 ALTER TABLE "Customer"
   ALTER COLUMN "type" SET NOT NULL;
 
--- Note: Keep existing source, sourceNotes, serviceOfInterest columns (migrate later)
-
--- Step 4: ConsultedService - Add new columns
+-- Step 3: ConsultedService - Add new columns
 ALTER TABLE "ConsultedService"
   ADD COLUMN "source" TEXT,
   ADD COLUMN "sourceNotes" TEXT,
   ADD COLUMN "stage" TEXT,
+  ADD COLUMN "followUpPriority" TEXT,
+  ADD COLUMN "nextFollowUpDate" TIMESTAMPTZ,
   ADD COLUMN "saleOnlineId" TEXT,
-  ADD COLUMN "lostReason" TEXT;
+  ADD COLUMN "lostReason" TEXT,
+  ADD COLUMN "lostDate" TIMESTAMPTZ;
 
--- Step 5: ConsultedService - Migrate source from customer
+-- Step 4: ConsultedService - Migrate source from customer.source
 UPDATE "ConsultedService" cs
 SET
-  "source" = c."source",
+  "source" = COALESCE(c."source", 'UNKNOWN'),
   "sourceNotes" = c."sourceNotes"
 FROM "Customer" c
 WHERE cs."customerId" = c.id;
 
--- Step 6: ConsultedService - Set stage based on serviceStatus
+-- Step 5: ConsultedService - Set stage based on serviceStatus
 UPDATE "ConsultedService"
 SET "stage" = CASE
   WHEN "serviceStatus" = 'Đã chốt' THEN 'WON'
-  ELSE 'QUOTED'
+  WHEN "serviceStatus" = 'Đã hủy' OR "serviceStatus" = 'Từ chối' THEN 'LOST'
+  WHEN "serviceStatus" = 'Đã báo giá' THEN 'QUOTED'
+  WHEN "serviceStatus" = 'Đang tư vấn' THEN 'CONSULTING'
+  ELSE 'NEW'
 END;
 
--- Step 7: ConsultedService - Make source and stage NOT NULL
+-- Step 6: ConsultedService - Make source and stage NOT NULL
 ALTER TABLE "ConsultedService"
   ALTER COLUMN "source" SET NOT NULL,
   ALTER COLUMN "stage" SET NOT NULL;
 
--- Step 8: Appointment - Add new columns
+-- Step 7: Appointment - Add new columns
 ALTER TABLE "Appointment"
   ADD COLUMN "type" TEXT,
   ADD COLUMN "consultedServiceId" TEXT;
@@ -286,11 +278,13 @@ SET "type" = 'TREATMENT';  -- Assume all existing are treatment
 ALTER TABLE "Appointment"
   ALTER COLUMN "type" SET NOT NULL;
 
--- Step 9: Add indexes
+-- Step 8: Add indexes
 CREATE INDEX "Customer_type_clinicId_createdAt_idx" ON "Customer"("type", "clinicId", "createdAt");
+CREATE INDEX "Customer_source_type_idx" ON "Customer"("source", "type");
 CREATE INDEX "ConsultedService_source_serviceStatus_idx" ON "ConsultedService"("source", "serviceStatus");
 CREATE INDEX "ConsultedService_stage_clinicId_idx" ON "ConsultedService"("stage", "clinicId");
 CREATE INDEX "ConsultedService_saleOnlineId_stage_idx" ON "ConsultedService"("saleOnlineId", "stage");
+CREATE INDEX "ConsultedService_stage_nextFollowUpDate_idx" ON "ConsultedService"("stage", "nextFollowUpDate");
 CREATE INDEX "Appointment_type_clinicId_appointmentDateTime_idx" ON "Appointment"("type", "clinicId", "appointmentDateTime");
 
 COMMIT;
@@ -310,13 +304,13 @@ COMMIT;
 
 **Tasks:**
 
-- [ ] Add `type` field to Customer schemas
+- [ ] Add `type` to Customer schemas (keep existing `source`, `sourceNotes` fields as-is)
 - [ ] Add `LeadCreateSchema` (loose validation: phone + name optional)
 - [ ] Add `CustomerCreateSchema` (strict validation: all required)
 - [ ] Add `ConvertLeadSchema` (fill missing fields)
-- [ ] Keep existing `source`, `sourceNotes`, `serviceOfInterest` in schemas
-- [ ] Add `source`, `stage`, `saleOnlineId` to ConsultedService schemas
-- [ ] Create CustomerFollowUp & FollowUpActivity schemas
+- [ ] Add `source`, `stage`, `followUpPriority`, `nextFollowUpDate`, `saleOnlineId` to ConsultedService schemas
+- [ ] Note: `stage` determines active/completed status (WON/LOST = completed, others = active)
+- [ ] Create FollowUpActivity schema with polymorphic validation (either customerId or consultedServiceId required)
 
 #### 1.2. Repositories
 
@@ -332,8 +326,10 @@ COMMIT;
 - [ ] Add `convertLeadToCustomer()` method
 - [ ] Add `findByPhone()` for deduplication
 - [ ] Update ConsultedService queries (add source, stage filters)
-- [ ] Add follow-up CRUD methods
-- [ ] Update sales-report queries (use `consultedService.source`)
+- [ ] Add query to get active deals needing follow-up today: `findDealsForFollowUp(saleId, date)` - WHERE `stage NOT IN ('WON', 'LOST')` AND `nextFollowUpDate = date`
+- [ ] Add query to get customer with all deals and activities: `findCustomerWithDealsAndActivities(customerId)`
+- [ ] Add FollowUpActivity CRUD methods
+- [ ] Update sales-report queries (use `consultedService.source` for deal-level tracking)
 
 #### 1.3. Services
 
@@ -350,9 +346,8 @@ COMMIT;
 - [ ] Add lead creation logic
 - [ ] Add lead conversion logic (generate customerCode)
 - [ ] Add deduplication check before create
-- [ ] Auto-create follow-up when ConsultedService created
-- [ ] Auto-update follow-up status when service confirmed
-- [ ] Update report services to use `consultedService.source`
+- [ ] Note: No need to manage followUpStatus - `stage` field handles active/completed state automatically
+- [ ] Update report services to use `consultedService.source` for deal-level ROI tracking
 
 #### 1.4. API Routes
 
@@ -362,9 +357,13 @@ COMMIT;
 - [ ] `POST /api/v1/customers` - Create customer
 - [ ] `POST /api/v1/leads/:id/convert` - Convert lead to customer
 - [ ] `PATCH /api/v1/consulted-services/:id/stage` - Update pipeline stage
-- [ ] `GET /api/v1/consulted-services?stage=NEW` - Filter by stage
-- [ ] CRUD for `/api/v1/follow-ups`
-- [ ] CRUD for `/api/v1/follow-ups/:id/activities`
+- [ ] `PATCH /api/v1/consulted-services/:id/follow-up` - Update follow-up fields (nextFollowUpDate, priority)
+- [ ] `GET /api/v1/consulted-services?stage=CONSULTING` - Filter by stage
+- [ ] `GET /api/v1/consulted-services/follow-ups/today` - Get active deals (stage NOT IN WON/LOST) needing follow-up today
+- [ ] `GET /api/v1/customers/:id/with-deals-and-activities` - Get customer with all deals and activities
+- [ ] `POST /api/v1/follow-up-activities` - Create activity (either for customer or deal)
+- [ ] `GET /api/v1/follow-up-activities?consultedServiceId=X` - Get activities for a deal
+- [ ] `GET /api/v1/follow-up-activities?customerId=X` - Get activities for a customer
 
 ---
 
@@ -447,13 +446,13 @@ COMMIT;
   - Hide customerCode
   - Set type = LEAD
   - Loose validation (phone + name optional)
-  - Focus on firstSource
+  - Focus on `source` (nguồn gốc ban đầu - static customer origin)
 - [ ] If mode = RECEPTION:
   - Show all fields
   - Set type = CUSTOMER
   - Auto-generate customerCode
   - Strict validation
-- [ ] Update field labels: `source` → `firstSource`
+- [ ] Clarify: Customer.source (static origin) vs ConsultedService.source (dynamic deal source)
 - [ ] Add deduplication check before submit
 
 #### 4.2. Lead Conversion
@@ -506,28 +505,40 @@ COMMIT;
 
 **Tasks:**
 
-- [ ] Create route `/follow-ups`
-- [ ] List view with filters:
-  - Status: pending, in_progress, success, give_up
-  - Priority: high, medium, low
-  - Assigned sale
-  - Next follow-up date range
-  - Clinic
-- [ ] Table columns: Customer, Service, Status, Priority, Next Date, Assigned Sale
-- [ ] Click row → Open detail modal
-- [ ] Detail modal shows:
-  - Customer info (name, phone, firstSource)
-  - Service info (dentalService, price, status)
-  - Timeline of activities (chronological)
-  - Form to add new activity
-- [ ] Add activity form:
-  - Type: call, sms, zalo, meeting, note
-  - Result: interested, callback_later, not_interested, no_contact
-  - Notes (textarea)
+- [ ] Create route `/follow-ups` (or `/sales/follow-ups`)
+- [ ] List view grouped by Customer, showing all active deals (stage NOT IN WON/LOST) needing follow-up:
+  - Filters:
+    - Deal stage: NEW, CONTACTED, CONSULTING, QUOTED (active stages only)
+    - Priority: HIGH, MEDIUM, LOW
+    - Assigned sale (filter by saleOnlineId or consultingSaleId)
+    - Next follow-up date range
+    - Clinic
+    - Show completed toggle (to view WON/LOST deals)
+  - Display format:
+    ```
+    📞 Chị Lan (0987654321) - 2 deals cần follow
+       • Niềng răng (50tr) - Hôm nay - Priority: HIGH
+       • Implant (30tr) - Ngày mai - Priority: MEDIUM
+    ```
+- [ ] Click customer row → Open modal showing:
+  - Customer info (name, phone, source - static origin)
+  - List of all deals (active and completed)
+  - Each deal shows:
+    - Service name, price, stage (NEW/CONTACTED/CONSULTING/QUOTED/WON/LOST), source (deal source)
+    - Follow-up info: priority, next date
+    - Assigned sale: saleOnlineId (telesale) hoặc consultingSaleId (offline)
+    - Activity timeline for this deal
+    - Quick action: Add activity for this deal
+  - Customer-level activities (not tied to specific deal)
+- [ ] Add activity modal:
+  - Choose target: "Ghi chú chung về khách" (customer) or "Về deal cụ thể" (consultedService)
+  - Type: CALL, SMS, ZALO, MEETING, NOTE, EMAIL
+  - Result: INTERESTED, CALLBACK_LATER, NOT_INTERESTED, NO_CONTACT
+  - Notes (textarea, can mention multiple services)
   - Next contact date
-- [ ] Auto-create follow-up when ConsultedService created with needsFollowUp
-- [ ] Auto-update follow-up status when service confirmed
-- [ ] Notification for overdue follow-ups
+  - Auto-update deal's `nextFollowUpDate` if activity is for specific deal
+- [ ] Note: stage automatically indicates active (NEW/CONTACTED/CONSULTING/QUOTED) vs completed (WON/LOST)
+- [ ] Dashboard widget: "Cần gọi hôm nay" showing active deals (stage NOT IN WON/LOST) with overdue + today's nextFollowUpDate
 
 #### 5.2. Customer Detail Integration
 
@@ -538,12 +549,22 @@ COMMIT;
 
 **Tasks:**
 
-- [ ] Add "Follow-ups" tab in Customer detail
-- [ ] Show all follow-ups for this customer
-- [ ] Group by service (1 follow-up per service)
-- [ ] Show activity timeline per follow-up
-- [ ] Quick add activity button
-- [ ] Highlight overdue/due today
+- [ ] Add "Deals & Follow-ups" tab in Customer detail
+- [ ] Show all deals (ConsultedServices) for this customer
+- [ ] Each deal card shows:
+  - Service info: name, price, stage (badge color based on stage), source (deal source - dynamic)
+  - Follow-up info: priority, next date (only show for active deals)
+  - Sale phụ trách: saleOnlineId (telesale) hoặc consultingSaleId (offline)
+  - Activity timeline (activities gắn với deal này)
+  - Button: "Add Activity" for this deal
+- [ ] Show customer-level activities separately (activities gắn với customer, không liên quan deal cụ thể)
+- [ ] Highlight overdue/due today deals with red badge
+- [ ] Display Customer.source vs ConsultedService.source clearly:
+  ```
+  Nguồn gốc khách hàng: Bạn bè giới thiệu (2020) ← Customer.source (static)
+  Deal Niềng răng: Từ Facebook Ads Tháng 12 ← ConsultedService.source (dynamic)
+  Deal Implant: Walk-in ← ConsultedService.source (dynamic)
+  ```
 
 ---
 
@@ -558,16 +579,25 @@ COMMIT;
 
 **Tasks:**
 
-- [ ] Change source query from `customer.source` → `consultedService.source`
+- [ ] Change source attribution from `customer.source` → `consultedService.source` (deal-level)
 - [ ] Update KPI calculations:
-  - New customers: Count unique customers where `consultedService.source = X`
-  - Revenue: Sum from `consultedService` where `source = X`
-  - Conversion rate: `(Won services / Total services) * 100`
+  - **New deals**: Count deals where `consultedService.source = X AND createdAt IN dateRange`
+  - **Unique customers**: Count DISTINCT customers from those deals
+  - **Revenue**: SUM(price) from deals where `source = X AND stage = WON`
+  - **Win rate**: `(WON deals / Total deals) * 100` per source
 - [ ] Add new metrics:
-  - Average deal size per source
-  - Win rate per source
-  - Average time to close per source
-- [ ] Test with new data
+  - **Average deal size**: AVG(price) WHERE stage = WON, grouped by source
+  - **Conversion rate by stage**: Funnel NEW → CONTACTED → CONSULTING → QUOTED → WON
+  - **Average time to close**: AVG(wonDate - createdAt) per source
+  - **ROI per source**: (Revenue - Marketing Cost) / Marketing Cost \* 100
+- [ ] Example report output:
+  ```
+  | Source          | Deals | Customers | Won | Win Rate | Revenue      | Avg Deal | ROI   |
+  |-----------------|-------|-----------|-----|----------|--------------|----------|-------|
+  | Facebook Ads    | 65    | 50        | 20  | 30.8%    | 500,000,000đ | 25tr     | 250%  |
+  | Google Search   | 45    | 30        | 25  | 55.6%    | 600,000,000đ | 24tr     | 400%  |
+  | Referral        | 25    | 20        | 18  | 72.0%    | 300,000,000đ | 16.7tr   | ∞     |
+  ```
 
 #### 6.2. Revenue Report Changes
 
@@ -592,17 +622,21 @@ COMMIT;
 
 **Tasks:**
 
-- [ ] Source Performance Report:
-  - Table: Source, New Leads, Converted, Win Rate, Revenue, ROI
+- [ ] **Deal Source Performance Report**:
+  - Table: Source, New Deals, Unique Customers, Won Deals, Win Rate, Revenue, Avg Deal Size, ROI
   - Chart: Revenue by source (bar chart)
-- [ ] Pipeline Report:
+  - Chart: Win rate by source (line chart)
+  - Insight: Which sources bring high-value deals vs high-volume deals
+- [ ] **Pipeline Report**:
   - Funnel chart: NEW → CONTACTED → CONSULTING → QUOTED → WON
   - Conversion rates between stages
   - Average time in each stage
-- [ ] Follow-up Report:
-  - By sale: Assigned, Completed, Pending, Success rate
-  - By priority: High/Medium/Low distribution
-  - Overdue follow-ups
+  - Bottleneck analysis: Where do deals get stuck?
+- [ ] **Follow-up Performance Report**:
+  - By sale: Active deals assigned, Completed this week, Success rate (WON / Total)
+  - By priority: HIGH/MEDIUM/LOW distribution
+  - Overdue deals count and total value at risk
+  - Average response time (time between activities)
 
 ---
 
@@ -615,19 +649,29 @@ COMMIT;
 
 **Tasks:**
 
-- [ ] "My Follow-ups" widget:
-  - Pending count
-  - Due today count
-  - Overdue count (red badge)
-  - Quick link to follow-up list
-- [ ] "Pipeline Summary" widget:
-  - Cards showing count & value per stage
-  - Quick link to pipeline view
-- [ ] "Conversion Funnel" chart:
-  - Lead → Customer → Service → Won
-  - Conversion rates between stages
-- [ ] Update "Sales by Source" widget to use service-level source
-- [ ] Update "Revenue by Source" widget
+- [ ] **"My Follow-ups Today"** widget:
+  - Active deals count (stage NOT IN 'WON', 'LOST')
+  - Due today count (active deals WHERE nextFollowUpDate = today)
+  - Overdue count (active deals WHERE nextFollowUpDate < today) - red badge
+  - High priority count - orange badge
+  - Quick action: "Xem danh sách" → Navigate to `/sales/follow-ups?date=today`
+- [ ] **"Pipeline Summary"** widget:
+  - Cards per stage showing:
+    - Deal count
+    - Total value
+    - Avg deal size
+  - Quick link to pipeline Kanban view
+- [ ] **"Deal Conversion Funnel"** chart:
+  - Visual funnel: NEW (100%) → CONTACTED (60%) → CONSULTING (40%) → QUOTED (25%) → WON (15%)
+  - Show conversion rate between each stage
+  - Click stage → Filter pipeline by that stage
+- [ ] **"Revenue by Deal Source"** widget (UPDATED):
+  - Use `consultedService.source` instead of `customer.source`
+  - Show top 5 sources by revenue
+  - Chart: Pie or bar chart
+- [ ] **"Customer Journey"** widget (NEW):
+  - Show difference between Customer.source (static origin) vs ConsultedService.source (dynamic deal source)
+  - Example: "50 khách từ Referral (Customer.source) đã tạo 80 deals từ nhiều sources khác nhau (ConsultedService.source)"
 
 ---
 
@@ -642,11 +686,14 @@ COMMIT;
 
 #### 8.2. Integration Tests
 
-- [ ] Lead creation → Follow-up auto-created
-- [ ] Lead conversion → Customer code generated, type updated
-- [ ] Service confirmed → Follow-up status updated
-- [ ] Drag & drop in Kanban → Stage updated in DB
-- [ ] Deduplication flow
+- [ ] Lead creation → ConsultedService created with stage = 'NEW'
+- [ ] Lead conversion → Customer code generated, type updated to CUSTOMER
+- [ ] Deal stage WON/LOST → Deal no longer appears in active follow-up list
+- [ ] Add activity to deal → nextFollowUpDate updated in ConsultedService
+- [ ] Drag & drop in Kanban → Stage updated
+- [ ] Deduplication flow: Existing phone → Offer to add new deal instead of new customer
+- [ ] Polymorphic activity creation: Customer-level vs Deal-level
+- [ ] Query active deals (stage NOT IN WON/LOST) needing follow-up today grouped by customer
 
 #### 8.3. E2E Tests (Playwright)
 
