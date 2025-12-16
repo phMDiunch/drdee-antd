@@ -31,6 +31,7 @@ export interface RawDailyData {
   cardVisa: number;
   transfer: number;
   totalRevenue: number;
+  companyRevenue: number;
 }
 
 /**
@@ -136,6 +137,7 @@ export const revenueReportRepo = {
                 name: true,
                 serviceGroup: true,
                 department: true,
+                paymentAccountType: true,
               },
             },
             treatingDoctor: {
@@ -230,6 +232,7 @@ export const revenueReportRepo = {
         cardRegular: number;
         cardVisa: number;
         transfer: number;
+        companyRevenue: number;
       }
     >();
 
@@ -242,6 +245,7 @@ export const revenueReportRepo = {
         cardRegular: 0,
         cardVisa: 0,
         transfer: 0,
+        companyRevenue: 0,
       };
 
       switch (detail.paymentMethod) {
@@ -259,6 +263,13 @@ export const revenueReportRepo = {
           break;
       }
 
+      // Add to company revenue if service uses company account
+      if (
+        detail.consultedService.dentalService.paymentAccountType === "COMPANY"
+      ) {
+        existing.companyRevenue += detail.amount;
+      }
+
       dateMap.set(dateKey, existing);
     });
 
@@ -268,6 +279,7 @@ export const revenueReportRepo = {
         ...data,
         totalRevenue:
           data.cash + data.cardRegular + data.cardVisa + data.transfer,
+        companyRevenue: data.companyRevenue,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
   },

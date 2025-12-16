@@ -77,6 +77,7 @@ export const DailyRevenueDataSchema = z.object({
   cardVisa: z.number(),
   transfer: z.number(),
   totalRevenue: z.number(),
+  companyRevenue: z.number(), // Revenue from services with paymentAccountType = COMPANY
   percentage: z.number(),
 });
 

@@ -49,6 +49,7 @@ export default function SummaryTable<T extends DimensionData>({
         cardRegular: 0,
         cardVisa: 0,
         transfer: 0,
+        companyRevenue: 0,
         voucherCount: 0,
         customerCount: 0,
         totalPaid: 0,
@@ -62,6 +63,7 @@ export default function SummaryTable<T extends DimensionData>({
       cardRegular?: number;
       cardVisa?: number;
       transfer?: number;
+      companyRevenue?: number;
       voucherCount?: number;
       customerCount?: number;
       totalPaid?: number;
@@ -83,6 +85,10 @@ export default function SummaryTable<T extends DimensionData>({
       );
       result.cardVisa = dailyData.reduce((sum, item) => sum + item.cardVisa, 0);
       result.transfer = dailyData.reduce((sum, item) => sum + item.transfer, 0);
+      result.companyRevenue = dailyData.reduce(
+        (sum, item) => sum + item.companyRevenue,
+        0
+      );
     }
 
     // Source dimension
@@ -250,6 +256,16 @@ export default function SummaryTable<T extends DimensionData>({
           ),
         },
         {
+          title: "DT TK Công ty",
+          dataIndex: "companyRevenue",
+          key: "companyRevenue",
+          width: 150,
+          align: "right",
+          render: (value: number) => (
+            <Text style={{ color: "#eb2f96" }}>{value.toLocaleString()} ₫</Text>
+          ),
+        },
+        {
           title: "%",
           dataIndex: "percentage",
           key: "percentage",
@@ -401,6 +417,11 @@ export default function SummaryTable<T extends DimensionData>({
       row.transfer = (
         <Text strong style={{ color: "#13c2c2" }}>
           {(totals.transfer || 0).toLocaleString()} ₫
+        </Text>
+      );
+      row.companyRevenue = (
+        <Text strong style={{ color: "#eb2f96" }}>
+          {(totals.companyRevenue || 0).toLocaleString()} ₫
         </Text>
       );
       row.percentage = <Text strong>100%</Text>;

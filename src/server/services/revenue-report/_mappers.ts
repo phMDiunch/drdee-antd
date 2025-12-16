@@ -59,6 +59,7 @@ export function mapDailyData(
     cardVisa: d.cardVisa,
     transfer: d.transfer,
     totalRevenue: d.totalRevenue,
+    companyRevenue: d.companyRevenue,
     percentage:
       totalRevenue > 0
         ? Math.round((d.totalRevenue / totalRevenue) * 1000) / 10
