@@ -4,6 +4,7 @@ import {
   TREATMENT_STATUSES,
   type TreatmentStatus,
 } from "./treatment-log.schema";
+import { CUSTOMER_SOURCES } from "@/features/customers/constants";
 
 /**
  * ============================================================================
@@ -43,6 +44,8 @@ const ConsultedServiceCommonFieldsSchema = z.object({
   consultingSaleId: z.string().uuid().optional().nullable(),
   treatingDoctorId: z.string().uuid().optional().nullable(),
   specificStatus: z.string().trim().optional().nullable(),
+  source: z.string().trim().min(1, "Vui lòng chọn nguồn khách"), // REQUIRED like Customer
+  sourceNote: z.string().trim().optional().nullable(),
 });
 
 /**
@@ -104,6 +107,37 @@ const validateConsultedServiceConditionalFields = (
 };
 
 /**
+ * Validate sourceNote based on source's noteType (same as Customer)
+ * - "text_input_required" → sourceNote REQUIRED
+ * - "text_input_optional" → sourceNote optional
+ * - "employee_search" → sourceNote optional (employeeId)
+ * - "customer_search" → sourceNote optional (customerId)
+ * - "none" → sourceNote should be empty/null
+ */
+const validateSourceNoteConditional = (
+  data: {
+    source?: string;
+    sourceNote?: string | null;
+  },
+  ctx: z.RefinementCtx
+) => {
+  if (!data.source) return; // source is required by base schema
+
+  const sourceMeta = CUSTOMER_SOURCES.find((s) => s.value === data.source);
+  if (!sourceMeta) return;
+
+  if (sourceMeta.noteType === "text_input_required") {
+    if (!data.sourceNote || data.sourceNote.trim() === "") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Vui lòng nhập ghi chú nguồn",
+        path: ["sourceNote"],
+      });
+    }
+  }
+};
+
+/**
  * ============================================================================
  * FRONTEND SCHEMAS (Client-side Form Validation)
  * ============================================================================
@@ -125,7 +159,9 @@ export const CreateConsultedServiceFormSchema =
     consultedServiceUnit: z.string().optional(),
     minPrice: z.number().optional(),
     price: z.number().optional(),
-  }).superRefine(validateConsultedServiceConditionalFields);
+  })
+    .superRefine(validateConsultedServiceConditionalFields)
+    .superRefine(validateSourceNoteConditional);
 
 export type CreateConsultedServiceFormData = z.infer<
   typeof CreateConsultedServiceFormSchema
@@ -145,7 +181,9 @@ export const UpdateConsultedServiceFormSchema =
     consultedServiceUnit: z.string().optional(),
     minPrice: z.number().optional(),
     price: z.number().optional(),
-  }).superRefine(validateConsultedServiceConditionalFields);
+  })
+    .superRefine(validateConsultedServiceConditionalFields)
+    .superRefine(validateSourceNoteConditional);
 
 export type UpdateConsultedServiceFormData = z.infer<
   typeof UpdateConsultedServiceFormSchema
@@ -263,6 +301,10 @@ export const ConsultedServiceResponseSchema = z.object({
   // Treatment details
   toothPositions: z.array(z.string()),
   specificStatus: z.string().nullable(),
+
+  // Classification
+  source: z.string().nullable(),
+  sourceNote: z.string().nullable(),
 
   // Financial
   quantity: z.number(),

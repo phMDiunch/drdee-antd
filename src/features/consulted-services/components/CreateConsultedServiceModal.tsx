@@ -14,12 +14,15 @@ import {
   Alert,
   Tag,
   Space,
+  Spin,
 } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDentalServices } from "@/features/dental-services/hooks/useDentalServices";
 import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmployees";
+import { CUSTOMER_SOURCES } from "@/features/customers/constants";
+import { useCustomersSearch } from "@/features/customers/hooks/useCustomerSearch";
 import ToothSelectorModal from "./ToothSelectorModal";
 import type { CreateConsultedServiceRequest } from "@/shared/validation/consulted-service.schema";
 
@@ -33,6 +36,8 @@ const CreateConsultedServiceFormSchema = z.object({
   consultingSaleId: z.string().optional().nullable(),
   treatingDoctorId: z.string().optional().nullable(),
   specificStatus: z.string().optional().nullable(),
+  source: z.string().min(1, "Vui lòng chọn nguồn khách"),
+  sourceNote: z.string().optional().nullable(),
 });
 
 type FormData = z.infer<typeof CreateConsultedServiceFormSchema>;
@@ -71,6 +76,8 @@ export default function CreateConsultedServiceModal({
       consultingSaleId: null,
       treatingDoctorId: null,
       specificStatus: "",
+      source: "",
+      sourceNote: null,
     }),
     []
   );
@@ -99,6 +106,37 @@ export default function CreateConsultedServiceModal({
   const quantity = watch("quantity");
   const preferentialPrice = watch("preferentialPrice");
   const toothPositions = watch("toothPositions");
+  const sourceValue = watch("source");
+
+  // Source metadata for conditional sourceNote rendering
+  const sourceMeta = useMemo(
+    () => CUSTOMER_SOURCES.find((s) => s.value === sourceValue),
+    [sourceValue]
+  );
+
+  // Customer search for sourceNote (when source = "customer_referral")
+  const [custQuery, setCustQuery] = useState("");
+  const [custDebounced, setCustDebounced] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setCustDebounced(custQuery), 500);
+    return () => clearTimeout(timer);
+  }, [custQuery]);
+
+  const { data: customerSearchResults = [], isFetching: custFetching } =
+    useCustomersSearch({
+      q: custDebounced,
+      requirePhone: false,
+    });
+
+  const customerSourceOptions = useMemo(
+    () =>
+      customerSearchResults.map((c) => ({
+        label: `${c.fullName} — ${c.phone ?? "—"}`,
+        value: c.id,
+      })),
+    [customerSearchResults]
+  );
 
   // Fetch data
   const { data: dentalServices = [] } = useDentalServices(false);
@@ -221,6 +259,8 @@ export default function CreateConsultedServiceModal({
       consultingSaleId: formData.consultingSaleId || null,
       treatingDoctorId: formData.treatingDoctorId || null,
       specificStatus: formData.specificStatus || null,
+      source: formData.source,
+      sourceNote: formData.sourceNote || null,
     };
 
     onSubmit(payload);
@@ -514,6 +554,143 @@ export default function CreateConsultedServiceModal({
                   </Form.Item>
                 )}
               />
+            </Col>
+          </Row>
+
+          {/* Row 7: Source & Source Note */}
+          <Row gutter={12}>
+            <Col xs={24} lg={12}>
+              <Controller
+                name="source"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Form.Item
+                    label="Nguồn khách"
+                    required
+                    validateStatus={fieldState.error ? "error" : ""}
+                    help={fieldState.error?.message}
+                  >
+                    <Select
+                      {...field}
+                      showSearch
+                      placeholder="Chọn nguồn khách"
+                      options={CUSTOMER_SOURCES.map((s) => ({
+                        label: s.label,
+                        value: s.value,
+                        desc: s.description,
+                      }))}
+                      optionRender={(option) => (
+                        <Space
+                          direction="vertical"
+                          size={0}
+                          style={{ width: "100%" }}
+                        >
+                          <span style={{ fontWeight: 500 }}>
+                            {option.label}
+                          </span>
+                          {option.data.desc && (
+                            <span
+                              style={{ fontSize: "12px", color: "#8c8c8c" }}
+                            >
+                              {option.data.desc}
+                            </span>
+                          )}
+                        </Space>
+                      )}
+                      onChange={(v) => {
+                        field.onChange(v);
+                        setValue("sourceNote", null);
+                      }}
+                    />
+                  </Form.Item>
+                )}
+              />
+            </Col>
+            <Col xs={24} lg={12}>
+              {sourceMeta && sourceMeta.noteType !== "none" && (
+                <>
+                  {sourceMeta.noteType === "employee_search" ? (
+                    <Controller
+                      name="sourceNote"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Form.Item
+                          label="Ghi chú nguồn"
+                          validateStatus={fieldState.error ? "error" : ""}
+                          help={fieldState.error?.message}
+                        >
+                          <Select
+                            {...field}
+                            showSearch
+                            allowClear
+                            placeholder="Tìm và chọn nhân viên giới thiệu"
+                            options={employeeOptions}
+                            filterOption={(input, option) =>
+                              (option?.label ?? "")
+                                .toLowerCase()
+                                .includes(input.toLowerCase())
+                            }
+                          />
+                        </Form.Item>
+                      )}
+                    />
+                  ) : sourceMeta.noteType === "customer_search" ? (
+                    <Controller
+                      name="sourceNote"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Form.Item
+                          label="Ghi chú nguồn"
+                          validateStatus={fieldState.error ? "error" : ""}
+                          help={fieldState.error?.message}
+                        >
+                          <Select
+                            {...field}
+                            showSearch
+                            allowClear
+                            onSearch={(v) => setCustQuery(v)}
+                            filterOption={false}
+                            options={customerSourceOptions}
+                            placeholder="Nhập tên hoặc SĐT để tìm khách (ít nhất 2 ký tự)"
+                            notFoundContent={
+                              custFetching ? (
+                                <Spin size="small" />
+                              ) : custQuery.length >= 2 ? (
+                                "Không tìm thấy khách hàng"
+                              ) : custQuery.length > 0 ? (
+                                "Nhập ít nhất 2 ký tự"
+                              ) : (
+                                "Nhập để tìm kiếm"
+                              )
+                            }
+                          />
+                        </Form.Item>
+                      )}
+                    />
+                  ) : (
+                    <Controller
+                      name="sourceNote"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Form.Item
+                          label="Ghi chú nguồn"
+                          required={
+                            sourceMeta.noteType === "text_input_required"
+                          }
+                          validateStatus={fieldState.error ? "error" : ""}
+                          help={fieldState.error?.message}
+                        >
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            placeholder="Nhập ghi chú nguồn (nếu cần)"
+                          />
+                        </Form.Item>
+                      )}
+                    />
+                  )}
+                </>
+              )}
             </Col>
           </Row>
 

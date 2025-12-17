@@ -86,6 +86,8 @@ const EMPLOYEE_EDITABLE_FIELDS_UNCONFIRMED = [
   "consultingSaleId",
   "treatingDoctorId",
   "specificStatus",
+  "source",
+  "sourceNote",
 ];
 
 /**

@@ -373,6 +373,10 @@ model ConsultedService {
   toothPositions String[] // Mảng vị trí răng, ví dụ: ["R16", "R26"]
   specificStatus String? // Ghi chú của bác sĩ về tình trạng
 
+  // Thông tin phân loại
+  source     String? // Nguồn khách
+  sourceNote String? // Ghi chú nguồn
+
   // Thông tin Tài chính
   quantity          Int @default(1) // Số lượng
   preferentialPrice Int // Giá ưu đãi cho 1 đơn vị

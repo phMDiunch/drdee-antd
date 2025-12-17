@@ -44,6 +44,7 @@ export type NoteType =
 export interface CustomerSource {
   value: string; // Giá trị lưu vào database
   label: string; // Nhãn hiển thị cho người dùng
+  description?: string; // Giải thích chi tiết (hiển thị trong dropdown)
   noteType: NoteType; // "Chỉ thị" cho UI
 }
 
@@ -53,44 +54,133 @@ export const CUSTOMER_SOURCES: CustomerSource[] = [
   {
     value: "employee_referral",
     label: "Nhân viên giới thiệu",
+    description: "Khách hàng được giới thiệu bởi nhân viên của phòng khám",
     noteType: "employee_search",
   },
   {
     value: "customer_referral",
     label: "Khách cũ giới thiệu",
+    description: "Khách hàng được giới thiệu bởi khách hàng cũ của phòng khám",
     noteType: "customer_search",
   },
   {
     value: "acquaintance_referral",
     label: "Người quen giới thiệu",
+    description:
+      "Khách hàng được giới thiệu bởi người quen (bạn bè, gia đình...)",
     noteType: "text_input_optional",
   },
 
+  // Nhóm Khách hàng trung thành
+  {
+    value: "returning_customer",
+    label: "Khách cũ làm dịch vụ mới",
+    description:
+      "Khách hàng đã từng điều trị tại phòng khám, quay lại để thực hiện dịch vụ mới",
+    noteType: "none",
+  },
+
   // Nhóm Online
-  { value: "facebook", label: "Facebook", noteType: "text_input_optional" },
-  { value: "zalo", label: "Zalo", noteType: "text_input_optional" },
-  { value: "tiktok", label: "Tiktok", noteType: "text_input_optional" },
-  { value: "youtube", label: "Youtube", noteType: "text_input_optional" },
-  { value: "google_search", label: "Tìm kiếm Google", noteType: "none" },
-  { value: "google_maps", label: "Google Maps", noteType: "none" },
-  { value: "website", label: "Website Dr Dee", noteType: "none" },
+  {
+    value: "facebook",
+    label: "Facebook",
+    description:
+      "Khách hàng biết đến qua fanpage, quảng cáo hoặc bài viết trên Facebook",
+    noteType: "text_input_optional",
+  },
+  {
+    value: "facebook_group",
+    label: "Group Facebook",
+    description:
+      "Khách hàng biết đến qua các nhóm cộng đồng, nhóm kín trên Facebook",
+    noteType: "text_input_optional",
+  },
+  {
+    value: "zalo",
+    label: "Zalo",
+    description:
+      "Khách hàng liên hệ qua Zalo OA, nhóm chat hoặc quảng cáo Zalo Ads",
+    noteType: "text_input_optional",
+  },
+  {
+    value: "tiktok",
+    label: "Tiktok",
+    description:
+      "Khách hàng biết đến qua video, livestream hoặc quảng cáo trên Tiktok",
+    noteType: "text_input_optional",
+  },
+  {
+    value: "youtube",
+    label: "Youtube",
+    description:
+      "Khách hàng xem video review, hướng dẫn hoặc quảng cáo trên Youtube",
+    noteType: "text_input_optional",
+  },
+  {
+    value: "google_search",
+    label: "Tìm kiếm Google",
+    description:
+      "Khách hàng tìm kiếm dịch vụ nha khoa trên Google và tìm thấy phòng khám",
+    noteType: "none",
+  },
+  {
+    value: "google_maps",
+    label: "Google Maps",
+    description:
+      "Khách hàng tìm thấy phòng khám qua Google Maps khi tìm kiếm lân cận",
+    noteType: "none",
+  },
+  {
+    value: "website",
+    label: "Website Dr Dee",
+    description:
+      "Khách hàng truy cập và đặt lịch qua website chính thức của Dr Dee",
+    noteType: "none",
+  },
 
   // Nhóm Offline & Sự kiện
   {
     value: "voucher",
     label: "Voucher / Tờ rơi",
+    description:
+      "Khách hàng nhận voucher, tờ rơi quảng cáo từ các hoạt động marketing offline",
     noteType: "text_input_optional",
   },
   {
     value: "event",
     label: "Sự kiện / Hội thảo",
+    description:
+      "Khách hàng tham gia sự kiện, hội thảo do phòng khám tổ chức hoặc tài trợ",
     noteType: "text_input_optional",
   },
-  { value: "walk_in", label: "Khách vãng lai", noteType: "none" },
-  { value: "hismile", label: "Hismile", noteType: "text_input_optional" },
+  {
+    value: "walk_in",
+    label: "Khách vãng lai",
+    description:
+      "Khách hàng tự đến trực tiếp phòng khám mà không có giới thiệu hay quảng cáo",
+    noteType: "none",
+  },
+  {
+    value: "hismile",
+    label: "Hismile",
+    description: "Khách hàng biết đến qua đối tác Hismile",
+    noteType: "text_input_optional",
+  },
+  {
+    value: "nha_khoa_hub",
+    label: "Nha Khoa Hub",
+    description: "Khách hàng biết đến qua đối tác Nha Khoa Hub",
+    noteType: "text_input_optional",
+  },
 
   // Nguồn khác
-  { value: "other", label: "Nguồn khác", noteType: "text_input_required" },
+  {
+    value: "other",
+    label: "Nguồn khác",
+    description:
+      "Các nguồn khác không thuộc các nhóm trên (vui lòng ghi rõ trong ghi chú)",
+    noteType: "text_input_required",
+  },
 ];
 
 /** DANH SÁCH CÁC DỊCH VỤ QUAN TÂM theo requirements */

@@ -12,6 +12,7 @@ import {
   Button,
   Spin,
   Radio,
+  Space,
 } from "antd";
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -630,7 +631,22 @@ export default function CustomerFormModal({
                     options={CUSTOMER_SOURCES.map((s) => ({
                       label: s.label,
                       value: s.value,
+                      desc: s.description,
                     }))}
+                    optionRender={(option) => (
+                      <Space
+                        direction="vertical"
+                        size={0}
+                        style={{ width: "100%" }}
+                      >
+                        <span style={{ fontWeight: 500 }}>{option.label}</span>
+                        {option.data.desc && (
+                          <span style={{ fontSize: "12px", color: "#8c8c8c" }}>
+                            {option.data.desc}
+                          </span>
+                        )}
+                      </Space>
+                    )}
                     onChange={(v) => {
                       field.onChange(v);
                       setValue("sourceNotes", undefined);

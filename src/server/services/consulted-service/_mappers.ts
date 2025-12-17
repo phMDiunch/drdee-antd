@@ -51,6 +51,10 @@ export function mapConsultedServiceToResponse(
     toothPositions: row.toothPositions,
     specificStatus: row.specificStatus,
 
+    // Classification
+    source: row.source,
+    sourceNote: row.sourceNote,
+
     // Financial
     quantity: row.quantity,
     preferentialPrice: row.preferentialPrice,
