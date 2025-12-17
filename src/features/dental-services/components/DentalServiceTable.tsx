@@ -11,7 +11,6 @@ import {
   RollbackOutlined,
 } from "@ant-design/icons";
 import type { DentalServiceResponse } from "@/shared/validation/dental-service.schema";
-import { DENTAL_DEPARTMENTS, DENTAL_SERVICE_GROUPS } from "../constants";
 
 type Props = {
   data: DentalServiceResponse[];
@@ -22,6 +21,28 @@ type Props = {
   onDelete: (row: DentalServiceResponse) => void;
 };
 
+// Types cho nested structure
+type DentalServiceNode = DentalServiceResponse & {
+  type: "service";
+  key: string;
+};
+
+type ServiceGroupNode = {
+  type: "serviceGroup";
+  key: string;
+  serviceGroup: string;
+  children: DentalServiceNode[];
+};
+
+type DepartmentNode = {
+  type: "department";
+  key: string;
+  department: string;
+  children: ServiceGroupNode[];
+};
+
+type TableNode = DepartmentNode | ServiceGroupNode | DentalServiceNode;
+
 export default function DentalServiceTable({
   data,
   loading,
@@ -30,164 +51,267 @@ export default function DentalServiceTable({
   onUnarchive,
   onDelete,
 }: Props) {
-  // Tạo bộ lọc động từ dữ liệu và hằng số
-  const serviceGroupFilters = useMemo(() => {
-    const fromConst = DENTAL_SERVICE_GROUPS;
-    const fromData = Array.from(
-      new Set((data || []).map((d) => d.serviceGroup).filter(Boolean))
-    ) as string[];
-    const merged = Array.from(
-      new Set([...(fromConst as string[]), ...fromData])
+  // Transform flat data to nested structure
+  const nestedData = useMemo(() => {
+    const departmentMap = new Map<
+      string,
+      Map<string, DentalServiceResponse[]>
+    >();
+
+    // Group by department -> serviceGroup
+    data.forEach((service) => {
+      const dept = service.department || "Không có bộ môn";
+      const group = service.serviceGroup || "Không có nhóm";
+
+      if (!departmentMap.has(dept)) {
+        departmentMap.set(dept, new Map());
+      }
+
+      const groupMap = departmentMap.get(dept)!;
+      if (!groupMap.has(group)) {
+        groupMap.set(group, []);
+      }
+
+      groupMap.get(group)!.push(service);
+    });
+
+    // Convert to array structure with sorting
+    const result: DepartmentNode[] = [];
+    let deptIndex = 0;
+
+    // Sort departments alphabetically
+    const sortedDepts = Array.from(departmentMap.entries()).sort(([a], [b]) =>
+      a.localeCompare(b)
     );
-    return merged.map((v) => ({ text: v, value: v }));
-  }, [data]);
 
-  const departmentFilters = useMemo(() => {
-    const fromConst = DENTAL_DEPARTMENTS;
-    const fromData = Array.from(
-      new Set((data || []).map((d) => d.department).filter(Boolean))
-    ) as string[];
-    const merged = Array.from(
-      new Set([...(fromConst as string[]), ...fromData])
-    );
-    return merged.map((v) => ({ text: v, value: v }));
-  }, [data]);
+    sortedDepts.forEach(([deptName, groupMap]) => {
+      const serviceGroups: ServiceGroupNode[] = [];
+      let groupIndex = 0;
 
-  const columns: ColumnsType<DentalServiceResponse> = [
-    {
-      title: "Tên dịch vụ",
-      dataIndex: "name",
-      sorter: (a, b) => a.name.localeCompare(b.name),
-    },
-    {
-      title: "Nhóm dịch vụ",
-      dataIndex: "serviceGroup",
-      sorter: (a, b) =>
-        (a.serviceGroup || "").localeCompare(b.serviceGroup || ""),
-      filters: serviceGroupFilters,
-      onFilter: (value, record) => (record.serviceGroup || "") === value,
-    },
-    {
-      title: "Bộ môn",
-      dataIndex: "department",
-      sorter: (a, b) => (a.department || "").localeCompare(b.department || ""),
-      filters: departmentFilters,
-      onFilter: (value, record) => (record.department || "") === value,
-    },
-    {
-      title: "Đơn vị",
-      dataIndex: "unit",
-      width: 120,
-    },
-    {
-      title: "Giá niêm yết",
-      dataIndex: "price",
-      sorter: (a, b) => a.price - b.price,
-      render: (v: number) => (
-        <Tag color="blue">{v.toLocaleString("vi-VN")} ₫</Tag>
-      ),
-      width: 160,
-    },
-    {
-      title: "Cần follow-up",
-      dataIndex: "requiresFollowUp",
-      render: (v: boolean) =>
-        v ? <Tag color="orange">Có</Tag> : <Tag color="default">Không</Tag>,
-      filters: [
-        { text: "Có", value: true },
-        { text: "Không", value: false },
-      ],
-      onFilter: (value, record) => record.requiresFollowUp === value,
-      width: 140,
-    },
-    {
-      title: "Loại TK thu",
-      dataIndex: "paymentAccountType",
-      render: (v: string) =>
-        v === "COMPANY" ? (
-          <Tag color="blue">Công ty</Tag>
-        ) : (
-          <Tag color="purple">Cá nhân</Tag>
-        ),
-      filters: [
-        { text: "Công ty", value: "COMPANY" },
-        { text: "Cá nhân", value: "PERSONAL" },
-      ],
-      onFilter: (value, record) => record.paymentAccountType === value,
-      width: 130,
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "archivedAt",
-      render: (v: string | null | undefined) =>
-        v ? (
-          <Tag color="default">Archived</Tag>
-        ) : (
-          <Tag color="green">Active</Tag>
-        ),
-      width: 140,
-    },
-    {
-      title: "Tags",
-      dataIndex: "tags",
-      render: (tags: string[]) =>
-        (tags || []).map((t) => <Tag key={t}>{t}</Tag>),
-    },
-    {
-      title: "Thao tác",
-      key: "actions",
-      fixed: "right",
-      width: 150,
-      render: (_, row) => {
-        const isArchived = !!row.archivedAt;
-        return (
-          <Space>
-            <Tooltip title="Sửa">
-              <Button icon={<EditOutlined />} onClick={() => onEdit(row)} />
-            </Tooltip>
+      // Sort service groups alphabetically
+      const sortedGroups = Array.from(groupMap.entries()).sort(([a], [b]) =>
+        a.localeCompare(b)
+      );
 
-            {!isArchived ? (
-              <Tooltip title="Lưu trữ">
-                <Button
-                  icon={<InboxOutlined />}
-                  onClick={() => onArchive(row)}
-                />
-              </Tooltip>
-            ) : (
-              <Tooltip title="Khôi phục">
-                <Button
-                  icon={<RollbackOutlined />}
-                  onClick={() => onUnarchive(row)}
-                />
-              </Tooltip>
-            )}
-
-            <Popconfirm
-              title="Xóa dịch vụ"
-              description="Bạn chắc chắn muốn xóa? Hành động này không thể hoàn tác."
-              okText="Xóa"
-              cancelText="Hủy"
-              onConfirm={() => onDelete(row)}
-            >
-              <Tooltip title="Xóa">
-                <Button danger icon={<DeleteOutlined />} />
-              </Tooltip>
-            </Popconfirm>
-          </Space>
+      sortedGroups.forEach(([groupName, services]) => {
+        // Sort services by name alphabetically
+        const sortedServices = [...services].sort((a, b) =>
+          a.name.localeCompare(b.name)
         );
+
+        serviceGroups.push({
+          type: "serviceGroup",
+          key: `dept-${deptIndex}-group-${groupIndex}`,
+          serviceGroup: groupName,
+          children: sortedServices.map((service, serviceIndex) => ({
+            ...service,
+            type: "service",
+            key: `dept-${deptIndex}-group-${groupIndex}-service-${serviceIndex}`,
+          })),
+        });
+        groupIndex++;
+      });
+
+      result.push({
+        type: "department",
+        key: `dept-${deptIndex}`,
+        department: deptName,
+        children: serviceGroups,
+      });
+      deptIndex++;
+    });
+
+    return result;
+  }, [data]);
+
+  const columns = useMemo<ColumnsType<TableNode>>(
+    () => [
+      {
+        title: "Bộ môn / Nhóm dịch vụ / Tên dịch vụ",
+        dataIndex: "name",
+        key: "name",
+        render: (_, record) => {
+          if (record.type === "department") {
+            return (
+              <strong style={{ fontSize: 16, color: "#1890ff" }}>
+                {record.department}
+              </strong>
+            );
+          }
+          if (record.type === "serviceGroup") {
+            return (
+              <strong
+                style={{ fontSize: 14, color: "#52c41a", marginLeft: 24 }}
+              >
+                {record.serviceGroup}
+              </strong>
+            );
+          }
+          // service level
+          const service = record as DentalServiceNode;
+          return <span style={{ marginLeft: 48 }}>{service.name}</span>;
+        },
       },
-    },
-  ];
+      {
+        title: "Đơn vị",
+        dataIndex: "unit",
+        key: "unit",
+        width: 100,
+        render: (_, record) => {
+          if (record.type === "service") {
+            return (record as DentalServiceNode).unit;
+          }
+          return null;
+        },
+      },
+      {
+        title: "Giá niêm yết",
+        dataIndex: "price",
+        key: "price",
+        width: 150,
+        render: (_, record) => {
+          if (record.type === "service") {
+            const service = record as DentalServiceNode;
+            return (
+              <Tag color="blue">{service.price.toLocaleString("vi-VN")} ₫</Tag>
+            );
+          }
+          return null;
+        },
+      },
+      {
+        title: "Follow-up",
+        dataIndex: "requiresFollowUp",
+        key: "requiresFollowUp",
+        width: 110,
+        render: (_, record) => {
+          if (record.type === "service") {
+            const service = record as DentalServiceNode;
+            return service.requiresFollowUp ? (
+              <Tag color="orange">Có</Tag>
+            ) : (
+              <Tag color="default">Không</Tag>
+            );
+          }
+          return null;
+        },
+      },
+      {
+        title: "TK thu",
+        dataIndex: "paymentAccountType",
+        key: "paymentAccountType",
+        width: 110,
+        render: (_, record) => {
+          if (record.type === "service") {
+            const service = record as DentalServiceNode;
+            return service.paymentAccountType === "COMPANY" ? (
+              <Tag color="blue">Công ty</Tag>
+            ) : (
+              <Tag color="purple">Cá nhân</Tag>
+            );
+          }
+          return null;
+        },
+      },
+      {
+        title: "Trạng thái",
+        dataIndex: "archivedAt",
+        key: "archivedAt",
+        width: 110,
+        render: (_, record) => {
+          if (record.type === "service") {
+            const service = record as DentalServiceNode;
+            return service.archivedAt ? (
+              <Tag color="default">Archived</Tag>
+            ) : (
+              <Tag color="green">Active</Tag>
+            );
+          }
+          return null;
+        },
+      },
+      {
+        title: "Tags",
+        dataIndex: "tags",
+        key: "tags",
+        width: 200,
+        render: (_, record) => {
+          if (record.type === "service") {
+            const service = record as DentalServiceNode;
+            return (service.tags || []).map((t) => <Tag key={t}>{t}</Tag>);
+          }
+          return null;
+        },
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        fixed: "right",
+        width: 150,
+        render: (_, record) => {
+          // Only show actions for service level
+          if (record.type !== "service") return null;
+
+          const service = record as DentalServiceNode;
+          const isArchived = !!service.archivedAt;
+
+          return (
+            <Space>
+              <Tooltip title="Sửa">
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => onEdit(service)}
+                />
+              </Tooltip>
+
+              {!isArchived ? (
+                <Tooltip title="Lưu trữ">
+                  <Button
+                    icon={<InboxOutlined />}
+                    onClick={() => onArchive(service)}
+                  />
+                </Tooltip>
+              ) : (
+                <Tooltip title="Khôi phục">
+                  <Button
+                    icon={<RollbackOutlined />}
+                    onClick={() => onUnarchive(service)}
+                  />
+                </Tooltip>
+              )}
+
+              <Popconfirm
+                title="Xóa dịch vụ"
+                description="Bạn chắc chắn muốn xóa? Hành động này không thể hoàn tác."
+                okText="Xóa"
+                cancelText="Hủy"
+                onConfirm={() => onDelete(service)}
+              >
+                <Tooltip title="Xóa">
+                  <Button danger icon={<DeleteOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </Space>
+          );
+        },
+      },
+    ],
+    [onEdit, onArchive, onUnarchive, onDelete]
+  );
 
   return (
-    <Table<DentalServiceResponse>
+    <Table<TableNode>
       size="small"
-      rowKey={(r) => r.id}
+      rowKey={(record) => record.key}
       loading={loading}
       columns={columns}
-      dataSource={data}
+      dataSource={nestedData}
       pagination={false}
       scroll={{ x: 1200 }}
+      expandable={{
+        defaultExpandAllRows: false,
+        childrenColumnName: "children",
+      }}
     />
   );
 }
