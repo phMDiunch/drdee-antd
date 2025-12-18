@@ -11,7 +11,13 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { CheckOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  UserAddOutlined,
+} from "@ant-design/icons";
+import { useClaimPipeline } from "@/features/sales-pipeline";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import Link from "next/link";
@@ -53,6 +59,11 @@ export default function ConsultedServiceTable({
   actionLoading,
 }: Props) {
   const { user: currentUser } = useCurrentUser();
+  const claimPipelineMutation = useClaimPipeline();
+
+  const handleClaimPipeline = (consultedServiceId: string) => {
+    claimPipelineMutation.mutate(consultedServiceId);
+  };
 
   const columns = React.useMemo<ColumnsType<ConsultedServiceResponse>>(() => {
     // Calculate unique values for filters
@@ -239,9 +250,8 @@ export default function ConsultedServiceTable({
       },
       {
         title: "Sale",
-        dataIndex: ["consultingSale", "fullName"],
         key: "consultingSale",
-        width: 100,
+        width: 140,
         filters: [
           { text: "Chưa chọn", value: "NONE" },
           ...sales.map((name) => ({ text: name, value: name })),
@@ -250,7 +260,37 @@ export default function ConsultedServiceTable({
           if (value === "NONE") return !record.consultingSale;
           return record.consultingSale?.fullName === value;
         },
-        render: (name) => name || <Text type="secondary">—</Text>,
+        render: (_, record) => {
+          const requiresFollowUp = record.dentalService?.requiresFollowUp;
+          const hasSale = !!record.consultingSale;
+
+          // Case 1: Service doesn't require follow-up
+          if (!requiresFollowUp) {
+            return <Text type="secondary">—</Text>;
+          }
+
+          // Case 2: Requires follow-up but not yet claimed
+          if (!hasSale) {
+            return (
+              <Button
+                type="link"
+                size="small"
+                icon={<UserAddOutlined />}
+                loading={claimPipelineMutation.isPending}
+                onClick={() => handleClaimPipeline(record.id)}
+              >
+                Nhận quản lý
+              </Button>
+            );
+          }
+
+          // Case 3: Already claimed - show sale name
+          return (
+            <div>
+              <Text strong>{record.consultingSale?.fullName}</Text>
+            </div>
+          );
+        },
       },
       {
         title: "Trạng thái dịch vụ",
@@ -393,6 +433,8 @@ export default function ConsultedServiceTable({
     onDelete,
     actionLoading,
     isCustomerDetailView,
+    claimPipelineMutation.isPending,
+    handleClaimPipeline,
   ]);
 
   return (

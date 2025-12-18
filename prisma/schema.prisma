@@ -148,8 +148,11 @@ model Employee {
 
   // Liên kết đến phiếu thu
   cashierVouchers PaymentVoucher[] @relation("CashierVouchers")
-  createdVouchers PaymentVoucher[] @relation("CreatedVouchers")
-  updatedVouchers PaymentVoucher[] @relation("UpdatedVouchers")
+
+  // Liên kết đến sales activity logs
+  salesActivityLogs SalesActivityLog[] @relation("SalesActivityLogs")
+  createdVouchers   PaymentVoucher[]   @relation("CreatedVouchers")
+  updatedVouchers   PaymentVoucher[]   @relation("UpdatedVouchers")
 
   // Liên kết đến chi tiết phiếu thu
   createdVoucherDetails PaymentVoucherDetail[] @relation("CreatedVoucherDetails")
@@ -427,6 +430,9 @@ model ConsultedService {
 
   // Liên kết đến phiếu thu chi tiết
   paymentDetails PaymentVoucherDetail[]
+
+  // Liên kết đến sales activity logs
+  salesActivityLogs SalesActivityLog[]
 }
 
 model PaymentVoucher {
@@ -830,4 +836,38 @@ model LaboOrder {
   @@index([customerId])
   @@index([supplierId])
   @@index([laboServiceId])
+}
+
+//---------------------------
+// Sales Pipeline
+//---------------------------
+
+model SalesActivityLog {
+  id String @id @default(uuid())
+
+  // Liên kết
+  consultedServiceId String
+  consultedService   ConsultedService @relation(fields: [consultedServiceId], references: [id])
+
+  employeeId String
+  employee   Employee @relation("SalesActivityLogs", fields: [employeeId], references: [id])
+
+  // Thông tin Tiếp xúc
+  contactType String // "call" | "message" | "meet"
+  contactDate DateTime @default(now()) @db.Timestamptz
+
+  // Nội dung & Chi tiết
+  content String // Nội dung ghi chú, tóm tắt cuộc gọi, kết quả gặp mặt (bắt buộc)
+
+  // Kế hoạch Tiếp xúc Tiếp theo
+  nextContactDate DateTime? @db.Date // Ngày dự kiến liên hệ tiếp
+
+  // Metadata
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Indexes để tối ưu query
+  @@index([consultedServiceId, contactDate(sort: Desc)])
+  @@index([employeeId, contactDate(sort: Desc)])
+  @@index([contactType, contactDate])
 }

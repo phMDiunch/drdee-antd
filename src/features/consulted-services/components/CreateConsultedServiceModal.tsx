@@ -33,7 +33,6 @@ const CreateConsultedServiceFormSchema = z.object({
   preferentialPrice: z.number().int().min(0, "Giá ưu đãi không thể âm"),
   toothPositions: z.array(z.string()),
   consultingDoctorId: z.string().optional().nullable(),
-  consultingSaleId: z.string().optional().nullable(),
   treatingDoctorId: z.string().optional().nullable(),
   specificStatus: z.string().optional().nullable(),
   source: z.string().min(1, "Vui lòng chọn nguồn khách"),
@@ -73,7 +72,6 @@ export default function CreateConsultedServiceModal({
       preferentialPrice: 0,
       toothPositions: [],
       consultingDoctorId: null,
-      consultingSaleId: null,
       treatingDoctorId: null,
       specificStatus: "",
       source: "",
@@ -256,7 +254,7 @@ export default function CreateConsultedServiceModal({
       preferentialPrice: formData.preferentialPrice,
       toothPositions: formData.toothPositions,
       consultingDoctorId: formData.consultingDoctorId || null,
-      consultingSaleId: formData.consultingSaleId || null,
+      consultingSaleId: null,
       treatingDoctorId: formData.treatingDoctorId || null,
       specificStatus: formData.specificStatus || null,
       source: formData.source,
@@ -487,25 +485,6 @@ export default function CreateConsultedServiceModal({
                       {...field}
                       showSearch
                       placeholder="Chọn bác sĩ tư vấn"
-                      optionFilterProp="label"
-                      options={employeeOptions}
-                      allowClear
-                    />
-                  </Form.Item>
-                )}
-              />
-            </Col>
-
-            <Col xs={24} lg={8}>
-              <Controller
-                name="consultingSaleId"
-                control={control}
-                render={({ field }) => (
-                  <Form.Item label="Sale tư vấn">
-                    <Select
-                      {...field}
-                      showSearch
-                      placeholder="Chọn sale tư vấn"
                       optionFilterProp="label"
                       options={employeeOptions}
                       allowClear

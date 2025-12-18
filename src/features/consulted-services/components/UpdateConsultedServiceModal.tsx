@@ -41,7 +41,6 @@ const UpdateConsultedServiceFormSchema = z.object({
   preferentialPrice: z.number().int().min(0, "Giá ưu đãi không thể âm"),
   toothPositions: z.array(z.string()),
   consultingDoctorId: z.string().optional().nullable(),
-  consultingSaleId: z.string().optional().nullable(),
   treatingDoctorId: z.string().optional().nullable(),
   specificStatus: z.string().optional().nullable(),
   source: z.string().min(1, "Vui lòng chọn nguồn khách"),
@@ -85,7 +84,6 @@ export default function UpdateConsultedServiceModal({
       preferentialPrice: service.preferentialPrice,
       toothPositions: service.toothPositions,
       consultingDoctorId: service.consultingDoctorId || null,
-      consultingSaleId: service.consultingSaleId || null,
       treatingDoctorId: service.treatingDoctorId || null,
       specificStatus: service.specificStatus || "",
       source: service.source || "",
@@ -252,12 +250,7 @@ export default function UpdateConsultedServiceModal({
       payload.consultingDoctorId = formData.consultingDoctorId || null;
     }
 
-    if (
-      editableFields.includes("consultingSaleId") &&
-      formData.consultingSaleId !== service.consultingSaleId
-    ) {
-      payload.consultingSaleId = formData.consultingSaleId || null;
-    }
+    // consultingSaleId - removed per requirement, use button in table instead
 
     if (
       editableFields.includes("treatingDoctorId") &&
@@ -542,26 +535,6 @@ export default function UpdateConsultedServiceModal({
                       optionFilterProp="label"
                       options={employeeOptions}
                       disabled={!editableFields.includes("consultingDoctorId")}
-                      allowClear
-                    />
-                  </Form.Item>
-                )}
-              />
-            </Col>
-
-            <Col xs={24} lg={8}>
-              <Controller
-                name="consultingSaleId"
-                control={control}
-                render={({ field }) => (
-                  <Form.Item label="Sale tư vấn">
-                    <Select
-                      {...field}
-                      showSearch
-                      placeholder="Chọn sale tư vấn"
-                      optionFilterProp="label"
-                      options={employeeOptions}
-                      disabled={!editableFields.includes("consultingSaleId")}
                       allowClear
                     />
                   </Form.Item>

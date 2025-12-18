@@ -347,6 +347,7 @@ export const ConsultedServiceResponseSchema = z.object({
       unit: z.string(),
       price: z.number(),
       minPrice: z.number().nullable(),
+      requiresFollowUp: z.boolean(),
     })
     .optional(),
   consultingDoctor: z
