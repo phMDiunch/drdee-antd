@@ -1,7 +1,7 @@
 // src/features/consulted-services/components/ConsultedServiceTable.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Button,
   Popconfirm,
@@ -16,6 +16,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   UserAddOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useClaimPipeline } from "@/features/sales-pipeline";
 import type { ColumnsType } from "antd/es/table";
@@ -27,8 +28,16 @@ import {
   CONSULTED_SERVICE_MESSAGES,
 } from "../constants";
 import type { ConsultedServiceResponse } from "@/shared/validation/consulted-service.schema";
+import {
+  SALES_STAGES,
+  STAGE_LABELS,
+  type SalesStage,
+} from "@/shared/validation/consulted-service.schema";
 import { useCurrentUser } from "@/shared/providers";
 import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
+import StageSelect from "./StageSelect";
+import StageTag from "./StageTag";
+import ConsultedServiceDetailDrawer from "./ConsultedServiceDetailDrawer";
 
 const { Text } = Typography;
 
@@ -60,9 +69,17 @@ export default function ConsultedServiceTable({
 }: Props) {
   const { user: currentUser } = useCurrentUser();
   const claimPipelineMutation = useClaimPipeline();
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [selectedService, setSelectedService] =
+    useState<ConsultedServiceResponse | null>(null);
 
   const handleClaimPipeline = (consultedServiceId: string) => {
     claimPipelineMutation.mutate(consultedServiceId);
+  };
+
+  const handleViewDetail = (service: ConsultedServiceResponse) => {
+    setSelectedService(service);
+    setDetailDrawerOpen(true);
   };
 
   const columns = React.useMemo<ColumnsType<ConsultedServiceResponse>>(() => {
@@ -293,6 +310,51 @@ export default function ConsultedServiceTable({
         },
       },
       {
+        title: "Stage",
+        dataIndex: "stage",
+        key: "stage",
+        width: 160,
+        filters: SALES_STAGES.map((stage) => ({
+          text: STAGE_LABELS[stage],
+          value: stage,
+        })),
+        onFilter: (value, record) => record.stage === value,
+        render: (stage: SalesStage | null, record) => {
+          // Only show stage management for services that require follow-up and are claimed
+          const requiresFollowUp = record.dentalService?.requiresFollowUp;
+          const hasSale = !!record.consultingSale;
+
+          if (!requiresFollowUp || !hasSale) {
+            return stage ? (
+              <StageTag stage={stage} />
+            ) : (
+              <Text type="secondary">—</Text>
+            );
+          }
+
+          // Show editable stage select
+          const canEdit =
+            currentUser?.role === "admin" ||
+            record.consultingSale?.id === currentUser?.employeeId;
+
+          if (!canEdit) {
+            return stage ? (
+              <StageTag stage={stage} />
+            ) : (
+              <Text type="secondary">—</Text>
+            );
+          }
+
+          return (
+            <StageSelect
+              consultedServiceId={record.id}
+              currentStage={stage}
+              disabled={false}
+            />
+          );
+        },
+      },
+      {
         title: "Trạng thái dịch vụ",
         dataIndex: "serviceStatus",
         key: "serviceStatus",
@@ -392,6 +454,12 @@ export default function ConsultedServiceTable({
           // Remove unused editPermission variable since button is always enabled
           return (
             <Space size="small">
+              <Tooltip title="Xem chi tiết">
+                <Button
+                  icon={<EyeOutlined />}
+                  onClick={() => handleViewDetail(record)}
+                />
+              </Tooltip>
               <Tooltip title="Sửa">
                 <Button
                   icon={<EditOutlined />}
@@ -435,16 +503,27 @@ export default function ConsultedServiceTable({
     isCustomerDetailView,
     claimPipelineMutation.isPending,
     handleClaimPipeline,
+    handleViewDetail,
   ]);
 
   return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      loading={loading}
-      rowKey="id"
-      scroll={{ x: 1300 }}
-      pagination={false}
-    />
+    <>
+      <Table
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        rowKey="id"
+        scroll={{ x: 1500 }}
+        pagination={false}
+      />
+      <ConsultedServiceDetailDrawer
+        open={detailDrawerOpen}
+        service={selectedService}
+        onClose={() => {
+          setDetailDrawerOpen(false);
+          setSelectedService(null);
+        }}
+      />
+    </>
   );
 }

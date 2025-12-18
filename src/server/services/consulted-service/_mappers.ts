@@ -68,6 +68,9 @@ export function mapConsultedServiceToResponse(
     serviceStatus: row.serviceStatus,
     treatmentStatus: row.treatmentStatus,
 
+    // Sales Pipeline
+    stage: row.stage,
+
     // Assignment
     consultingDoctorId: row.consultingDoctorId,
     consultingSaleId: row.consultingSaleId,

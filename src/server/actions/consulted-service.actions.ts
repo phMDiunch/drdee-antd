@@ -47,3 +47,12 @@ export async function confirmConsultedServiceAction(id: string) {
   const user = await getSessionUser();
   return await consultedServiceService.confirm(id, user);
 }
+
+/**
+ * Server Action: Update stage of consulted service (Sales Pipeline)
+ * Usage: const result = await updateStageAction(id, { toStage: "QUOTED", reason: "..." });
+ */
+export async function updateStageAction(id: string, data: unknown) {
+  const user = await getSessionUser();
+  return await consultedServiceService.updateStage(id, user, data);
+}

@@ -451,4 +451,99 @@ export const consultedServiceService = {
     const mapped = mapConsultedServiceToResponse(updated);
     return ConsultedServiceResponseSchema.parse(mapped);
   },
+
+  /**
+   * Update stage of consulted service (Sales Pipeline)
+   */
+  async updateStage(
+    id: string,
+    currentUser: UserCore | null,
+    request: unknown
+  ) {
+    requireAuth(currentUser);
+
+    // Import stage validation (avoid circular dependency)
+    const { UpdateStageRequestSchema, STAGE_FLOW } = await import(
+      "@/shared/validation/consulted-service.schema"
+    );
+    const { stageHistoryRepo } = await import(
+      "@/server/repos/stage-history.repo"
+    );
+
+    // 1. Validate request
+    const parsed = UpdateStageRequestSchema.parse(request);
+    const { toStage, reason } = parsed;
+
+    // 2. Fetch existing service
+    const existing = await consultedServiceRepo.getStage(id);
+    if (!existing) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy dịch vụ tư vấn", 404);
+    }
+
+    // 3. Permission check - can only edit own clinic services
+    if (currentUser!.role !== "admin") {
+      if (existing.clinicId !== currentUser!.clinicId) {
+        throw new ServiceError(
+          "PERMISSION_DENIED",
+          "Bạn chỉ có thể cập nhật dịch vụ trong chi nhánh của mình",
+          403
+        );
+      }
+    }
+
+    const fromStage = existing.stage;
+
+    // 4. Validate stage transition
+    if (fromStage === toStage) {
+      throw new ServiceError(
+        "INVALID_TRANSITION",
+        "Stage mới trùng với stage hiện tại",
+        400
+      );
+    }
+
+    // 5. Check if transition is allowed
+    if (fromStage) {
+      const allowedStages = STAGE_FLOW[fromStage as keyof typeof STAGE_FLOW];
+      if (!allowedStages.includes(toStage)) {
+        throw new ServiceError(
+          "INVALID_TRANSITION",
+          `Không thể chuyển từ ${fromStage} sang ${toStage}. Phải chuyển tuần tự hoặc chuyển sang LOST`,
+          400
+        );
+      }
+    }
+
+    // 6. Validate reason required for LOST
+    if (toStage === "LOST" && !reason?.trim()) {
+      throw new ServiceError(
+        "REASON_REQUIRED",
+        "Vui lòng nhập lý do khi chuyển sang trạng thái LOST",
+        400
+      );
+    }
+
+    // 7. Update stage in transaction
+    const [updated] = await Promise.all([
+      consultedServiceRepo.updateStage(id, toStage, currentUser!.employeeId!),
+      stageHistoryRepo.create({
+        consultedServiceId: id,
+        fromStage:
+          (fromStage as
+            | "ARRIVED"
+            | "CONSULTING"
+            | "QUOTED"
+            | "DEPOSIT"
+            | "TREATING"
+            | "LOST"
+            | null) || null,
+        toStage,
+        reason,
+        changedById: currentUser!.employeeId!,
+      }),
+    ]);
+
+    const mapped = mapConsultedServiceToResponse(updated);
+    return ConsultedServiceResponseSchema.parse(mapped);
+  },
 };

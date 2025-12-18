@@ -94,6 +94,17 @@ const consultedServiceInclude = {
       name: true,
     },
   },
+  salesActivityLogs: {
+    take: 1, // Only fetch latest activity
+    orderBy: {
+      contactDate: "desc" as const,
+    },
+    select: {
+      contactType: true,
+      contactDate: true,
+      content: true,
+    },
+  },
 } satisfies Prisma.ConsultedServiceInclude;
 
 /**
@@ -342,5 +353,72 @@ export const consultedServiceRepo = {
       },
       include: consultedServiceInclude,
     });
+  },
+
+  /**
+   * Update stage of consulted service (Sales Pipeline)
+   */
+  async updateStage(id: string, stage: string, updatedById: string) {
+    return prisma.consultedService.update({
+      where: { id },
+      data: {
+        stage,
+        updatedById,
+      },
+      include: consultedServiceInclude,
+    });
+  },
+
+  /**
+   * Get current stage of consulted service
+   */
+  async getStage(id: string) {
+    return prisma.consultedService.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        stage: true,
+        customerId: true,
+        clinicId: true,
+      },
+    });
+  },
+
+  /**
+   * List consulted services by stage (for Kanban/Pipeline view)
+   */
+  async listByStage(params: {
+    clinicId: string;
+    stage: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const { clinicId, stage, page = 1, pageSize = 20 } = params;
+    const skip = (page - 1) * pageSize;
+
+    const [items, totalCount] = await Promise.all([
+      prisma.consultedService.findMany({
+        where: {
+          clinicId,
+          stage,
+        },
+        orderBy: { consultationDate: "desc" },
+        skip,
+        take: pageSize,
+        include: consultedServiceInclude,
+      }),
+      prisma.consultedService.count({
+        where: {
+          clinicId,
+          stage,
+        },
+      }),
+    ]);
+
+    return {
+      items,
+      totalCount,
+      hasMore: skip + items.length < totalCount,
+    };
   },
 };

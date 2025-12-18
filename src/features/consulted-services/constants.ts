@@ -82,6 +82,19 @@ export const CONSULTED_SERVICE_MESSAGES = {
 } as const;
 
 /**
+ * React Query Keys
+ */
+export const CONSULTED_SERVICE_QUERY_KEYS = {
+  list: (filters?: Record<string, unknown>) =>
+    ["consulted-services", filters] as const,
+  daily: (params?: Record<string, unknown>) =>
+    ["consulted-services-daily", params] as const,
+  byId: (id: string) => ["consulted-service", id] as const,
+  byCustomer: (customerId: string) =>
+    ["consulted-services", "customer", customerId] as const,
+} as const;
+
+/**
  * API Endpoints
  */
 export const CONSULTED_SERVICE_ENDPOINTS = {

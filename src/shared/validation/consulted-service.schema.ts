@@ -277,6 +277,65 @@ export type GetConsultedServicesDailyQuery = z.infer<
 
 /**
  * ============================================================================
+ * SALES PIPELINE STAGES (Must be defined before use in Response Schema)
+ * ============================================================================
+ */
+
+/**
+ * Sales Pipeline Stages
+ */
+export const SALES_STAGES = [
+  "ARRIVED",
+  "CONSULTING",
+  "QUOTED",
+  "DEPOSIT",
+  "TREATING",
+  "LOST",
+] as const;
+export type SalesStage = (typeof SALES_STAGES)[number];
+
+/**
+ * Stage Flow Rules - Allowed transitions
+ * Rules:
+ * - Sequential only (no jumping stages)
+ * - No backward transitions
+ * - Can move to LOST from any stage
+ */
+export const STAGE_FLOW: Record<SalesStage, SalesStage[]> = {
+  ARRIVED: ["CONSULTING", "LOST"],
+  CONSULTING: ["QUOTED", "LOST"],
+  QUOTED: ["DEPOSIT", "LOST"],
+  DEPOSIT: ["TREATING", "LOST"],
+  TREATING: [], // Terminal state
+  LOST: [], // Terminal state
+};
+
+/**
+ * Stage Labels (Vietnamese)
+ */
+export const STAGE_LABELS: Record<SalesStage, string> = {
+  ARRIVED: "Khách đến",
+  CONSULTING: "Đang tư vấn",
+  QUOTED: "Đã báo giá",
+  DEPOSIT: "Đã đặt cọc",
+  TREATING: "Đang điều trị",
+  LOST: "Thất bại",
+};
+
+/**
+ * Stage Colors (for UI)
+ */
+export const STAGE_COLORS: Record<SalesStage, string> = {
+  ARRIVED: "blue",
+  CONSULTING: "cyan",
+  QUOTED: "geekblue",
+  DEPOSIT: "purple",
+  TREATING: "green",
+  LOST: "red",
+};
+
+/**
+ * ============================================================================
  * RESPONSE SCHEMAS
  * ============================================================================
  */
@@ -323,6 +382,9 @@ export const ConsultedServiceResponseSchema = z.object({
   consultingDoctorId: z.string().nullable(),
   consultingSaleId: z.string().nullable(),
   treatingDoctorId: z.string().nullable(),
+
+  // Sales Pipeline
+  stage: z.string().nullable(),
 
   // Metadata
   createdById: z.string(),
@@ -424,3 +486,38 @@ export const ConsultedServicesDailyResponseSchema = z.object({
 export type ConsultedServicesDailyResponse = z.infer<
   typeof ConsultedServicesDailyResponseSchema
 >;
+
+/**
+ * ============================================================================
+ * SALES PIPELINE - UPDATE STAGE & STAGE HISTORY
+ * ============================================================================
+ */
+
+/**
+ * Update Stage Request Schema
+ */
+export const UpdateStageRequestSchema = z.object({
+  toStage: z.enum(SALES_STAGES, { message: "Stage không hợp lệ" }),
+  reason: z.string().trim().optional(),
+});
+
+export type UpdateStageRequest = z.infer<typeof UpdateStageRequestSchema>;
+
+/**
+ * Stage History Response Schema
+ */
+export const StageHistoryResponseSchema = z.object({
+  id: z.string(),
+  consultedServiceId: z.string(),
+  fromStage: z.string().nullable(),
+  toStage: z.string(),
+  reason: z.string().nullable(),
+  changedAt: z.string().datetime(),
+  changedBy: z.object({
+    id: z.string(),
+    fullName: z.string(),
+    avatarUrl: z.string().nullable(),
+  }),
+});
+
+export type StageHistoryResponse = z.infer<typeof StageHistoryResponseSchema>;

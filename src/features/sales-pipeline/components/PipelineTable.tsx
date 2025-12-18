@@ -5,6 +5,12 @@ import React, { useMemo, useState } from "react";
 import { Table, Button, Space, Typography, Tag, Tooltip, Divider } from "antd";
 import { EditOutlined, SwapOutlined, UserAddOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import { StageSelect, StageTag } from "@/features/consulted-services";
+import {
+  SALES_STAGES,
+  STAGE_LABELS,
+  type SalesStage,
+} from "@/shared/validation/consulted-service.schema";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -29,6 +35,7 @@ interface PipelineService {
   serviceStatus: string;
   specificStatus: string | null;
   consultingSaleId: string | null;
+  stage: string | null;
   customer: {
     id: string;
     fullName: string;
@@ -42,6 +49,11 @@ interface PipelineService {
   consultingSale: {
     id: string;
     fullName: string;
+  } | null;
+  latestActivity?: {
+    contactType: string;
+    contactDate: string;
+    content: string | null;
   } | null;
 }
 
@@ -95,7 +107,7 @@ export default function PipelineTable({ data, loading }: PipelineTableProps) {
   };
 
   const handleClaimPipeline = (consultedServiceId: string) => {
-    claimPipelineMutation.mutate({ consultedServiceId });
+    claimPipelineMutation.mutate(consultedServiceId);
   };
 
   const columns = useMemo<ColumnsType<PipelineService>>(
@@ -149,6 +161,47 @@ export default function PipelineTable({ data, loading }: PipelineTableProps) {
         ),
       },
       {
+        title: "Stage",
+        dataIndex: "stage",
+        key: "stage",
+        width: 160,
+        filters: SALES_STAGES.map((stage) => ({
+          text: STAGE_LABELS[stage],
+          value: stage,
+        })),
+        onFilter: (value, record) => record.stage === value,
+        render: (stage: string | null, record) => {
+          const hasSale = !!record.consultingSale;
+
+          if (!hasSale) {
+            return stage ? (
+              <StageTag stage={stage as SalesStage} />
+            ) : (
+              <Text type="secondary">—</Text>
+            );
+          }
+
+          const canEdit =
+            isAdmin || record.consultingSaleId === user?.employeeId;
+
+          if (!canEdit) {
+            return stage ? (
+              <StageTag stage={stage as SalesStage} />
+            ) : (
+              <Text type="secondary">—</Text>
+            );
+          }
+
+          return (
+            <StageSelect
+              consultedServiceId={record.id}
+              currentStage={stage as SalesStage | null}
+              disabled={false}
+            />
+          );
+        },
+      },
+      {
         title: "Sale",
         key: "sale",
         width: 150,
@@ -173,7 +226,7 @@ export default function PipelineTable({ data, loading }: PipelineTableProps) {
           // Case 2: Sale already assigned - show name
           return (
             <div>
-              <Text strong>{record.consultingSale.fullName}</Text>
+              <Text strong>{record.consultingSale?.fullName || "—"}</Text>
             </div>
           );
         },
@@ -182,7 +235,7 @@ export default function PipelineTable({ data, loading }: PipelineTableProps) {
         title: "Lần tiếp xúc cuối",
         key: "lastContact",
         width: 150,
-        render: (_, record: any) => {
+        render: (_, record: PipelineService) => {
           const latestActivity = record.latestActivity;
           if (!latestActivity) return <Text type="secondary">-</Text>;
 

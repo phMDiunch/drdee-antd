@@ -84,6 +84,7 @@ export function mapPipelineServiceToResponse(
   | "serviceConfirmDate"
   | "specificStatus"
   | "consultingSaleId"
+  | "stage"
 > & {
   customer: {
     id: string;
@@ -108,6 +109,7 @@ export function mapPipelineServiceToResponse(
     serviceConfirmDate: service.serviceConfirmDate?.toISOString() || null,
     specificStatus: service.specificStatus,
     consultingSaleId: service.consultingSaleId,
+    stage: service.stage,
     customer: {
       id: service.customer.id,
       fullName: service.customer.fullName,

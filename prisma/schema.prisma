@@ -151,8 +151,12 @@ model Employee {
 
   // Liên kết đến sales activity logs
   salesActivityLogs SalesActivityLog[] @relation("SalesActivityLogs")
-  createdVouchers   PaymentVoucher[]   @relation("CreatedVouchers")
-  updatedVouchers   PaymentVoucher[]   @relation("UpdatedVouchers")
+
+  // Liên kết đến stage history
+  stageChanges StageHistory[]
+
+  createdVouchers PaymentVoucher[] @relation("CreatedVouchers")
+  updatedVouchers PaymentVoucher[] @relation("UpdatedVouchers")
 
   // Liên kết đến chi tiết phiếu thu
   createdVoucherDetails PaymentVoucherDetail[] @relation("CreatedVoucherDetails")
@@ -392,6 +396,7 @@ model ConsultedService {
   serviceConfirmDate DateTime? @db.Timestamptz // Ngày khách hàng đồng ý
   serviceStatus      String    @default("Chưa chốt") // "Chưa chốt", "Đã chốt"
   treatmentStatus    String    @default("Chưa điều trị") // "Chưa điều trị", "Đang điều trị", "Hoàn thành"
+  stage              String? // Sales pipeline stage: ARRIVED | CONSULTING | QUOTED | DEPOSIT | TREATING | LOST
 
   // Thông tin Phân công
   consultingDoctorId String?
@@ -433,6 +438,13 @@ model ConsultedService {
 
   // Liên kết đến sales activity logs
   salesActivityLogs SalesActivityLog[]
+
+  // Liên kết đến stage history
+  stageHistory StageHistory[]
+
+  // 🚀 Performance Indexes
+  @@index([clinicId, stage])
+  @@index([stage, consultationDate(sort: Desc)])
 }
 
 model PaymentVoucher {
@@ -870,4 +882,28 @@ model SalesActivityLog {
   @@index([consultedServiceId, contactDate(sort: Desc)])
   @@index([employeeId, contactDate(sort: Desc)])
   @@index([contactType, contactDate])
+}
+
+model StageHistory {
+  id String @id @default(uuid())
+
+  // Liên kết
+  consultedServiceId String
+  consultedService   ConsultedService @relation(fields: [consultedServiceId], references: [id])
+
+  changedById String
+  changedBy   Employee @relation(fields: [changedById], references: [id])
+
+  // Stage Transition
+  fromStage String? // Stage trước đó (null nếu lần đầu set stage)
+  toStage   String // Stage mới
+
+  // Metadata
+  reason    String? // Lý do chuyển stage (bắt buộc khi chuyển sang LOST)
+  changedAt DateTime @default(now()) @db.Timestamptz
+
+  // Indexes để tối ưu analytics queries
+  @@index([consultedServiceId, changedAt(sort: Desc)])
+  @@index([toStage, changedAt])
+  @@index([fromStage, toStage])
 }
