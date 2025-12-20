@@ -55,6 +55,7 @@ const consultedServiceInclude = {
       unit: true,
       price: true,
       minPrice: true,
+      requiresFollowUp: true,
     },
   },
   consultingDoctor: {

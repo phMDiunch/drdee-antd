@@ -14,7 +14,7 @@ type ConsultedServiceWithRelations = ConsultedService & {
   >;
   dentalService: Pick<
     DentalService,
-    "id" | "name" | "unit" | "price" | "minPrice"
+    "id" | "name" | "unit" | "price" | "minPrice" | "requiresFollowUp"
   >;
   consultingDoctor: Pick<Employee, "id" | "fullName"> | null;
   consultingSale: Pick<Employee, "id" | "fullName"> | null;
@@ -94,6 +94,7 @@ export function mapConsultedServiceToResponse(
       unit: row.dentalService.unit,
       price: row.dentalService.price,
       minPrice: row.dentalService.minPrice,
+      requiresFollowUp: row.dentalService.requiresFollowUp,
     },
 
     consultingDoctor: row.consultingDoctor

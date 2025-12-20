@@ -75,8 +75,35 @@ export default function UpdateConsultedServiceModal({
 
   // Check permissions
   const permission = consultedServicePermissions.canEdit(currentUser, service);
-  const editableFields = permission.editableFields || [];
   const isAdmin = currentUser?.role === "admin";
+
+  // Memoize editableFields to prevent re-renders
+  const editableFields = useMemo(
+    () => permission.editableFields || [],
+    [permission.editableFields]
+  );
+
+  // Check if sale field can be edited
+  const canEditSale = useMemo(() => {
+    // Rule 1: requiresFollowUp must be true
+    if (!service.dentalService?.requiresFollowUp) {
+      return { allowed: false, reason: "Dịch vụ này không yêu cầu follow-up" };
+    }
+
+    // Rule 2: Check if field is editable (based on permissions)
+    if (!editableFields.includes("consultingSaleId")) {
+      // Employee can't edit if already has sale
+      if (!isAdmin && service.consultingSaleId) {
+        return {
+          allowed: false,
+          reason: "Chỉ Admin mới đổi sale sau khi đã follow up",
+        };
+      }
+      return { allowed: false, reason: "Không có quyền chỉnh sửa" };
+    }
+
+    return { allowed: true };
+  }, [service, editableFields, isAdmin]);
 
   const defaultValues: FormData = useMemo(
     () => ({
@@ -554,14 +581,17 @@ export default function UpdateConsultedServiceModal({
                 name="consultingSaleId"
                 control={control}
                 render={({ field }) => (
-                  <Form.Item label="Sale tư vấn">
+                  <Form.Item
+                    label="Sale tư vấn"
+                    help={!canEditSale.allowed ? canEditSale.reason : undefined}
+                  >
                     <Select
                       {...field}
                       showSearch
                       placeholder="Chọn sale tư vấn"
                       optionFilterProp="label"
                       options={employeeOptions}
-                      disabled={!editableFields.includes("consultingSaleId")}
+                      disabled={!canEditSale.allowed}
                       allowClear
                     />
                   </Form.Item>

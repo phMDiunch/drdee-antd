@@ -13,6 +13,7 @@ import {
   ConsultedServiceTable,
   CreateConsultedServiceModal,
   UpdateConsultedServiceModal,
+  useAssignConsultingSale,
 } from "@/features/consulted-services";
 import type {
   ConsultedServiceResponse,
@@ -62,6 +63,7 @@ export default function ConsultedServicesTab({
   const updateMutation = useUpdateConsultedService();
   const deleteMutation = useDeleteConsultedService();
   const confirmMutation = useConfirmConsultedService();
+  const assignSaleMutation = useAssignConsultingSale();
 
   // Check if user can add service (checked-in today)
   const canAddService = !!todayCheckIn;
@@ -121,12 +123,28 @@ export default function ConsultedServicesTab({
     [confirmMutation]
   );
 
+  const handleAssignSale = useCallback(
+    (id: string) => {
+      assignSaleMutation.mutate(id);
+    },
+    [assignSaleMutation]
+  );
+
   // Trigger data change on successful delete or confirm
   useEffect(() => {
-    if (deleteMutation.isSuccess || confirmMutation.isSuccess) {
+    if (
+      deleteMutation.isSuccess ||
+      confirmMutation.isSuccess ||
+      assignSaleMutation.isSuccess
+    ) {
       onDataChange?.();
     }
-  }, [deleteMutation.isSuccess, confirmMutation.isSuccess, onDataChange]);
+  }, [
+    deleteMutation.isSuccess,
+    confirmMutation.isSuccess,
+    assignSaleMutation.isSuccess,
+    onDataChange,
+  ]);
 
   return (
     <div>
@@ -167,7 +185,10 @@ export default function ConsultedServicesTab({
         onConfirm={handleConfirm}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        actionLoading={confirmMutation.isPending}
+        onAssignSale={handleAssignSale}
+        actionLoading={
+          confirmMutation.isPending || assignSaleMutation.isPending
+        }
       />
 
       {/* Create Modal */}

@@ -14,6 +14,7 @@ import {
   useDeleteConsultedService,
   useUpdateConsultedService,
   exportConsultedServicesToExcel,
+  useAssignConsultingSale,
 } from "@/features/consulted-services";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
@@ -54,6 +55,7 @@ export default function ConsultedServiceDailyView() {
   const confirmMutation = useConfirmConsultedService();
   const deleteMutation = useDeleteConsultedService();
   const updateMutation = useUpdateConsultedService();
+  const assignSaleMutation = useAssignConsultingSale();
 
   // Handlers
   const handleConfirm = useCallback(
@@ -72,6 +74,13 @@ export default function ConsultedServiceDailyView() {
       deleteMutation.mutate(id);
     },
     [deleteMutation]
+  );
+
+  const handleAssignSale = useCallback(
+    (id: string) => {
+      assignSaleMutation.mutate(id);
+    },
+    [assignSaleMutation]
   );
 
   const handleUpdateSubmit = useCallback(
@@ -145,7 +154,12 @@ export default function ConsultedServiceDailyView() {
         onConfirm={handleConfirm}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        actionLoading={confirmMutation.isPending || deleteMutation.isPending}
+        onAssignSale={handleAssignSale}
+        actionLoading={
+          confirmMutation.isPending ||
+          deleteMutation.isPending ||
+          assignSaleMutation.isPending
+        }
       />
 
       {/* Edit Modal */}

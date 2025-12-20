@@ -33,6 +33,7 @@ type Props = {
   onConfirm: (id: string) => void;
   onEdit: (service: ConsultedServiceResponse) => void;
   onDelete: (id: string) => void;
+  onAssignSale: (id: string) => void; // New: Auto-assign sale action
   actionLoading?: boolean;
 };
 
@@ -50,6 +51,7 @@ export default function ConsultedServiceTable({
   onConfirm,
   onEdit,
   onDelete,
+  onAssignSale,
   actionLoading,
 }: Props) {
   const { user: currentUser } = useCurrentUser();
@@ -241,7 +243,7 @@ export default function ConsultedServiceTable({
         title: "Sale",
         dataIndex: ["consultingSale", "fullName"],
         key: "consultingSale",
-        width: 100,
+        width: 120,
         filters: [
           { text: "Chưa chọn", value: "NONE" },
           ...sales.map((name) => ({ text: name, value: name })),
@@ -250,7 +252,40 @@ export default function ConsultedServiceTable({
           if (value === "NONE") return !record.consultingSale;
           return record.consultingSale?.fullName === value;
         },
-        render: (name) => name || <Text type="secondary">—</Text>,
+        render: (name, record) => {
+          // Legacy data: requiresFollowUp=false but has consultingSaleId
+          if (
+            !record.dentalService?.requiresFollowUp &&
+            record.consultingSaleId
+          ) {
+            return name || <Text type="secondary">—</Text>;
+          }
+
+          // Case 1: Service doesn't require follow-up
+          if (!record.dentalService?.requiresFollowUp) {
+            return <Text type="secondary">—</Text>;
+          }
+
+          // Case 2: Requires follow-up but no sale assigned yet
+          if (!record.consultingSaleId) {
+            return (
+              <Button
+                type="primary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAssignSale(record.id);
+                }}
+                loading={actionLoading}
+              >
+                Follow up
+              </Button>
+            );
+          }
+
+          // Case 3: Has sale assigned
+          return name || <Text type="secondary">—</Text>;
+        },
       },
       {
         title: "Trạng thái dịch vụ",
@@ -391,6 +426,7 @@ export default function ConsultedServiceTable({
     onConfirm,
     onEdit,
     onDelete,
+    onAssignSale,
     actionLoading,
     isCustomerDetailView,
   ]);

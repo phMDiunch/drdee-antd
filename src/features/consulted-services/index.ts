@@ -21,6 +21,7 @@ export * from "./hooks/useCreateConsultedService";
 export * from "./hooks/useUpdateConsultedService";
 export * from "./hooks/useDeleteConsultedService";
 export * from "./hooks/useConfirmConsultedService";
+export * from "./hooks/useAssignConsultingSale";
 
 // ===== CONSTANTS =====
 export * from "./constants";

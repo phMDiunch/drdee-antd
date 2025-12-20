@@ -501,7 +501,14 @@ export default function CreateConsultedServiceModal({
                 name="consultingSaleId"
                 control={control}
                 render={({ field }) => (
-                  <Form.Item label="Sale tư vấn">
+                  <Form.Item
+                    label="Sale tư vấn"
+                    help={
+                      selectedService && !selectedService.requiresFollowUp
+                        ? "Dịch vụ này không yêu cầu follow-up"
+                        : undefined
+                    }
+                  >
                     <Select
                       {...field}
                       showSearch
@@ -509,6 +516,9 @@ export default function CreateConsultedServiceModal({
                       optionFilterProp="label"
                       options={employeeOptions}
                       allowClear
+                      disabled={
+                        !!(selectedService && !selectedService.requiresFollowUp)
+                      }
                     />
                   </Form.Item>
                 )}

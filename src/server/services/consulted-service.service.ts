@@ -212,7 +212,16 @@ export const consultedServiceService = {
       );
     }
 
-    // 3. Validate preferentialPrice
+    // 3. Validate requiresFollowUp logic
+    if (!dentalService.requiresFollowUp && data.consultingSaleId) {
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        "Dịch vụ này không yêu cầu follow-up, không thể chọn sale tư vấn",
+        400
+      );
+    }
+
+    // 4. Validate preferentialPrice
     const minPrice = dentalService.minPrice ?? 0;
     const price = dentalService.price;
     const preferentialPrice = data.preferentialPrice;
@@ -299,7 +308,18 @@ export const consultedServiceService = {
 
     const data = parsed.data;
 
-    // 3. Check permissions
+    // 3. Validate requiresFollowUp logic (if consultingSaleId is being changed)
+    if (data.consultingSaleId !== undefined) {
+      if (!existing.dentalService.requiresFollowUp && data.consultingSaleId) {
+        throw new ServiceError(
+          "VALIDATION_ERROR",
+          "Dịch vụ này không yêu cầu follow-up, không thể chọn sale tư vấn",
+          400
+        );
+      }
+    }
+
+    // 4. Check permissions
     try {
       consultedServicePermissions.validateUpdateFields(
         currentUser!,
@@ -447,6 +467,46 @@ export const consultedServiceService = {
       id,
       currentUser!.employeeId!
     );
+
+    const mapped = mapConsultedServiceToResponse(updated);
+    return ConsultedServiceResponseSchema.parse(mapped);
+  },
+
+  /**
+   * Assign current user as consulting sale (auto-assign follow-up)
+   */
+  async assignConsultingSale(id: string, currentUser: UserCore | null) {
+    requireAuth(currentUser);
+
+    // 1. Fetch existing service
+    const existing = await consultedServiceRepo.findById(id);
+    if (!existing) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy dịch vụ tư vấn", 404);
+    }
+
+    // 2. Validate: requiresFollowUp must be true
+    if (!existing.dentalService.requiresFollowUp) {
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        "Dịch vụ này không yêu cầu follow-up",
+        400
+      );
+    }
+
+    // 3. Validate: consultingSaleId must be null (not already assigned)
+    if (existing.consultingSaleId) {
+      throw new ServiceError(
+        "ALREADY_ASSIGNED",
+        "Dịch vụ đã có sale tư vấn",
+        400
+      );
+    }
+
+    // 4. Assign current user as sale
+    const updated = await consultedServiceRepo.update(id, {
+      consultingSaleId: currentUser!.employeeId!,
+      updatedById: currentUser!.employeeId!,
+    });
 
     const mapped = mapConsultedServiceToResponse(updated);
     return ConsultedServiceResponseSchema.parse(mapped);

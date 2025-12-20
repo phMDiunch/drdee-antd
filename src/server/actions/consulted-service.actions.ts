@@ -47,3 +47,12 @@ export async function confirmConsultedServiceAction(id: string) {
   const user = await getSessionUser();
   return await consultedServiceService.confirm(id, user);
 }
+
+/**
+ * Server Action: Assign current user as consulting sale (auto-assign follow-up)
+ * Usage: const result = await assignConsultingSaleAction(id);
+ */
+export async function assignConsultingSaleAction(id: string) {
+  const user = await getSessionUser();
+  return await consultedServiceService.assignConsultingSale(id, user);
+}

@@ -58,6 +58,21 @@ type ConsultedServiceCreateInput = CreateConsultedServiceRequest & {
 };
 ```
 
+### Sale Follow-Up Rules
+
+- ✅ **requiresFollowUp Logic**: Dựa vào DentalService.requiresFollowUp
+  - `requiresFollowUp = false` → Sale field DISABLED (không cho chọn)
+  - `requiresFollowUp = true` → Sale field ENABLED
+  - **Backend validation**: Enforce `consultingSaleId = null` khi `requiresFollowUp = false` → 400 error
+- ✅ **Auto-assign Pattern**: Button "Follow up" (cột Sale) → auto-assign current user
+  - Điều kiện hiển thị: `requiresFollowUp = true` AND `consultingSaleId = null`
+  - Click → Assign `consultingSaleId = currentUser.id` (không cần modal/select)
+  - Pattern: Primary button small, inline trong cell (giống button "Chốt")
+- ✅ **Edit Permission**: Sau khi đã follow up
+  - Employee: ❌ Không đổi được (field disabled)
+  - Admin: ✅ Đổi được (field enabled)
+- ✅ **Legacy Data**: Giữ nguyên (nếu có `requiresFollowUp=false` nhưng có `consultingSaleId`)
+
 ### Permission Rules
 
 **Quyền dựa trên: Service Status + Timeline (33d) + Role + Clinic**
@@ -174,10 +189,17 @@ Hàng 5: [Ghi chú tình trạng (Textarea)                                     
 
 **Optional**:
 
-- `consultingDoctorId`, `consultingSaleId`, `treatingDoctorId`: UUID
-  - Placeholder: "Chọn bác sĩ tư vấn", "Chọn sale tư vấn", "Chọn bác sĩ điều trị"
+- `consultingDoctorId`, `treatingDoctorId`: UUID
+  - Placeholder: "Chọn bác sĩ tư vấn", "Chọn bác sĩ điều trị"
   - Hook: `useWorkingEmployees({ clinicId })`
   - Display: `"{fullName}"`
+- `consultingSaleId`: UUID ⭐ **CONDITIONAL LOGIC**
+  - Placeholder: "Chọn sale tư vấn"
+  - Hook: `useWorkingEmployees({ clinicId })`
+  - Display: `"{fullName}"`
+  - **Disabled khi**: `requiresFollowUp = false` (từ selected DentalService)
+  - **Enabled khi**: `requiresFollowUp = true`
+  - Helper text (khi disabled): "Dịch vụ này không yêu cầu follow-up" (gray, size 12px)
 - `specificStatus`: String (textarea, placeholder: "Ghi chú của bác sĩ về tình trạng răng...")
 
 **Display-Only (Readonly)**:
@@ -229,10 +251,20 @@ Hàng 1: [dentalServiceId (disabled nếu đã chốt)] [Đơn vị (readonly)  
 Hàng 2: [Vị trí răng: Button "Chọn vị trí răng (X)" (disabled nếu đã chốt)        ]
 Hàng 3: [Đơn giá (readonly)                     ] [Giá ưu đãi (disabled nếu chốt) ]
         [Số lượng (disabled nếu đã chốt)       ] [Thành tiền (readonly)           ]
-Hàng 4: [consultingDoctorId                    ] [consultingSaleId                ]
+Hàng 4: [consultingDoctorId                    ] [consultingSaleId ⭐ LOGIC]      ]
         [treatingDoctorId                                                          ]
 Hàng 5: [specificStatus (Textarea, disabled nếu đã chốt)                          ]
 ```
+
+**consultingSaleId Field Logic** ⭐:
+
+- **Disabled khi**:
+  - `requiresFollowUp = false` (từ DentalService) → Không cho chọn dù Admin
+  - `consultingSaleId !== null` AND user = Employee → Không đổi được
+- **Enabled khi**:
+  - `requiresFollowUp = true` AND (user = Admin OR `consultingSaleId = null`)
+- Helper text (khi disabled do requiresFollowUp): "Dịch vụ này không yêu cầu follow-up"
+- Helper text (khi disabled do đã có sale + Employee): "Chỉ Admin mới đổi sale sau khi đã follow up"
 
 **Admin Section** (sau Divider "Chỉnh sửa nâng cao (Admin)"):
 
@@ -421,7 +453,7 @@ await update(serviceId, {
 | Thành tiền      | 140px | ✅ Sort     | `finalPrice` (VND format)                            |
 | Bác sĩ tư vấn   | 140px | ✅ Filter   | `consultingDoctor.fullName`                          |
 | Bác sĩ điều trị | 140px | ✅ Filter   | `treatingDoctor.fullName`                            |
-| Sale            | 120px | ✅ Filter   | `consultingSale.fullName`                            |
+| Sale tư vấn     | 120px | ✅ Filter   | ⭐ LOGIC: Button "Follow up" hoặc Tên sale           |
 | Trạng thái      | 120px | ✅ Filter   | Tag: Chưa chốt (blue) / Đã chốt (green)              |
 | Ngày chốt       | 140px | ✅ Sort     | Date hoặc Button "Chốt" (inline action)              |
 | Thao tác        | 120px | -           | Edit \| Delete (fixed="right")                       |
@@ -431,9 +463,16 @@ await update(serviceId, {
 - **Khách hàng**:
   - Tên: Link → navigate to `/customers/{customerId}` (Customer Detail page)
   - Tuổi: Calculate từ `customer.dateOfBirth` → `{currentYear - birthYear} tuổi`
+- **Sale tư vấn** ⭐:
+  - **Case 1**: `requiresFollowUp = false` → Hiển thị "-" (không cần sale)
+  - **Case 2**: `requiresFollowUp = true` AND `consultingSaleId = null` → Button "Follow up" (primary, small)
+    - Click → Auto-assign `consultingSaleId = currentUser.id` (không cần modal)
+    - Action: `assignConsultingSaleAction(consultedServiceId)` → Mutation + toast success
+  - **Case 3**: `consultingSaleId !== null` → Hiển thị `consultingSale.fullName`
+  - **Legacy**: Nếu `requiresFollowUp = false` nhưng có `consultingSaleId` → Vẫn hiển thị tên sale (không button)
 - **Ngày chốt**:
   - **Đã chốt**: Hiển thị `serviceConfirmDate` (DD/MM/YYYY HH:mm)
-  - **Chưa chốt**: Hiển thị Button "Chốt" (dashed, small) - inline action giống check-in của appointment
+  - **Chưa chốt**: Hiển thị Button "Chốt" (primary, small) - inline action giống check-in của appointment
 
 **Sort/Filter**: Client-side (dữ liệu daily ít)
 
@@ -456,21 +495,21 @@ await update(serviceId, {
 - **Thêm cột**: Ngày tư vấn, Công nợ, Trạng thái điều trị
 - **Sort**: `consultationDate desc` (mới nhất trước)
 
-| Column              | Width | Sort/Filter | Description                                                    |
-| ------------------- | ----- | ----------- | -------------------------------------------------------------- |
-| Ngày tư vấn         | 140px | ✅ Sort     | `consultationDate` (DD/MM/YYYY)                                |
-| Dịch vụ             | 200px | ✅ Filter   | `consultedServiceName`                                         |
-| SL                  | 60px  | -           | `quantity`                                                     |
-| Giá ưu đãi          | 120px | -           | `preferentialPrice` (VND format)                               |
-| Thành tiền          | 140px | ✅ Sort     | `finalPrice` (VND format)                                      |
-| Công nợ             | 120px | ✅ Sort     | `debt` (VND format, **chỉ red khi đã chốt và > 0**)            |
-| Bác sĩ tư vấn       | 140px | ✅ Filter   | `consultingDoctor.fullName`                                    |
-| Sale tư vấn         | 120px | ✅ Filter   | `consultingSale.fullName`                                      |
-| Bác sĩ điều trị     | 140px | ✅ Filter   | `treatingDoctor.fullName`                                      |
-| Trạng thái dịch vụ  | 120px | ✅ Filter   | Tag: Chưa chốt (orange) / Đã chốt (green)                      |
-| Trạng thái điều trị | 120px | ✅ Filter   | Tag: Chưa (default) / Đang (processing) / Hoàn thành (success) |
-| Ngày chốt           | 140px | ✅ Sort     | Date hoặc Button "Chốt" (inline action)                        |
-| Thao tác            | 120px | -           | Edit \| Delete (fixed="right")                                 |
+| Column              | Width | Sort/Filter | Description                                                      |
+| ------------------- | ----- | ----------- | ---------------------------------------------------------------- |
+| Ngày tư vấn         | 140px | ✅ Sort     | `consultationDate` (DD/MM/YYYY)                                  |
+| Dịch vụ             | 200px | ✅ Filter   | `consultedServiceName`                                           |
+| SL                  | 60px  | -           | `quantity`                                                       |
+| Giá ưu đãi          | 120px | -           | `preferentialPrice` (VND format)                                 |
+| Thành tiền          | 140px | ✅ Sort     | `finalPrice` (VND format)                                        |
+| Công nợ             | 120px | ✅ Sort     | `debt` (VND format, **chỉ red khi đã chốt và > 0**)              |
+| Bác sĩ tư vấn       | 140px | ✅ Filter   | `consultingDoctor.fullName`                                      |
+| Sale tư vấn         | 120px | ✅ Filter   | ⭐ LOGIC: Button "Follow up" hoặc Tên sale (tương tự Daily View) |
+| Bác sĩ điều trị     | 140px | ✅ Filter   | `treatingDoctor.fullName`                                        |
+| Trạng thái dịch vụ  | 120px | ✅ Filter   | Tag: Chưa chốt (orange) / Đã chốt (green)                        |
+| Trạng thái điều trị | 120px | ✅ Filter   | Tag: Chưa (default) / Đang (processing) / Hoàn thành (success)   |
+| Ngày chốt           | 140px | ✅ Sort     | Date hoặc Button "Chốt" (inline action)                          |
+| Thao tác            | 120px | -           | Edit \| Delete (fixed="right")                                   |
 
 ---
 
@@ -510,6 +549,11 @@ await update(serviceId, {
 - `updateConsultedServiceAction(id, data)` - Cập nhật
 - `deleteConsultedServiceAction(id)` - Xóa (hard delete)
 - `confirmConsultedServiceAction(id)` - Chốt service
+- `assignConsultingSaleAction(id)` ⭐ - Auto-assign current user as sale
+  - Input: `id` (consulted service UUID)
+  - Process: Set `consultingSaleId = currentUser.id`, validate `requiresFollowUp = true` và `consultingSaleId = null`
+  - Return: Updated ConsultedService object
+  - Error: 400 nếu không đủ điều kiện, 404 nếu không tìm thấy, 403 nếu không có quyền
 
 ### Zod Schemas
 
@@ -526,6 +570,10 @@ await update(serviceId, {
 - `preferentialPrice`: min(0), validate với minPrice/price ở service layer
 - `quantity`: min(1), default(1)
 - `toothPositions`: array string[], default([])
+- **`consultingSaleId`** ⭐: Business rule validation
+  - **Backend enforce**: Nếu `requiresFollowUp = false` → `consultingSaleId` PHẢI là `null`
+  - Validation: Lookup DentalService.requiresFollowUp → throw 400 nếu vi phạm
+  - Message: "Dịch vụ này không yêu cầu follow-up, không thể chọn sale tư vấn"
 - **`debt`**: Business rule validation
   - CREATE: Always 0 (chưa chốt)
   - UPDATE: 0 nếu chưa chốt, calculated nếu đã chốt
@@ -549,9 +597,11 @@ await update(serviceId, {
 
 - `canEdit(user, service)` → Check role + status + timeline → return { allowed, editableFields }
 - `canDelete(user, service)` → Check role + status
+- `canAssignSale(user, service)` ⭐ → Check `requiresFollowUp = true` AND `consultingSaleId = null`
+- `canEditSale(user, service)` ⭐ → Check `requiresFollowUp = true` AND (Admin OR `consultingSaleId = null`)
 - `validateUpdateFields(user, service, fields)` → Throw error nếu edit restricted fields
 
-**Logic**: Admin = full access; Employee = restricted theo status + 33-day timeline
+**Logic**: Admin = full access; Employee = restricted theo status + 33-day timeline + sale assignment rules
 
 ### React Query Caching
 
