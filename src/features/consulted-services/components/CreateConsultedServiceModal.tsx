@@ -33,6 +33,7 @@ const CreateConsultedServiceFormSchema = z.object({
   preferentialPrice: z.number().int().min(0, "Giá ưu đãi không thể âm"),
   toothPositions: z.array(z.string()),
   consultingDoctorId: z.string().optional().nullable(),
+  saleOnlineId: z.string().optional().nullable(),
   consultingSaleId: z.string().optional().nullable(),
   treatingDoctorId: z.string().optional().nullable(),
   specificStatus: z.string().optional().nullable(),
@@ -65,6 +66,9 @@ export default function CreateConsultedServiceModal({
   onSubmit,
 }: Props) {
   const [toothSelectorOpen, setToothSelectorOpen] = useState(false);
+  const [toothPositionsError, setToothPositionsError] = useState<string | null>(
+    null
+  );
 
   const defaultValues: FormData = useMemo(
     () => ({
@@ -73,6 +77,7 @@ export default function CreateConsultedServiceModal({
       preferentialPrice: 0,
       toothPositions: [],
       consultingDoctorId: null,
+      saleOnlineId: null,
       consultingSaleId: null,
       treatingDoctorId: null,
       specificStatus: "",
@@ -82,14 +87,7 @@ export default function CreateConsultedServiceModal({
     []
   );
 
-  const {
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<FormData>({
+  const { control, handleSubmit, watch, setValue, reset } = useForm<FormData>({
     resolver: zodResolver(CreateConsultedServiceFormSchema),
     defaultValues,
   });
@@ -113,6 +111,57 @@ export default function CreateConsultedServiceModal({
     () => CUSTOMER_SOURCES.find((s) => s.value === sourceValue),
     [sourceValue]
   );
+
+  // Quick-select source options (memoized per guideline Section 4.3)
+  const quickSelectSources = useMemo(() => {
+    const findLabel = (value: string) =>
+      CUSTOMER_SOURCES.find((s) => s.value === value)?.label || value;
+
+    return [
+      {
+        value: "returning_customer",
+        label: findLabel("returning_customer"),
+        icon: "🔄",
+        isActive: sourceValue === "returning_customer",
+      },
+      {
+        value: "customer_referral",
+        label: findLabel("customer_referral"),
+        icon: "👤",
+        isActive: sourceValue === "customer_referral",
+      },
+      {
+        value: "facebook",
+        label: findLabel("facebook"),
+        icon: "📱",
+        isActive: sourceValue === "facebook",
+      },
+      {
+        value: "facebook_group",
+        label: findLabel("facebook_group"),
+        icon: "👥",
+        isActive: sourceValue === "facebook_group",
+      },
+      {
+        value: "tiktok",
+        label: findLabel("tiktok"),
+        icon: "🎵",
+        isActive: sourceValue === "tiktok",
+      },
+      {
+        value: "hismile",
+        label: findLabel("hismile"),
+        icon: "🦷",
+        isActive: sourceValue === "hismile",
+      },
+      {
+        value: "nha_khoa_hub",
+        label: findLabel("nha_khoa_hub"),
+        icon: "🏥",
+        isActive: sourceValue === "nha_khoa_hub",
+      },
+    ];
+  }, [sourceValue]);
 
   // Customer search for sourceNote (when source = "customer_referral")
   const [custQuery, setCustQuery] = useState("");
@@ -194,6 +243,10 @@ export default function CreateConsultedServiceModal({
   useEffect(() => {
     if (selectedService?.unit === "Răng") {
       setValue("quantity", toothPositions.length);
+      // Clear error when user selects teeth
+      if (toothPositions.length > 0) {
+        setToothPositionsError(null);
+      }
     }
   }, [toothPositions, selectedService, setValue]);
 
@@ -244,6 +297,7 @@ export default function CreateConsultedServiceModal({
       selectedService?.unit === "Răng" &&
       formData.toothPositions.length === 0
     ) {
+      setToothPositionsError("Vui lòng chọn ít nhất 1 vị trí răng");
       return;
     }
 
@@ -256,6 +310,7 @@ export default function CreateConsultedServiceModal({
       preferentialPrice: formData.preferentialPrice,
       toothPositions: formData.toothPositions,
       consultingDoctorId: formData.consultingDoctorId || null,
+      saleOnlineId: formData.saleOnlineId || null,
       consultingSaleId: formData.consultingSaleId || null,
       treatingDoctorId: formData.treatingDoctorId || null,
       specificStatus: formData.specificStatus || null,
@@ -352,7 +407,12 @@ export default function CreateConsultedServiceModal({
           {selectedService?.unit === "Răng" && (
             <Row gutter={12}>
               <Col span={24}>
-                <Form.Item label="Vị trí răng" required>
+                <Form.Item
+                  label="Vị trí răng"
+                  required
+                  validateStatus={toothPositionsError ? "error" : ""}
+                  help={toothPositionsError}
+                >
                   <Space size={[8, 8]} wrap style={{ width: "100%" }}>
                     <Button
                       onClick={() => setToothSelectorOpen(true)}
@@ -475,9 +535,28 @@ export default function CreateConsultedServiceModal({
             </Col>
           </Row>
 
-          {/* Row 5: Doctors and Sale - 3 columns */}
+          {/* Row 5: Doctors and Sale - 4 columns */}
           <Row gutter={12}>
-            <Col xs={24} lg={8}>
+            <Col xs={24} lg={6}>
+              <Controller
+                name="saleOnlineId"
+                control={control}
+                render={({ field }) => (
+                  <Form.Item label="Sale online">
+                    <Select
+                      {...field}
+                      showSearch
+                      placeholder="Chọn sale online"
+                      optionFilterProp="label"
+                      options={employeeOptions}
+                      allowClear
+                    />
+                  </Form.Item>
+                )}
+              />
+            </Col>
+
+            <Col xs={24} lg={6}>
               <Controller
                 name="consultingDoctorId"
                 control={control}
@@ -496,19 +575,12 @@ export default function CreateConsultedServiceModal({
               />
             </Col>
 
-            <Col xs={24} lg={8}>
+            <Col xs={24} lg={6}>
               <Controller
                 name="consultingSaleId"
                 control={control}
                 render={({ field }) => (
-                  <Form.Item
-                    label="Sale tư vấn"
-                    help={
-                      selectedService && !selectedService.requiresFollowUp
-                        ? "Dịch vụ này không yêu cầu follow-up"
-                        : undefined
-                    }
-                  >
+                  <Form.Item label="Sale tư vấn">
                     <Select
                       {...field}
                       showSearch
@@ -525,7 +597,7 @@ export default function CreateConsultedServiceModal({
               />
             </Col>
 
-            <Col xs={24} lg={8}>
+            <Col xs={24} lg={6}>
               <Controller
                 name="treatingDoctorId"
                 control={control}
@@ -556,7 +628,7 @@ export default function CreateConsultedServiceModal({
                     <Input.TextArea
                       {...field}
                       value={field.value || ""}
-                      rows={3}
+                      rows={2}
                       placeholder="Ghi chú của bác sĩ về tình trạng răng..."
                       maxLength={500}
                       showCount
@@ -569,13 +641,34 @@ export default function CreateConsultedServiceModal({
 
           {/* Row 7: Source & Source Note */}
           <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item label="Nguồn khách - Chọn nhanh">
+                <Space size={8} wrap>
+                  {quickSelectSources.map((option) => (
+                    <Button
+                      key={option.value}
+                      type={option.isActive ? "primary" : "default"}
+                      onClick={() => {
+                        setValue("source", option.value);
+                        setValue("sourceNote", null);
+                      }}
+                    >
+                      {option.icon} {option.label}
+                    </Button>
+                  ))}
+                </Space>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={12}>
             <Col xs={24} lg={12}>
               <Controller
                 name="source"
                 control={control}
                 render={({ field, fieldState }) => (
                   <Form.Item
-                    label="Nguồn khách"
+                    label="Nguồn khách (chi tiết)"
                     required
                     validateStatus={fieldState.error ? "error" : ""}
                     help={fieldState.error?.message}
@@ -703,16 +796,6 @@ export default function CreateConsultedServiceModal({
               )}
             </Col>
           </Row>
-
-          {/* Validation summary */}
-          {Object.keys(errors).length > 0 && (
-            <Alert
-              message="Vui lòng kiểm tra lại các trường đã nhập"
-              type="error"
-              showIcon
-              style={{ marginTop: 8 }}
-            />
-          )}
         </Form>
       </Modal>
 

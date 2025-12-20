@@ -64,6 +64,12 @@ const consultedServiceInclude = {
       fullName: true,
     },
   },
+  saleOnline: {
+    select: {
+      id: true,
+      fullName: true,
+    },
+  },
   consultingSale: {
     select: {
       id: true,

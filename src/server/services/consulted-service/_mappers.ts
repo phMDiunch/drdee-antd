@@ -17,6 +17,7 @@ type ConsultedServiceWithRelations = ConsultedService & {
     "id" | "name" | "unit" | "price" | "minPrice" | "requiresFollowUp"
   >;
   consultingDoctor: Pick<Employee, "id" | "fullName"> | null;
+  saleOnline: Pick<Employee, "id" | "fullName"> | null;
   consultingSale: Pick<Employee, "id" | "fullName"> | null;
   treatingDoctor: Pick<Employee, "id" | "fullName"> | null;
   createdBy: Pick<Employee, "id" | "fullName">;
@@ -54,6 +55,7 @@ export function mapConsultedServiceToResponse(
     // Classification
     source: row.source,
     sourceNote: row.sourceNote,
+    stage: row.stage,
 
     // Financial
     quantity: row.quantity,
@@ -70,6 +72,7 @@ export function mapConsultedServiceToResponse(
 
     // Assignment
     consultingDoctorId: row.consultingDoctorId,
+    saleOnlineId: row.saleOnlineId,
     consultingSaleId: row.consultingSaleId,
     treatingDoctorId: row.treatingDoctorId,
 
@@ -101,6 +104,13 @@ export function mapConsultedServiceToResponse(
       ? {
           id: row.consultingDoctor.id,
           fullName: row.consultingDoctor.fullName,
+        }
+      : null,
+
+    saleOnline: row.saleOnline
+      ? {
+          id: row.saleOnline.id,
+          fullName: row.saleOnline.fullName,
         }
       : null,
 

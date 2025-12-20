@@ -58,7 +58,27 @@ type ConsultedServiceCreateInput = CreateConsultedServiceRequest & {
 };
 ```
 
-### Sale Follow-Up Rules
+### Sale Online & Consulting Sale Rules
+
+**2 loại Sale:**
+
+- **Sale Online** (`saleOnlineId`): Tư vấn viên tư vấn TRƯỚC KHI khách đến phòng khám (lead nurturing, online consultation)
+- **Consulting Sale** (`consultingSaleId`): Tư vấn viên tư vấn SAU KHI khách đến phòng khám (onsite consultation)
+
+**Sale Online Rules:**
+
+- ✅ **Không yêu cầu requiresFollowUp**: Sale online có thể assign cho bất kỳ dịch vụ nào
+- ✅ **Optional field**: Có thể null (nhiều khách walk-in không có sale online)
+- ✅ **Employee relation**: `saleOnline` cũng là Employee
+- ✅ **UI Display**:
+  - Modal: Hiển thị TRƯỚC "Bác sĩ tư vấn"
+  - Daily View Table: Cột "Sale Online" (120px) đặt TRƯỚC "Bác sĩ tư vấn"
+  - Customer Detail: KHÔNG hiển thị
+- ✅ **No special actions**: Không có button "Follow up online" (assign thủ công qua Select)
+- ✅ **Edit Permission**: Giống `consultingSaleId` (theo serviceStatus + 33-day rule)
+- ✅ **No filter/sort**: Không cần filter hay sort theo sale online
+
+**Consulting Sale Follow-Up Rules:**
 
 - ✅ **requiresFollowUp Logic**: Dựa vào DentalService.requiresFollowUp
   - `requiresFollowUp = false` → Sale field DISABLED (không cho chọn)
@@ -73,6 +93,15 @@ type ConsultedServiceCreateInput = CreateConsultedServiceRequest & {
   - Admin: ✅ Đổi được (field enabled)
 - ✅ **Legacy Data**: Giữ nguyên (nếu có `requiresFollowUp=false` nhưng có `consultingSaleId`)
 
+### Stage Field (Marketing Funnel)
+
+- ✅ **Type**: String, optional (nullable)
+- ✅ **Purpose**: Lưu trữ giai đoạn trong marketing/sales funnel (lead, qualified, proposal, closed...)
+- ✅ **Default**: null
+- ✅ **UI**: KHÔNG hiển thị trên UI (modal/table) - chỉ lưu database
+- ✅ **Logic**: Sẽ implement sau (workflow automation, stage transitions...)
+- ✅ **No validation**: Không ràng buộc với bất kỳ field/status nào
+
 ### Permission Rules
 
 **Quyền dựa trên: Service Status + Timeline (33d) + Role + Clinic**
@@ -84,11 +113,11 @@ type ConsultedServiceCreateInput = CreateConsultedServiceRequest & {
 
 #### UPDATE
 
-| Service Status | Employee                                                | Admin         |
-| -------------- | ------------------------------------------------------- | ------------- |
-| Chưa chốt      | ✅ Sửa tất cả                                           | ✅ Sửa tất cả |
-| Đã chốt <33d   | ⚠️ Chỉ sửa nhân sự (3 fields: consulting/treating/sale) | ✅ Sửa tất cả |
-| Đã chốt >33d   | ❌ Không sửa                                            | ✅ Sửa tất cả |
+| Service Status | Employee                                                           | Admin         |
+| -------------- | ------------------------------------------------------------------ | ------------- |
+| Chưa chốt      | ✅ Sửa tất cả                                                      | ✅ Sửa tất cả |
+| Đã chốt <33d   | ⚠️ Chỉ sửa nhân sự (4 fields: saleOnline/consulting/treating/sale) | ✅ Sửa tất cả |
+| Đã chốt >33d   | ❌ Không sửa                                                       | ✅ Sửa tất cả |
 
 #### DELETE
 
@@ -134,8 +163,8 @@ Hàng 1: [* Dịch vụ (Select)                    ] [Đơn vị (readonly)    
 Hàng 2: [Vị trí răng: Button "Chọn vị trí răng (0)" - counter động               ]
 Hàng 3: [Đơn giá (VND) (readonly)              ] [Giá ưu đãi (VND)                ]
         [Số lượng (auto nếu Răng)              ] [Thành tiền (VND) (readonly)     ]
-Hàng 4: [Bác sĩ tư vấn (Select)                ] [Sale tư vấn (Select)            ]
-        [Bác sĩ điều trị (Select)                                                  ]
+Hàng 4: [Sale online (Select)                  ] [Bác sĩ tư vấn (Select)          ]
+        [Sale tư vấn (Select)                  ] [Bác sĩ điều trị (Select)        ]
 Hàng 5: [Ghi chú tình trạng (Textarea)                                            ]
 ```
 
@@ -189,6 +218,13 @@ Hàng 5: [Ghi chú tình trạng (Textarea)                                     
 
 **Optional**:
 
+- `saleOnlineId`: UUID ⭐ **NEW FIELD**
+  - Label: "Sale online"
+  - Placeholder: "Chọn sale online"
+  - Hook: `useWorkingEmployees({ clinicId })`
+  - Display: `"{fullName}"`
+  - **No conditional logic**: Không phụ thuộc vào `requiresFollowUp`
+  - **Default**: null
 - `consultingDoctorId`, `treatingDoctorId`: UUID
   - Placeholder: "Chọn bác sĩ tư vấn", "Chọn bác sĩ điều trị"
   - Hook: `useWorkingEmployees({ clinicId })`
@@ -199,7 +235,6 @@ Hàng 5: [Ghi chú tình trạng (Textarea)                                     
   - Display: `"{fullName}"`
   - **Disabled khi**: `requiresFollowUp = false` (từ selected DentalService)
   - **Enabled khi**: `requiresFollowUp = true`
-  - Helper text (khi disabled): "Dịch vụ này không yêu cầu follow-up" (gray, size 12px)
 - `specificStatus`: String (textarea, placeholder: "Ghi chú của bác sĩ về tình trạng răng...")
 
 **Display-Only (Readonly)**:
@@ -221,6 +256,7 @@ Hàng 5: [Ghi chú tình trạng (Textarea)                                     
 - `consultationDate`: now()
 - `serviceStatus`: "Chưa chốt"
 - `treatmentStatus`: "Chưa điều trị"
+- `stage`: null (optional field for future marketing funnel logic)
 
 ### Check-in Requirement Logic
 
@@ -251,10 +287,15 @@ Hàng 1: [dentalServiceId (disabled nếu đã chốt)] [Đơn vị (readonly)  
 Hàng 2: [Vị trí răng: Button "Chọn vị trí răng (X)" (disabled nếu đã chốt)        ]
 Hàng 3: [Đơn giá (readonly)                     ] [Giá ưu đãi (disabled nếu chốt) ]
         [Số lượng (disabled nếu đã chốt)       ] [Thành tiền (readonly)           ]
-Hàng 4: [consultingDoctorId                    ] [consultingSaleId ⭐ LOGIC]      ]
-        [treatingDoctorId                                                          ]
+Hàng 4: [saleOnlineId                          ] [consultingDoctorId              ]
+        [consultingSaleId ⭐ LOGIC]             ] [treatingDoctorId                ]
 Hàng 5: [specificStatus (Textarea, disabled nếu đã chốt)                          ]
 ```
+
+**saleOnlineId Field Logic**:
+
+- **No conditional logic**: Không phụ thuộc vào `requiresFollowUp`
+- **Edit permission**: Theo permission matrix (serviceStatus + 33-day rule)
 
 **consultingSaleId Field Logic** ⭐:
 
@@ -263,8 +304,6 @@ Hàng 5: [specificStatus (Textarea, disabled nếu đã chốt)                 
   - `consultingSaleId !== null` AND user = Employee → Không đổi được
 - **Enabled khi**:
   - `requiresFollowUp = true` AND (user = Admin OR `consultingSaleId = null`)
-- Helper text (khi disabled do requiresFollowUp): "Dịch vụ này không yêu cầu follow-up"
-- Helper text (khi disabled do đã có sale + Employee): "Chỉ Admin mới đổi sale sau khi đã follow up"
 
 **Admin Section** (sau Divider "Chỉnh sửa nâng cao (Admin)"):
 
@@ -451,8 +490,13 @@ await update(serviceId, {
 | Đơn giá         | 120px | -           | `price` (VND format)                                 |
 | Giá ưu đãi      | 120px | -           | `preferentialPrice` (VND format)                     |
 | Thành tiền      | 140px | ✅ Sort     | `finalPrice` (VND format)                            |
+| Sale online     | 120px | -           | `saleOnline.fullName` ⭐ NEW (no filter/sort)        |
 | Bác sĩ tư vấn   | 140px | ✅ Filter   | `consultingDoctor.fullName`                          |
 | Bác sĩ điều trị | 140px | ✅ Filter   | `treatingDoctor.fullName`                            |
+| Sale tư vấn     | 120px | ✅ Filter   | ⭐ LOGIC: Button "Follow up" hoặc Tên sale           |
+| Trạng thái      | 120px | ✅ Filter   | Tag: Chưa chốt (blue) / Đã chốt (green)              |
+| Ngày chốt       | 140px | ✅ Sort     | Date hoặc Button "Chốt" (inline action)              |
+| Thao tác        | 120px | -           | Edit \| Delete (fixed="right")                       |
 | Sale tư vấn     | 120px | ✅ Filter   | ⭐ LOGIC: Button "Follow up" hoặc Tên sale           |
 | Trạng thái      | 120px | ✅ Filter   | Tag: Chưa chốt (blue) / Đã chốt (green)              |
 | Ngày chốt       | 140px | ✅ Sort     | Date hoặc Button "Chốt" (inline action)              |
@@ -463,6 +507,10 @@ await update(serviceId, {
 - **Khách hàng**:
   - Tên: Link → navigate to `/customers/{customerId}` (Customer Detail page)
   - Tuổi: Calculate từ `customer.dateOfBirth` → `{currentYear - birthYear} tuổi`
+- **Sale online** ⭐ NEW:
+  - Hiển thị `saleOnline.fullName` hoặc "-" nếu null
+  - **No button/action**: Chỉ hiển thị tên (assign thủ công qua modal)
+  - **No filter/sort**: Không cần filter hay sort
 - **Sale tư vấn** ⭐:
   - **Case 1**: `requiresFollowUp = false` → Hiển thị "-" (không cần sale)
   - **Case 2**: `requiresFollowUp = true` AND `consultingSaleId = null` → Button "Follow up" (primary, small)

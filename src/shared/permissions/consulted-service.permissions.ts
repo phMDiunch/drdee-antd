@@ -70,6 +70,7 @@ const EDIT_PERMISSION_DAYS = 33;
  */
 const EMPLOYEE_EDITABLE_FIELDS_CONFIRMED = [
   "consultingDoctorId",
+  "saleOnlineId",
   "consultingSaleId",
   "treatingDoctorId",
 ];
@@ -83,6 +84,7 @@ const EMPLOYEE_EDITABLE_FIELDS_UNCONFIRMED = [
   "preferentialPrice",
   "toothPositions",
   "consultingDoctorId",
+  "saleOnlineId",
   "consultingSaleId",
   "treatingDoctorId",
   "specificStatus",

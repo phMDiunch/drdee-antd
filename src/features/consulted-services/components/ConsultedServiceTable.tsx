@@ -62,30 +62,6 @@ export default function ConsultedServiceTable({
       new Set(data.map((s) => s.consultedServiceName))
     ).sort();
 
-    const consultingDoctors = Array.from(
-      new Set(
-        data
-          .map((s) => s.consultingDoctor?.fullName)
-          .filter((name): name is string => !!name)
-      )
-    ).sort();
-
-    const treatingDoctors = Array.from(
-      new Set(
-        data
-          .map((s) => s.treatingDoctor?.fullName)
-          .filter((name): name is string => !!name)
-      )
-    ).sort();
-
-    const sales = Array.from(
-      new Set(
-        data
-          .map((s) => s.consultingSale?.fullName)
-          .filter((name): name is string => !!name)
-      )
-    ).sort();
-
     const baseColumns: ColumnsType<ConsultedServiceResponse> = [
       ...(!isCustomerDetailView
         ? [
@@ -210,48 +186,24 @@ export default function ConsultedServiceTable({
           ]
         : []) as ColumnsType<ConsultedServiceResponse>),
       {
+        title: "Sale online",
+        dataIndex: ["saleOnline", "fullName"],
+        key: "saleOnline",
+        width: 120,
+        render: (name) => name || <Text type="secondary">—</Text>,
+      },
+      {
         title: "Bác sĩ tư vấn",
         dataIndex: ["consultingDoctor", "fullName"],
         key: "consultingDoctor",
         width: 120,
-        filters: [
-          { text: "Chưa chọn", value: "NONE" },
-          ...consultingDoctors.map((name) => ({ text: name, value: name })),
-        ],
-        onFilter: (value, record) => {
-          if (value === "NONE") return !record.consultingDoctor;
-          return record.consultingDoctor?.fullName === value;
-        },
         render: (name) => name || <Text type="secondary">—</Text>,
       },
       {
-        title: "Bác sĩ điều trị",
-        dataIndex: ["treatingDoctor", "fullName"],
-        key: "treatingDoctor",
-        width: 120,
-        filters: [
-          { text: "Chưa chọn", value: "NONE" },
-          ...treatingDoctors.map((name) => ({ text: name, value: name })),
-        ],
-        onFilter: (value, record) => {
-          if (value === "NONE") return !record.treatingDoctor;
-          return record.treatingDoctor?.fullName === value;
-        },
-        render: (name) => name || <Text type="secondary">—</Text>,
-      },
-      {
-        title: "Sale",
+        title: "Sale offline",
         dataIndex: ["consultingSale", "fullName"],
         key: "consultingSale",
         width: 120,
-        filters: [
-          { text: "Chưa chọn", value: "NONE" },
-          ...sales.map((name) => ({ text: name, value: name })),
-        ],
-        onFilter: (value, record) => {
-          if (value === "NONE") return !record.consultingSale;
-          return record.consultingSale?.fullName === value;
-        },
         render: (name, record) => {
           // Legacy data: requiresFollowUp=false but has consultingSaleId
           if (
@@ -288,45 +240,12 @@ export default function ConsultedServiceTable({
         },
       },
       {
-        title: "Trạng thái dịch vụ",
-        dataIndex: "serviceStatus",
-        key: "serviceStatus",
-        width: 110,
-        filters: [
-          { text: "Chưa chốt", value: "Chưa chốt" },
-          { text: "Đã chốt", value: "Đã chốt" },
-        ],
-        onFilter: (value, record) => record.serviceStatus === value,
-        render: (status) => {
-          const tag =
-            SERVICE_STATUS_TAGS[status as keyof typeof SERVICE_STATUS_TAGS];
-          return <Tag color={tag.color}>{tag.text}</Tag>;
-        },
+        title: "Bác sĩ điều trị",
+        dataIndex: ["treatingDoctor", "fullName"],
+        key: "treatingDoctor",
+        width: 120,
+        render: (name) => name || <Text type="secondary">—</Text>,
       },
-      // Customer Detail View: Add "Trạng thái điều trị" column
-      ...((isCustomerDetailView
-        ? [
-            {
-              title: "Trạng thái điều trị",
-              dataIndex: "treatmentStatus",
-              key: "treatmentStatus",
-              width: 110,
-              filters: [
-                { text: "Chưa điều trị", value: "Chưa điều trị" },
-                { text: "Đang điều trị", value: "Đang điều trị" },
-                { text: "Hoàn thành", value: "Hoàn thành" },
-              ],
-              onFilter: (value, record) => record.treatmentStatus === value,
-              render: (status: string) => {
-                const tag =
-                  TREATMENT_STATUS_TAGS[
-                    status as keyof typeof TREATMENT_STATUS_TAGS
-                  ];
-                return <Tag color={tag.color}>{tag.text}</Tag>;
-              },
-            },
-          ]
-        : []) as ColumnsType<ConsultedServiceResponse>),
       {
         title: "Ngày chốt",
         dataIndex: "serviceConfirmDate",
@@ -368,6 +287,35 @@ export default function ConsultedServiceTable({
           );
         },
       },
+      {
+        title: "Trạng thái dịch vụ",
+        dataIndex: "serviceStatus",
+        key: "serviceStatus",
+        width: 110,
+        render: (status) => {
+          const tag =
+            SERVICE_STATUS_TAGS[status as keyof typeof SERVICE_STATUS_TAGS];
+          return <Tag color={tag.color}>{tag.text}</Tag>;
+        },
+      },
+      // Customer Detail View: Add "Trạng thái điều trị" column
+      ...((isCustomerDetailView
+        ? [
+            {
+              title: "Trạng thái điều trị",
+              dataIndex: "treatmentStatus",
+              key: "treatmentStatus",
+              width: 110,
+              render: (status: string) => {
+                const tag =
+                  TREATMENT_STATUS_TAGS[
+                    status as keyof typeof TREATMENT_STATUS_TAGS
+                  ];
+                return <Tag color={tag.color}>{tag.text}</Tag>;
+              },
+            },
+          ]
+        : []) as ColumnsType<ConsultedServiceResponse>),
       {
         title: "Thao tác",
         key: "actions",

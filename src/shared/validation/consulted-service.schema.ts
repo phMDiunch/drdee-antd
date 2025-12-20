@@ -41,11 +41,13 @@ const ConsultedServiceCommonFieldsSchema = z.object({
     .min(0, "Giá ưu đãi không thể âm"),
   toothPositions: z.array(z.string()).optional(),
   consultingDoctorId: z.string().uuid().optional().nullable(),
+  saleOnlineId: z.string().uuid().optional().nullable(),
   consultingSaleId: z.string().uuid().optional().nullable(),
   treatingDoctorId: z.string().uuid().optional().nullable(),
   specificStatus: z.string().trim().optional().nullable(),
   source: z.string().trim().min(1, "Vui lòng chọn nguồn khách"), // REQUIRED like Customer
   sourceNote: z.string().trim().optional().nullable(),
+  stage: z.string().trim().optional().nullable(),
 });
 
 /**
@@ -305,6 +307,7 @@ export const ConsultedServiceResponseSchema = z.object({
   // Classification
   source: z.string().nullable(),
   sourceNote: z.string().nullable(),
+  stage: z.string().nullable(),
 
   // Financial
   quantity: z.number(),
@@ -321,6 +324,7 @@ export const ConsultedServiceResponseSchema = z.object({
 
   // Assignment
   consultingDoctorId: z.string().nullable(),
+  saleOnlineId: z.string().nullable(),
   consultingSaleId: z.string().nullable(),
   treatingDoctorId: z.string().nullable(),
 
@@ -351,6 +355,12 @@ export const ConsultedServiceResponseSchema = z.object({
     })
     .optional(),
   consultingDoctor: z
+    .object({
+      id: z.string(),
+      fullName: z.string(),
+    })
+    .nullable(),
+  saleOnline: z
     .object({
       id: z.string(),
       fullName: z.string(),

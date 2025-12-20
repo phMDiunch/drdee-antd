@@ -41,6 +41,7 @@ const UpdateConsultedServiceFormSchema = z.object({
   preferentialPrice: z.number().int().min(0, "Giá ưu đãi không thể âm"),
   toothPositions: z.array(z.string()),
   consultingDoctorId: z.string().optional().nullable(),
+  saleOnlineId: z.string().optional().nullable(),
   consultingSaleId: z.string().optional().nullable(),
   treatingDoctorId: z.string().optional().nullable(),
   specificStatus: z.string().optional().nullable(),
@@ -105,6 +106,23 @@ export default function UpdateConsultedServiceModal({
     return { allowed: true };
   }, [service, editableFields, isAdmin]);
 
+  // Check if sale online field can be edited (NO requiresFollowUp check)
+  const canEditSaleOnline = useMemo(() => {
+    // Check if field is editable (based on permissions)
+    if (!editableFields.includes("saleOnlineId")) {
+      // Employee can't edit if already has sale online
+      if (!isAdmin && service.saleOnlineId) {
+        return {
+          allowed: false,
+          reason: "Chỉ Admin mới đổi sale online sau khi đã được chỉ định",
+        };
+      }
+      return { allowed: false, reason: "Không có quyền chỉnh sửa" };
+    }
+
+    return { allowed: true };
+  }, [service, editableFields, isAdmin]);
+
   const defaultValues: FormData = useMemo(
     () => ({
       dentalServiceId: service.dentalServiceId,
@@ -112,6 +130,7 @@ export default function UpdateConsultedServiceModal({
       preferentialPrice: service.preferentialPrice,
       toothPositions: service.toothPositions,
       consultingDoctorId: service.consultingDoctorId || null,
+      saleOnlineId: service.saleOnlineId || null,
       consultingSaleId: service.consultingSaleId || null,
       treatingDoctorId: service.treatingDoctorId || null,
       specificStatus: service.specificStatus || "",
@@ -125,14 +144,7 @@ export default function UpdateConsultedServiceModal({
     [service]
   );
 
-  const {
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<FormData>({
+  const { control, handleSubmit, watch, setValue, reset } = useForm<FormData>({
     resolver: zodResolver(UpdateConsultedServiceFormSchema),
     defaultValues,
   });
@@ -277,6 +289,13 @@ export default function UpdateConsultedServiceModal({
       formData.consultingDoctorId !== service.consultingDoctorId
     ) {
       payload.consultingDoctorId = formData.consultingDoctorId || null;
+    }
+
+    if (
+      editableFields.includes("saleOnlineId") &&
+      formData.saleOnlineId !== service.saleOnlineId
+    ) {
+      payload.saleOnlineId = formData.saleOnlineId || null;
     }
 
     if (
@@ -554,9 +573,29 @@ export default function UpdateConsultedServiceModal({
             </Col>
           </Row>
 
-          {/* Row 5: Doctors and Sale - 3 columns */}
+          {/* Row 5: Doctors and Sale - 4 columns */}
           <Row gutter={12}>
-            <Col xs={24} lg={8}>
+            <Col xs={24} lg={6}>
+              <Controller
+                name="saleOnlineId"
+                control={control}
+                render={({ field }) => (
+                  <Form.Item label="Sale online">
+                    <Select
+                      {...field}
+                      showSearch
+                      placeholder="Chọn sale online"
+                      optionFilterProp="label"
+                      options={employeeOptions}
+                      disabled={!canEditSaleOnline.allowed}
+                      allowClear
+                    />
+                  </Form.Item>
+                )}
+              />
+            </Col>
+
+            <Col xs={24} lg={6}>
               <Controller
                 name="consultingDoctorId"
                 control={control}
@@ -576,15 +615,12 @@ export default function UpdateConsultedServiceModal({
               />
             </Col>
 
-            <Col xs={24} lg={8}>
+            <Col xs={24} lg={6}>
               <Controller
                 name="consultingSaleId"
                 control={control}
                 render={({ field }) => (
-                  <Form.Item
-                    label="Sale tư vấn"
-                    help={!canEditSale.allowed ? canEditSale.reason : undefined}
-                  >
+                  <Form.Item label="Sale tư vấn">
                     <Select
                       {...field}
                       showSearch
@@ -599,7 +635,7 @@ export default function UpdateConsultedServiceModal({
               />
             </Col>
 
-            <Col xs={24} lg={8}>
+            <Col xs={24} lg={6}>
               <Controller
                 name="treatingDoctorId"
                 control={control}
@@ -631,7 +667,7 @@ export default function UpdateConsultedServiceModal({
                     <Input.TextArea
                       {...field}
                       value={field.value || ""}
-                      rows={3}
+                      rows={2}
                       placeholder="Ghi chú của bác sĩ về tình trạng răng..."
                       maxLength={500}
                       showCount
@@ -897,16 +933,6 @@ export default function UpdateConsultedServiceModal({
                 </Descriptions.Item>
               </Descriptions>
             </>
-          )}
-
-          {/* Validation summary */}
-          {Object.keys(errors).length > 0 && (
-            <Alert
-              message="Vui lòng kiểm tra lại các trường đã nhập"
-              type="error"
-              showIcon
-              style={{ marginTop: 8 }}
-            />
           )}
         </Form>
       </Modal>

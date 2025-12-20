@@ -134,6 +134,7 @@ model Employee {
 
   // Liên kết đến dịch vụ tư vấn
   consultingDoctorServices ConsultedService[] @relation("ConsultingDoctorServices")
+  saleOnlineServices       ConsultedService[] @relation("SaleOnlineServices")
   consultingSaleServices   ConsultedService[] @relation("ConsultingSaleServices")
   treatingDoctorServices   ConsultedService[] @relation("TreatingDoctorServices")
   createdConsultedServices ConsultedService[] @relation("CreatedConsultedServices")
@@ -376,6 +377,7 @@ model ConsultedService {
   // Thông tin phân loại
   source     String? // Nguồn khách
   sourceNote String? // Ghi chú nguồn
+  stage      String? // Marketing funnel stage (for future workflow automation)
 
   // Thông tin Tài chính
   quantity          Int @default(1) // Số lượng
@@ -392,7 +394,8 @@ model ConsultedService {
 
   // Thông tin Phân công
   consultingDoctorId String?
-  consultingSaleId   String?
+  saleOnlineId       String? // Sale tư vấn online (TRƯỚC khi khách đến phòng khám)
+  consultingSaleId   String? // Sale tư vấn tại phòng khám (SAU khi khách đến)
   treatingDoctorId   String?
 
   // Metadata
@@ -416,6 +419,7 @@ model ConsultedService {
 
   // Liên kết đến nhân viên
   consultingDoctor Employee? @relation("ConsultingDoctorServices", fields: [consultingDoctorId], references: [id])
+  saleOnline       Employee? @relation("SaleOnlineServices", fields: [saleOnlineId], references: [id])
   consultingSale   Employee? @relation("ConsultingSaleServices", fields: [consultingSaleId], references: [id])
   treatingDoctor   Employee? @relation("TreatingDoctorServices", fields: [treatingDoctorId], references: [id])
 
