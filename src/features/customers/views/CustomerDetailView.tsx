@@ -32,6 +32,7 @@ import ConsultedServicesTab from "../components/detail-tabs/ConsultedServicesTab
 import TreatmentLogsTab from "../components/detail-tabs/TreatmentLogsTab";
 import TreatmentCareTab from "../components/detail-tabs/TreatmentCareTab";
 import LaboOrdersTab from "../components/detail-tabs/LaboOrdersTab";
+import SalesActivitiesTab from "../components/detail-tabs/SalesActivitiesTab";
 import PaymentsTab from "../components/detail-tabs/PaymentsTab";
 import FinancialSummaryCard from "../components/FinancialSummaryCard";
 import ConvertLeadModal from "../components/ConvertLeadModal";
@@ -155,6 +156,26 @@ export default function CustomerDetailView({
       type: "warning" as const,
     };
   }, [customer?.appointments]);
+
+  // Filter consulted services for Sales Activities Tab (memoized)
+  const consultedServicesForFollowUp = useMemo(() => {
+    if (!consultedServicesData?.items) return [];
+
+    return consultedServicesData.items
+      .filter(
+        (cs) =>
+          cs.dentalService?.requiresFollowUp === true &&
+          cs.serviceStatus !== "Đã chốt"
+      )
+      .map((cs) => ({
+        id: cs.id,
+        consultedServiceName: cs.consultedServiceName,
+        consultationDate: cs.consultationDate,
+        toothPositions: cs.toothPositions,
+        serviceStatus: cs.serviceStatus,
+        stage: cs.stage,
+      }));
+  }, [consultedServicesData?.items]);
 
   if (isLoading) {
     return (
@@ -300,6 +321,17 @@ export default function CustomerDetailView({
                   clinicId={customer.clinicId || ""}
                   todayCheckIn={todayCheckIn}
                   onDataChange={() => refetch()}
+                />
+              ),
+            },
+            {
+              key: "salesActivities",
+              label: "Sale follow up",
+              children: (
+                <SalesActivitiesTab
+                  customerId={customer.id}
+                  customerName={customer.fullName}
+                  consultedServices={consultedServicesForFollowUp}
                 />
               ),
             },

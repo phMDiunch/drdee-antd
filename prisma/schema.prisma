@@ -183,6 +183,9 @@ model Employee {
   createdLaboOrders  LaboOrder[] @relation("CreatedLaboOrders")
   updatedLaboOrders  LaboOrder[] @relation("UpdatedLaboOrders")
 
+  // Liên kết đến nhật ký liên hệ sale
+  salesActivities SalesActivityLog[] @relation("SalesActivities")
+
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
   @@index([email]) // Optimize: Login by email
@@ -431,6 +434,9 @@ model ConsultedService {
 
   // Liên kết đến phiếu thu chi tiết
   paymentDetails PaymentVoucherDetail[]
+
+  // Liên kết đến nhật ký liên hệ sale
+  salesActivityLogs SalesActivityLog[]
 }
 
 model PaymentVoucher {
@@ -493,6 +499,36 @@ model PaymentVoucherDetail {
   // Indexes
   @@index([consultedServiceId])
   @@index([paymentVoucherId])
+}
+
+model SalesActivityLog {
+  id String @id @default(uuid())
+
+  // Liên kết (Service-centric)
+  consultedServiceId String
+  consultedService   ConsultedService @relation(fields: [consultedServiceId], references: [id])
+
+  saleId String // Người thực hiện contact
+  sale   Employee @relation("SalesActivities", fields: [saleId], references: [id])
+
+  // Thông tin liên hệ
+  contactType String   // "call" | "message" | "meet"
+  contactDate DateTime @default(now()) @db.Timestamptz
+
+  // Nội dung
+  content String // Tóm tắt cuộc trao đổi (bắt buộc)
+
+  // Follow-up plan
+  nextContactDate DateTime? @db.Date
+
+  // Metadata
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Indexes
+  @@index([consultedServiceId, contactDate(sort: Desc)])
+  @@index([saleId, contactDate(sort: Desc)])
+  @@index([nextContactDate]) // For follow-up queries
 }
 
 model TreatmentLog {
