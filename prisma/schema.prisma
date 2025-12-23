@@ -378,9 +378,9 @@ model ConsultedService {
   specificStatus String? // Ghi chú của bác sĩ về tình trạng
 
   // Thông tin phân loại
-  source     String? // Nguồn khách
-  sourceNote String? // Ghi chú nguồn
-  stage      String? // Marketing funnel stage (for future workflow automation)
+  source      String? // Nguồn khách
+  sourceNotes String? // Ghi chú nguồn
+  stage       String? // Marketing funnel stage (for future workflow automation)
 
   // Thông tin Tài chính
   quantity          Int @default(1) // Số lượng
@@ -512,7 +512,7 @@ model SalesActivityLog {
   sale   Employee @relation("SalesActivities", fields: [saleId], references: [id])
 
   // Thông tin liên hệ
-  contactType String   // "call" | "message" | "meet"
+  contactType String // "call" | "message" | "meet"
   contactDate DateTime @default(now()) @db.Timestamptz
 
   // Nội dung
