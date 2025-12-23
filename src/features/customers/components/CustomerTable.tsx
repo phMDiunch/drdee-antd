@@ -5,7 +5,6 @@ import React from "react";
 import { Space, Table, Tag, Typography } from "antd";
 import Link from "next/link";
 
-const { Text } = Typography;
 import type { ColumnsType } from "antd/es/table";
 import type { CustomerDailyResponse } from "@/shared/validation/customer.schema";
 import {
@@ -16,6 +15,8 @@ import {
 import { APPOINTMENT_STATUS_COLORS } from "@/features/appointments/constants";
 import dayjs from "dayjs";
 import QuickCheckInButton from "./QuickCheckInButton";
+
+const { Text } = Typography;
 
 type Props = {
   data: CustomerDailyResponse[];

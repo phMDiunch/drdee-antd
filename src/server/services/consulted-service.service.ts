@@ -12,8 +12,61 @@ import {
 import type { UserCore } from "@/shared/types/user";
 import { consultedServiceRepo } from "@/server/repos/consulted-service.repo";
 import { dentalServiceRepo } from "@/server/repos/dental-service.repo";
+import { employeeRepo } from "@/server/repos/employee.repo";
+import { customerRepo } from "@/server/repos/customer.repo";
 import { mapConsultedServiceToResponse } from "./consulted-service/_mappers";
 import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
+
+/**
+ * Populate source relations (employee or customer) based on source type and sourceNote
+ * Similar to customer service pattern
+ */
+async function populateSourceRelations(consultedService: {
+  source: string | null;
+  sourceNote: string | null;
+}) {
+  let sourceEmployee = null;
+  let sourceCustomer = null;
+
+  // Populate sourceEmployee if source = 'employee_referral'
+  if (
+    consultedService.source === "employee_referral" &&
+    consultedService.sourceNote
+  ) {
+    const employeeId = consultedService.sourceNote.trim();
+    if (employeeId) {
+      const employee = await employeeRepo.findById(employeeId);
+      if (employee) {
+        sourceEmployee = {
+          id: employee.id,
+          fullName: employee.fullName,
+          phone: employee.phone,
+        };
+      }
+    }
+  }
+
+  // Populate sourceCustomer if source = 'customer_referral'
+  if (
+    consultedService.source === "customer_referral" &&
+    consultedService.sourceNote
+  ) {
+    const sourceCustomerId = consultedService.sourceNote.trim();
+    if (sourceCustomerId) {
+      const sourceCustomerData = await customerRepo.findById(sourceCustomerId);
+      if (sourceCustomerData) {
+        sourceCustomer = {
+          id: sourceCustomerData.id,
+          customerCode: sourceCustomerData.customerCode,
+          fullName: sourceCustomerData.fullName,
+          phone: sourceCustomerData.phone,
+        };
+      }
+    }
+  }
+
+  return { sourceEmployee, sourceCustomer };
+}
 
 /**
  * Require authenticated user (not just admin)
@@ -88,7 +141,18 @@ export const consultedServiceService = {
       sortDirection,
     });
 
-    const mappedItems = items.map(mapConsultedServiceToResponse);
+    // Populate source relations for all items
+    const mappedItems = await Promise.all(
+      items.map(async (item) => {
+        const { sourceEmployee, sourceCustomer } =
+          await populateSourceRelations(item);
+        return mapConsultedServiceToResponse(
+          item,
+          sourceEmployee,
+          sourceCustomer
+        );
+      })
+    );
     const totalPages = Math.ceil(total / pageSize);
 
     const response = {
@@ -144,8 +208,21 @@ export const consultedServiceService = {
       dateEnd,
     });
 
+    // Populate source relations for all items
+    const itemsWithSources = await Promise.all(
+      result.items.map(async (item) => {
+        const { sourceEmployee, sourceCustomer } =
+          await populateSourceRelations(item);
+        return mapConsultedServiceToResponse(
+          item,
+          sourceEmployee,
+          sourceCustomer
+        );
+      })
+    );
+
     const response = {
-      items: result.items.map(mapConsultedServiceToResponse),
+      items: itemsWithSources,
       count: result.count,
       statistics: result.statistics,
     };
@@ -164,7 +241,16 @@ export const consultedServiceService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy dịch vụ tư vấn", 404);
     }
 
-    const mapped = mapConsultedServiceToResponse(service);
+    // Populate source relations
+    const { sourceEmployee, sourceCustomer } = await populateSourceRelations(
+      service
+    );
+
+    const mapped = mapConsultedServiceToResponse(
+      service,
+      sourceEmployee,
+      sourceCustomer
+    );
     return ConsultedServiceResponseSchema.parse(mapped);
   },
 
@@ -279,7 +365,16 @@ export const consultedServiceService = {
     // 7. Create in database
     const created = await consultedServiceRepo.create(createInput);
 
-    const mapped = mapConsultedServiceToResponse(created);
+    // Populate source relations
+    const { sourceEmployee, sourceCustomer } = await populateSourceRelations(
+      created
+    );
+
+    const mapped = mapConsultedServiceToResponse(
+      created,
+      sourceEmployee,
+      sourceCustomer
+    );
     return ConsultedServiceResponseSchema.parse(mapped);
   },
 
@@ -408,7 +503,16 @@ export const consultedServiceService = {
     // 9. Update in database
     const updated = await consultedServiceRepo.update(id, updateInput);
 
-    const mapped = mapConsultedServiceToResponse(updated);
+    // Populate source relations
+    const { sourceEmployee, sourceCustomer } = await populateSourceRelations(
+      updated
+    );
+
+    const mapped = mapConsultedServiceToResponse(
+      updated,
+      sourceEmployee,
+      sourceCustomer
+    );
     return ConsultedServiceResponseSchema.parse(mapped);
   },
 
@@ -468,7 +572,16 @@ export const consultedServiceService = {
       currentUser!.employeeId!
     );
 
-    const mapped = mapConsultedServiceToResponse(updated);
+    // Populate source relations
+    const { sourceEmployee, sourceCustomer } = await populateSourceRelations(
+      updated
+    );
+
+    const mapped = mapConsultedServiceToResponse(
+      updated,
+      sourceEmployee,
+      sourceCustomer
+    );
     return ConsultedServiceResponseSchema.parse(mapped);
   },
 
@@ -508,7 +621,16 @@ export const consultedServiceService = {
       updatedById: currentUser!.employeeId!,
     });
 
-    const mapped = mapConsultedServiceToResponse(updated);
+    // Populate source relations
+    const { sourceEmployee, sourceCustomer } = await populateSourceRelations(
+      updated
+    );
+
+    const mapped = mapConsultedServiceToResponse(
+      updated,
+      sourceEmployee,
+      sourceCustomer
+    );
     return ConsultedServiceResponseSchema.parse(mapped);
   },
 };

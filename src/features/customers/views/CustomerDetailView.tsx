@@ -22,7 +22,7 @@ import {
   CheckCircleOutlined,
   BankOutlined,
 } from "@ant-design/icons";
-import { useCustomerDetail } from "@/features/customers";
+import { useCustomerDetail, WalkInModal } from "@/features/customers";
 import { useConsultedServicesByCustomer } from "@/features/consulted-services";
 import { usePaymentVouchers } from "@/features/payments";
 import { useLaboOrdersByCustomer } from "@/features/labo-orders";
@@ -55,6 +55,7 @@ export default function CustomerDetailView({
 }: CustomerDetailViewProps) {
   const [activeTab, setActiveTab] = useState<string>("info");
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
 
   const convertLeadMutation = useConvertLead();
 
@@ -100,62 +101,64 @@ export default function CustomerDetailView({
     );
   };
 
-  // Calculate today's check-in info (memoized)
-  const todayCheckIn = useMemo(() => {
+  // Calculate today's appointment (memoized)
+  const todayAppointment = useMemo(() => {
     if (!customer?.appointments) return null;
 
     const today = dayjs().format("YYYY-MM-DD");
-    const todayAppointment = customer.appointments.find((apt) => {
+    return customer.appointments.find((apt) => {
       const aptDate = dayjs(apt.appointmentDateTime).format("YYYY-MM-DD");
       return aptDate === today;
     });
+  }, [customer?.appointments]);
 
+  // Calculate today's check-in info for ConsultedServicesTab (memoized)
+  const todayCheckIn = useMemo(() => {
     if (!todayAppointment?.checkInTime) return null;
 
     return {
       appointmentId: todayAppointment.id,
       checkInTime: todayAppointment.checkInTime,
     };
-  }, [customer?.appointments]);
+  }, [todayAppointment]);
 
   // Calculate today's check-in status for display (memoized)
-  const checkInStatus = useMemo(() => {
-    if (!customer?.appointments) {
-      return {
-        icon: <ClockCircleOutlined />,
-        text: "Không có lịch hôm nay",
-      };
-    }
-
-    const today = dayjs().format("YYYY-MM-DD");
-    const todayAppointment = customer.appointments.find((apt) => {
-      const aptDate = dayjs(apt.appointmentDateTime).format("YYYY-MM-DD");
-      return aptDate === today;
-    });
-
+  const renderCheckInStatus = useMemo(() => {
+    // Không có lịch hôm nay → Button Walk-in
     if (!todayAppointment) {
-      return {
-        icon: <ClockCircleOutlined />,
-        text: "Không có lịch hôm nay",
-      };
+      return (
+        <Button
+          type="primary"
+          size="small"
+          icon={<CheckCircleOutlined />}
+          onClick={() => setIsWalkInModalOpen(true)}
+        >
+          Check-in Walk-in
+        </Button>
+      );
     }
 
+    // Đã check-in
     if (todayAppointment.checkInTime) {
-      return {
-        icon: <CheckCircleOutlined />,
-        text: `Đã check-in lúc ${dayjs(todayAppointment.checkInTime).format(
-          "HH:mm"
-        )}`,
-        type: "success" as const,
-      };
+      return (
+        <>
+          <CheckCircleOutlined />
+          <Text type="success">
+            Đã check-in lúc{" "}
+            {dayjs(todayAppointment.checkInTime).format("HH:mm")}
+          </Text>
+        </>
+      );
     }
 
-    return {
-      icon: <ClockCircleOutlined />,
-      text: "Chưa check-in",
-      type: "warning" as const,
-    };
-  }, [customer?.appointments]);
+    // Có lịch, chưa check-in
+    return (
+      <>
+        <ClockCircleOutlined />
+        <Text type="warning">Chưa check-in</Text>
+      </>
+    );
+  }, [todayAppointment]);
 
   // Filter consulted services for Sales Activities Tab (memoized)
   const consultedServicesForFollowUp = useMemo(() => {
@@ -262,11 +265,8 @@ export default function CustomerDetailView({
                 <Text>{customer.phone || "—"}</Text>
               </Space>
 
-              {/* Check-in status */}
-              <Space>
-                {checkInStatus.icon}
-                <Text type={checkInStatus.type}>{checkInStatus.text}</Text>
-              </Space>
+              {/* Quick Check-in */}
+              <Space>{renderCheckInStatus}</Space>
             </Space>
           </Card>
         </Col>
@@ -398,6 +398,21 @@ export default function CustomerDetailView({
           }}
         />
       )}
+
+      {/* Walk-in Modal */}
+      <WalkInModal
+        open={isWalkInModalOpen}
+        customer={{
+          ...customer,
+          clinicId: customer.clinicId || "",
+          todayAppointment: null,
+        }}
+        date={dayjs().format("YYYY-MM-DD")}
+        onClose={() => {
+          setIsWalkInModalOpen(false);
+          refetch();
+        }}
+      />
     </Space>
   );
 }

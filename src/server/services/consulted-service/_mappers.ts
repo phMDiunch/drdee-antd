@@ -33,7 +33,18 @@ type ConsultedServiceWithRelations = ConsultedService & {
  * Transform only - no validation
  */
 export function mapConsultedServiceToResponse(
-  row: ConsultedServiceWithRelations
+  row: ConsultedServiceWithRelations,
+  sourceEmployee?: {
+    id: string;
+    fullName: string;
+    phone: string | null;
+  } | null,
+  sourceCustomer?: {
+    id: string;
+    fullName: string;
+    phone: string | null;
+    customerCode: string | null;
+  } | null
 ) {
   return {
     id: row.id,
@@ -142,5 +153,9 @@ export function mapConsultedServiceToResponse(
       id: row.clinic.id,
       name: row.clinic.name,
     },
+
+    // Source relations (populated by service layer)
+    sourceEmployee: sourceEmployee || null,
+    sourceCustomer: sourceCustomer || null,
   };
 }

@@ -183,25 +183,51 @@ export default function UpdateConsultedServiceModal({
       requirePhone: false,
     });
 
-  const customerSourceOptions = useMemo(
-    () =>
-      customerSearchResults.map((c) => ({
-        label: `${c.fullName} — ${c.phone ?? "—"}`,
-        value: c.id,
-      })),
-    [customerSearchResults]
-  );
+  const customerSourceOptions = useMemo(() => {
+    const options = customerSearchResults.map((c) => ({
+      label: `${c.fullName} — ${c.phone ?? "—"}`,
+      value: c.id,
+    }));
+
+    // Pre-load: Merge initial sourceCustomer nếu tồn tại và chưa có trong options
+    if (
+      service.sourceCustomer &&
+      !options.some((opt) => opt.value === service.sourceCustomer!.id)
+    ) {
+      options.unshift({
+        label: `${service.sourceCustomer.fullName} — ${
+          service.sourceCustomer.phone ?? "—"
+        }`,
+        value: service.sourceCustomer.id,
+      });
+    }
+
+    return options;
+  }, [customerSearchResults, service.sourceCustomer]);
 
   // Fetch data
   const { data: employees = [] } = useWorkingEmployees();
 
   // Employee options for Select - Tất cả nhân viên, không filter theo cơ sở
   const employeeOptions = useMemo(() => {
-    return employees.map((e) => ({
+    const options = employees.map((e) => ({
       label: e.fullName,
       value: e.id,
     }));
-  }, [employees]);
+
+    // Pre-load: Merge initial sourceEmployee nếu tồn tại và chưa có trong options
+    if (
+      service.sourceEmployee &&
+      !options.some((opt) => opt.value === service.sourceEmployee!.id)
+    ) {
+      options.unshift({
+        label: service.sourceEmployee.fullName,
+        value: service.sourceEmployee.id,
+      });
+    }
+
+    return options;
+  }, [employees, service.sourceEmployee]);
 
   // Auto-calculate quantity when tooth positions change (if unit is Răng)
   useEffect(() => {

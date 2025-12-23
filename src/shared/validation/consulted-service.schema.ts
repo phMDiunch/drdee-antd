@@ -396,6 +396,25 @@ export const ConsultedServiceResponseSchema = z.object({
       name: z.string(),
     })
     .optional(),
+  // Source Employee relation (conditional - only when source = 'employee_referral')
+  sourceEmployee: z
+    .object({
+      id: z.string(),
+      fullName: z.string(),
+      phone: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+  // Source Customer relation (conditional - only when source = 'customer_referral')
+  sourceCustomer: z
+    .object({
+      id: z.string(),
+      fullName: z.string(),
+      phone: z.string().nullable(),
+      customerCode: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type ConsultedServiceResponse = z.infer<
