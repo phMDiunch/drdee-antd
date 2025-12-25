@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Button, Col, Row, Space, Tooltip, Typography } from "antd";
+import { Alert, Button, Col, Row, Tooltip, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import {
   useConsultedServicesByCustomer,
@@ -25,7 +25,7 @@ interface ConsultedServicesTabProps {
   customerId: string;
   customerCode: string;
   customerName: string;
-  clinicId: string;
+  clinicId: string | null; // nullable for LEAD
   todayCheckIn?: {
     appointmentId: string;
     checkInTime: string;

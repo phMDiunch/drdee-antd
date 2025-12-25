@@ -20,13 +20,20 @@ model ConsultedService {
   // ❌ ISSUE 2: consultationDate có @default(now())
   consultationDate DateTime @default(now()) @db.Timestamptz // Trùng với createdAt
 
+  // ❌ ISSUE 3: clinicId NOT NULL but LEAD.clinicId is NULLABLE
+  clinicId String // LEAD không có clinicId → không thể tạo consulted service
+
   // ✅ FIX 1: Make appointmentId nullable
   appointmentId   String? // null = tư vấn online, có value = đã đến phòng khám
 
   // ✅ FIX 2: Make consultationDate nullable, remove @default(now())
   consultationDate  DateTime? @db.Timestamptz // Set khi bind appointment (= appointmentDateTime)
 
+  // ✅ FIX 3: Make clinicId nullable to support LEAD online consultations
+  clinicId String? // null cho LEAD tư vấn online, có value cho CUSTOMER
+
   appointment Appointment? @relation(...)
+  clinic Clinic? @relation(...) // nullable relation
 }
 ```
 
@@ -444,24 +451,39 @@ async function migrateOrphanedServices() {
 - [x] useUpdateAppointment: Invalidate ["consulted-services"] khi check-in (pre-booked flow)
 - [x] Check-in success message: "Đã check-in thành công!" (không hiển thị số services đã bind)
 
+### Backend Refactoring for LEAD Support
+
+- [x] Prisma schema: Make ConsultedService.clinicId nullable (String?)
+- [x] Validation: Make clinicId optional in CreateConsultedServiceRequestSchema
+- [x] Service logic: Skip appointment auto-detect when clinicId is null (LEAD)
+- [x] Repo logic: Handle null clinicId in queries
+- [x] Mapper: Handle nullable clinic relation
+
+### Frontend Refactoring for LEAD Support
+
+- [x] ConsultedServicesTab: Accept clinicId as nullable prop
+- [x] CreateConsultedServiceModal: Accept clinicId as nullable prop
+- [x] Form submit: Convert null clinicId to undefined for optional field
+- [x] Validation: Make clinicId optional in form schema
+
 ### Testing
 
-- [ ] Test Lead online consultation flow
-- [ ] Test Customer online consultation flow (chưa check-in)
-- [ ] Test Customer offline consultation flow (đã check-in)
+- [ ] Test Lead online consultation flow (clinicId = null)
+- [ ] Test Customer online consultation flow (chưa check-in, clinicId có giá trị)
+- [ ] Test Customer offline consultation flow (đã check-in, clinicId có giá trị)
 - [ ] Test auto-binding: Check-in → All pending services bind tự động
 
 ### Documentation
 
-- [ ] Update 009 Consulted-Service.md
-- [ ] Update 120.2 ConsultedService Refactor.md
-- [ ] Add this spec (020) to requirements folder
+- [x] Update 020 spec với LEAD clinicId nullable issue
+- [ ] Update 009 Consulted-Service.md if needed
+- [ ] Update 120.2 ConsultedService Refactor.md if needed
 
 ---
 
 ## 🎯 Success Criteria
 
-- ✅ Lead có thể tạo ConsultedService không cần check-in (appointmentId = null)
+- ✅ Lead có thể tạo ConsultedService không cần check-in (appointmentId = null, clinicId = null)
 - ✅ Customer có thể tạo ConsultedService online không cần check-in (appointmentId = null)
 - ✅ Check-in tự động bind tất cả pending services (silent, không cần user action)
 - ✅ consultationDate được set khi bind appointment (không duplicate createdAt)

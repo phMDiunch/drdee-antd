@@ -275,16 +275,20 @@ export const consultedServiceService = {
     const data = parsed.data;
 
     // 1. Auto-detect appointmentId from check-in status
-    const appointment =
-      await consultedServiceRepo.findTodayCheckedInAppointment({
-        customerId: data.customerId,
-        clinicId: data.clinicId,
-      });
+    // Only if clinicId is provided (CUSTOMER), skip for LEAD (clinicId = null)
+    let appointmentId: string | null = null;
+    let consultationDate: Date | null = null;
 
-    const appointmentId = appointment ? appointment.id : null;
-    const consultationDate = appointment
-      ? appointment.appointmentDateTime
-      : null;
+    if (data.clinicId) {
+      const appointment =
+        await consultedServiceRepo.findTodayCheckedInAppointment({
+          customerId: data.customerId,
+          clinicId: data.clinicId,
+        });
+
+      appointmentId = appointment ? appointment.id : null;
+      consultationDate = appointment ? appointment.appointmentDateTime : null;
+    }
 
     // 2. Fetch dental service for denormalized data
     const dentalService = await dentalServiceRepo.getById(data.dentalServiceId);

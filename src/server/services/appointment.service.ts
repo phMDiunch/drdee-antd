@@ -13,6 +13,7 @@ import {
 } from "@/shared/validation/appointment.schema";
 import type { UserCore } from "@/shared/types/user";
 import { appointmentRepo } from "@/server/repos/appointment.repo";
+import { customerRepo } from "@/server/repos/customer.repo";
 import { mapAppointmentToResponse } from "./appointment/_mappers";
 import { appointmentPermissions } from "@/shared/permissions/appointment.permissions";
 
@@ -231,6 +232,23 @@ export const appointmentService = {
     }
 
     const parsed = CreateAppointmentRequestSchema.parse(body);
+
+    // Validate: only CUSTOMER can have appointments (not LEAD)
+    const customer = await customerRepo.findById(parsed.customerId);
+    if (!customer) {
+      throw new ServiceError(
+        "CUSTOMER_NOT_FOUND",
+        "Không tìm thấy khách hàng",
+        404
+      );
+    }
+    if (customer.type !== "CUSTOMER") {
+      throw new ServiceError(
+        "LEAD_CANNOT_BOOK",
+        "Chỉ khách hàng mới có thể đặt lịch hẹn. Vui lòng chuyển Lead thành khách hàng trước.",
+        400
+      );
+    }
 
     // Validate: no past appointments (allow within last 2 minutes for walk-in edge case)
     // Note: "Đến đột xuất" is just a marker (createdAt ≈ appointmentDateTime),

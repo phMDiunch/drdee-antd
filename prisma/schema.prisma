@@ -365,7 +365,7 @@ model ConsultedService {
   customerId      String // Khách hàng
   appointmentId   String? // Lịch hẹn tư vấn (nullable - null khi tư vấn online)
   dentalServiceId String // Dịch vụ tư vấn
-  clinicId        String // Chi nhánh diễn ra tư vấn
+  clinicId        String? // Chi nhánh diễn ra tư vấn (nullable - null khi LEAD tư vấn online)
 
   // Dữ liệu Sao chép (Denormalized)
   // Giữ lịch sử giá và tên tại thời điểm tư vấn
@@ -415,10 +415,10 @@ model ConsultedService {
   dentalService DentalService @relation(fields: [dentalServiceId], references: [id])
 
   // Liên kết đến lịch hẹn
-  Appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  Appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
 
   // Liên kết đến chi nhánh
-  clinic Clinic @relation(fields: [clinicId], references: [id])
+  clinic Clinic? @relation(fields: [clinicId], references: [id])
 
   // Liên kết đến nhân viên
   consultingDoctor Employee? @relation("ConsultingDoctorServices", fields: [consultingDoctorId], references: [id])

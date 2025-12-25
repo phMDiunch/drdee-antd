@@ -25,7 +25,7 @@ type ConsultedServiceWithRelations = ConsultedService & {
   clinic: {
     id: string;
     name: string;
-  };
+  } | null; // nullable for LEAD online consultations
 };
 
 /**
@@ -149,10 +149,12 @@ export function mapConsultedServiceToResponse(
       fullName: row.updatedBy.fullName,
     },
 
-    clinic: {
-      id: row.clinic.id,
-      name: row.clinic.name,
-    },
+    clinic: row.clinic
+      ? {
+          id: row.clinic.id,
+          name: row.clinic.name,
+        }
+      : null,
 
     // Source relations (populated by service layer)
     sourceEmployee: sourceEmployee || null,

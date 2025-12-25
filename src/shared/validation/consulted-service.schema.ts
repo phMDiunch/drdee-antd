@@ -155,8 +155,11 @@ export const CreateConsultedServiceFormSchema =
       .string({ message: "Khách hàng không hợp lệ" })
       .min(1, "Khách hàng không hợp lệ"),
     clinicId: z
-      .string({ message: "Vui lòng chọn chi nhánh" })
-      .min(1, "Vui lòng chọn chi nhánh"),
+      .string()
+      .uuid("Chi nhánh không hợp lệ")
+      .transform((val) => (val === "" ? null : val))
+      .nullable()
+      .optional(),
     // Hidden fields for validation context (auto-filled from DentalService)
     consultedServiceUnit: z.string().optional(),
     minPrice: z.number().optional(),
@@ -204,7 +207,12 @@ export type UpdateConsultedServiceFormData = z.infer<
 const ConsultedServiceRequestBaseSchema =
   ConsultedServiceCommonFieldsSchema.extend({
     customerId: z.string().uuid("Khách hàng không hợp lệ"),
-    clinicId: z.string().uuid("Chi nhánh không hợp lệ"),
+    clinicId: z
+      .string()
+      .uuid("Chi nhánh không hợp lệ")
+      .transform((val) => (val === "" ? null : val))
+      .nullable()
+      .optional(),
   });
 
 /**
@@ -292,7 +300,7 @@ export const ConsultedServiceResponseSchema = z.object({
   customerId: z.string(),
   appointmentId: z.string().nullable(), // Nullable - null khi tư vấn online
   dentalServiceId: z.string(),
-  clinicId: z.string(),
+  clinicId: z.string().nullable(), // Nullable - null cho LEAD tư vấn online
   customerClinicId: z.string().nullable().optional(), // Customer's current clinic for permission checks
 
   // Denormalized data
@@ -395,7 +403,8 @@ export const ConsultedServiceResponseSchema = z.object({
       id: z.string(),
       name: z.string(),
     })
-    .optional(),
+    .nullable()
+    .optional(), // Nullable - null cho LEAD tư vấn online
   // Source Employee relation (conditional - only when source = 'employee_referral')
   sourceEmployee: z
     .object({

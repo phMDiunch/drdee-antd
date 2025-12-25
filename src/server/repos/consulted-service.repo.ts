@@ -114,8 +114,12 @@ export const consultedServiceRepo = {
    * Create new consulted service
    */
   async create(data: ConsultedServiceCreateInput) {
+    const { clinicId, ...rest } = data;
     return prisma.consultedService.create({
-      data,
+      data: {
+        ...rest,
+        clinicId: clinicId || null,
+      },
       include: consultedServiceInclude,
     });
   },

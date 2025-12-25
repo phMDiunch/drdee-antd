@@ -52,7 +52,7 @@ type Props = {
     customerCode: string | null;
     fullName: string;
   };
-  clinicId: string;
+  clinicId: string | null; // nullable for LEAD
   onCancel: () => void;
   onSubmit: (payload: CreateConsultedServiceRequest) => void;
 };
@@ -304,7 +304,7 @@ export default function CreateConsultedServiceModal({
     // Build payload
     const payload: CreateConsultedServiceRequest = {
       customerId: customer.id,
-      clinicId,
+      clinicId: clinicId || undefined, // convert null to undefined for optional field
       dentalServiceId: formData.dentalServiceId,
       quantity: formData.quantity,
       preferentialPrice: formData.preferentialPrice,

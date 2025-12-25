@@ -128,7 +128,7 @@ export default function ConsultedServiceTable({
                 return aDate - bDate;
               },
               render: (date: string | null) =>
-                date ? dayjs(date).format("DD/MM/YYYY") : "-",
+                date ? dayjs(date).format("DD/MM/YYYY") : "Chưa đến",
             },
           ]
         : []) as ColumnsType<ConsultedServiceResponse>),
