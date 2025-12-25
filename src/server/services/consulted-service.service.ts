@@ -5,6 +5,7 @@ import {
   UpdateConsultedServiceRequestSchema,
   GetConsultedServicesQuerySchema,
   GetConsultedServicesDailyQuerySchema,
+  GetConsultedServicesPendingQuerySchema,
   ConsultedServicesListResponseSchema,
   ConsultedServicesDailyResponseSchema,
   ConsultedServiceResponseSchema,
@@ -228,6 +229,68 @@ export const consultedServiceService = {
       statistics: result.statistics,
     };
 
+    return ConsultedServicesDailyResponseSchema.parse(response);
+  },
+
+  /**
+   * List pending consulted services (status = "Chưa chốt")
+   * Filter by clinicId and month
+   */
+  async listPending(currentUser: UserCore | null, query: unknown) {
+    requireAuth(currentUser);
+
+    const parsed = GetConsultedServicesPendingQuerySchema.safeParse(query);
+    if (!parsed.success) {
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        "Tham số truy vấn không hợp lệ",
+        400
+      );
+    }
+
+    const { month, clinicId } = parsed.data;
+
+    // Parse month (YYYY-MM)
+    const [year, monthNum] = month.split("-").map(Number);
+    const monthStart = new Date(year, monthNum - 1, 1, 0, 0, 0);
+    const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+
+    // Scope clinic access
+    let effectiveClinicId: string | undefined = clinicId;
+    if (currentUser?.role !== "admin") {
+      effectiveClinicId = currentUser?.clinicId ?? undefined;
+    }
+
+    if (!effectiveClinicId) {
+      throw new ServiceError("MISSING_CLINIC", "Vui lòng chọn chi nhánh", 400);
+    }
+
+    const result = await consultedServiceRepo.listPending({
+      clinicId: effectiveClinicId,
+      monthStart,
+      monthEnd,
+    });
+
+    // Populate source relations for all items
+    const itemsWithSources = await Promise.all(
+      result.items.map(async (item) => {
+        const { sourceEmployee, sourceCustomer } =
+          await populateSourceRelations(item);
+        return mapConsultedServiceToResponse(
+          item,
+          sourceEmployee,
+          sourceCustomer
+        );
+      })
+    );
+
+    const response = {
+      items: itemsWithSources,
+      count: result.count,
+      statistics: result.statistics,
+    };
+
+    // Reuse daily response schema (compatible structure)
     return ConsultedServicesDailyResponseSchema.parse(response);
   },
 

@@ -30,11 +30,15 @@ type Props = {
   data: ConsultedServiceResponse[];
   loading?: boolean;
   isCustomerDetailView?: boolean; // Customer Detail context: hide customer column
+  view?: "daily" | "pending" | "customer"; // View type to determine which columns to show
   onConfirm: (id: string) => void;
   onEdit: (service: ConsultedServiceResponse) => void;
   onDelete: (id: string) => void;
   onAssignSale: (id: string) => void; // New: Auto-assign sale action
   actionLoading?: boolean;
+  expandable?: {
+    expandedRowRender: (record: ConsultedServiceResponse) => React.ReactNode;
+  }; // Optional: Enable expandable rows (for pending view)
 };
 
 /**
@@ -48,11 +52,13 @@ export default function ConsultedServiceTable({
   data,
   loading,
   isCustomerDetailView = false,
+  view = "daily",
   onConfirm,
   onEdit,
   onDelete,
   onAssignSale,
   actionLoading,
+  expandable,
 }: Props) {
   const { user: currentUser } = useCurrentUser();
 
@@ -243,54 +249,65 @@ export default function ConsultedServiceTable({
           return name || <Text type="secondary">—</Text>;
         },
       },
-      {
-        title: "Bác sĩ điều trị",
-        dataIndex: ["treatingDoctor", "fullName"],
-        key: "treatingDoctor",
-        width: 120,
-        render: (name) => name || <Text type="secondary">—</Text>,
-      },
-      {
-        title: "Ngày chốt",
-        dataIndex: "serviceConfirmDate",
-        key: "serviceConfirmDate",
-        width: 130,
-        sorter: (a, b) => {
-          if (!a.serviceConfirmDate) return 1;
-          if (!b.serviceConfirmDate) return -1;
-          return (
-            dayjs(a.serviceConfirmDate).valueOf() -
-            dayjs(b.serviceConfirmDate).valueOf()
-          );
-        },
-        render: (date, record) => {
-          if (record.serviceStatus === "Đã chốt" && date) {
-            return dayjs(date).format("DD/MM/YYYY HH:mm");
-          }
-          // Show inline confirm button
-          const canConfirm = consultedServicePermissions.canConfirm(
-            currentUser,
-            record
-          );
-          return (
-            <Popconfirm
-              title={CONSULTED_SERVICE_MESSAGES.CONFIRM_SERVICE}
-              onConfirm={() => onConfirm(record.id)}
-              disabled={!canConfirm.allowed}
-            >
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                disabled={!canConfirm.allowed}
-                loading={actionLoading}
-              >
-                Chốt
-              </Button>
-            </Popconfirm>
-          );
-        },
-      },
+      // Hide "Bác sĩ điều trị" in pending view
+      ...((view !== "pending"
+        ? [
+            {
+              title: "Bác sĩ điều trị",
+              dataIndex: ["treatingDoctor", "fullName"],
+              key: "treatingDoctor",
+              width: 120,
+              render: (name: string | undefined) =>
+                name || <Text type="secondary">—</Text>,
+            },
+          ]
+        : []) as ColumnsType<ConsultedServiceResponse>),
+      // Hide "Ngày chốt" in pending view
+      ...((view !== "pending"
+        ? [
+            {
+              title: "Ngày chốt",
+              dataIndex: "serviceConfirmDate",
+              key: "serviceConfirmDate",
+              width: 130,
+              sorter: (a, b) => {
+                if (!a.serviceConfirmDate) return 1;
+                if (!b.serviceConfirmDate) return -1;
+                return (
+                  dayjs(a.serviceConfirmDate).valueOf() -
+                  dayjs(b.serviceConfirmDate).valueOf()
+                );
+              },
+              render: (date, record) => {
+                if (record.serviceStatus === "Đã chốt" && date) {
+                  return dayjs(date).format("DD/MM/YYYY HH:mm");
+                }
+                // Show inline confirm button
+                const canConfirm = consultedServicePermissions.canConfirm(
+                  currentUser,
+                  record
+                );
+                return (
+                  <Popconfirm
+                    title={CONSULTED_SERVICE_MESSAGES.CONFIRM_SERVICE}
+                    onConfirm={() => onConfirm(record.id)}
+                    disabled={!canConfirm.allowed}
+                  >
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<CheckOutlined />}
+                      disabled={!canConfirm.allowed}
+                      loading={actionLoading}
+                    >
+                      Chốt
+                    </Button>
+                  </Popconfirm>
+                );
+              },
+            },
+          ]
+        : []) as ColumnsType<ConsultedServiceResponse>),
       {
         title: "Trạng thái dịch vụ",
         dataIndex: "serviceStatus",
@@ -381,6 +398,7 @@ export default function ConsultedServiceTable({
     onAssignSale,
     actionLoading,
     isCustomerDetailView,
+    view,
   ]);
 
   return (
@@ -391,6 +409,7 @@ export default function ConsultedServiceTable({
       rowKey="id"
       scroll={{ x: 1300 }}
       pagination={false}
+      expandable={expandable}
     />
   );
 }

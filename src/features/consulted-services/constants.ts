@@ -87,5 +87,6 @@ export const CONSULTED_SERVICE_MESSAGES = {
 export const CONSULTED_SERVICE_ENDPOINTS = {
   BASE: "/api/v1/consulted-services",
   DAILY: "/api/v1/consulted-services/daily",
+  PENDING: "/api/v1/consulted-services/pending",
   BY_ID: (id: string) => `/api/v1/consulted-services/${id}`,
 } as const;

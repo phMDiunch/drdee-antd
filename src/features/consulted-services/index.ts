@@ -3,6 +3,7 @@
 
 // ===== VIEWS (for app router) =====
 export { default as ConsultedServiceDailyView } from "./views/ConsultedServiceDailyView";
+export { default as PendingServicesView } from "./views/PendingServicesView";
 
 // ===== COMPONENTS (for external use) =====
 export { default as ConsultedServiceStatistics } from "./components/ConsultedServiceStatistics";
@@ -14,6 +15,7 @@ export { default as UpdateConsultedServiceModal } from "./components/UpdateConsu
 
 // ===== HOOKS (for data fetching) =====
 export * from "./hooks/useConsultedServicesDaily";
+export * from "./hooks/useConsultedServicesPending";
 export * from "./hooks/useConsultedServices";
 export * from "./hooks/useConsultedService";
 export * from "./hooks/useConsultedServicesByCustomer";

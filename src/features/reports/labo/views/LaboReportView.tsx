@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Spin, Alert } from "antd";
 import dayjs from "dayjs";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 import { useClinics } from "@/features/clinics";
 import PageHeaderWithMonthNav from "@/shared/components/PageHeaderWithMonthNav";
+import { useMonthNavigation } from "@/shared/hooks/useMonthNavigation";
 import { useLaboReportSummary } from "../hooks/useLaboReportSummary";
 import {
   useLaboReportDetail,
@@ -19,12 +20,19 @@ export default function LaboReportView() {
   const { user } = useCurrentUser();
   const { data: clinics } = useClinics(true);
 
-  const [selectedMonth, setSelectedMonth] = useState(dayjs());
+  const {
+    selectedMonth,
+    goToPreviousMonth,
+    goToCurrentMonth,
+    goToNextMonth,
+    handleMonthChange,
+  } = useMonthNavigation();
+
   const [filters, setFilters] = useState<{
     month: string;
     clinicId?: string;
   }>({
-    month: dayjs().format("YYYY-MM"),
+    month: selectedMonth.format("YYYY-MM"),
     clinicId: user?.clinicId || undefined,
   });
 
@@ -54,12 +62,18 @@ export default function LaboReportView() {
     });
   };
 
-  const handleMonthChange = (date: dayjs.Dayjs | null) => {
+  const handleMonthChangeWithFilter = (date: dayjs.Dayjs | null) => {
     if (date) {
-      setSelectedMonth(date);
+      handleMonthChange(date);
       handleFilterChange({ month: date.format("YYYY-MM") });
     }
   };
+
+  // Sync filter when month changes via navigation buttons
+  useEffect(() => {
+    handleFilterChange({ month: selectedMonth.format("YYYY-MM") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]);
 
   const handleClinicChange = (clinicId: string | undefined) => {
     handleFilterChange({ clinicId });
@@ -124,7 +138,10 @@ export default function LaboReportView() {
       <PageHeaderWithMonthNav
         title="Báo cáo Labo"
         selectedMonth={selectedMonth}
-        onMonthChange={handleMonthChange}
+        onMonthChange={handleMonthChangeWithFilter}
+        onPreviousMonth={goToPreviousMonth}
+        onCurrentMonth={goToCurrentMonth}
+        onNextMonth={goToNextMonth}
         clinics={filteredClinics}
         selectedClinicId={filters.clinicId}
         onClinicChange={handleClinicChange}

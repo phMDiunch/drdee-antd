@@ -294,6 +294,53 @@ export const consultedServiceRepo = {
   },
 
   /**
+   * List pending consulted services (status = "Chưa chốt")
+   * Filter by clinicId and month (createdAt)
+   */
+  async listPending(params: {
+    clinicId: string;
+    monthStart: Date;
+    monthEnd: Date;
+  }) {
+    const { clinicId, monthStart, monthEnd } = params;
+
+    const where: Prisma.ConsultedServiceWhereInput = {
+      clinicId,
+      serviceStatus: "Chưa chốt",
+      createdAt: {
+        gte: monthStart,
+        lte: monthEnd,
+      },
+    };
+
+    // Get items with relations
+    const items = await prisma.consultedService.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: consultedServiceInclude,
+    });
+
+    // Calculate statistics (match daily schema)
+    const total = items.length;
+    const confirmed = 0; // All are "Chưa chốt"
+    const unconfirmed = total; // All are "Chưa chốt"
+    const totalValue = items.reduce((sum, s) => sum + s.finalPrice, 0);
+    const confirmedValue = 0; // All are "Chưa chốt"
+
+    return {
+      items,
+      count: total,
+      statistics: {
+        total,
+        confirmed,
+        unconfirmed,
+        totalValue,
+        confirmedValue,
+      },
+    };
+  },
+
+  /**
    * Find consulted services by criteria
    * Used for finding pending services (appointmentId = null) for auto-binding
    */

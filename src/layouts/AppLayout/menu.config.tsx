@@ -46,7 +46,10 @@ export const menuItems: MenuItem[] = [
     key: "consulted-services",
     icon: <MedicineBoxOutlined />,
     label: "Dịch vụ tư vấn",
-    children: [{ key: "/consulted-services/daily", label: "Theo ngày" }],
+    children: [
+      { key: "/consulted-services/daily", label: "Theo ngày" },
+      { key: "/consulted-services/pending", label: "Chưa chốt" },
+    ],
   },
   {
     key: "treatment-logs",

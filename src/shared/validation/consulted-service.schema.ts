@@ -285,6 +285,15 @@ export type GetConsultedServicesDailyQuery = z.infer<
   typeof GetConsultedServicesDailyQuerySchema
 >;
 
+export const GetConsultedServicesPendingQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Định dạng tháng không hợp lệ"), // YYYY-MM
+  clinicId: z.string().uuid("Chi nhánh không hợp lệ"),
+});
+
+export type GetConsultedServicesPendingQuery = z.infer<
+  typeof GetConsultedServicesPendingQuerySchema
+>;
+
 /**
  * ============================================================================
  * RESPONSE SCHEMAS

@@ -1,8 +1,12 @@
 "use client";
 import React, { useMemo } from "react";
 import dayjs from "dayjs";
-import { Col, DatePicker, Row, Select, Typography } from "antd";
-import { CalendarOutlined } from "@ant-design/icons";
+import { Button, Col, DatePicker, Row, Select, Space, Typography } from "antd";
+import {
+  CalendarOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 
 const { Title } = Typography;
@@ -11,6 +15,9 @@ interface PageHeaderWithMonthNavProps {
   title: string;
   selectedMonth: dayjs.Dayjs;
   onMonthChange: (date: dayjs.Dayjs | null) => void;
+  onPreviousMonth: () => void;
+  onCurrentMonth: () => void;
+  onNextMonth: () => void;
   clinics?: Array<{ id: string; clinicCode: string }>;
   selectedClinicId?: string;
   onClinicChange?: (clinicId: string | undefined) => void;
@@ -23,6 +30,9 @@ export default function PageHeaderWithMonthNav({
   title,
   selectedMonth,
   onMonthChange,
+  onPreviousMonth,
+  onCurrentMonth,
+  onNextMonth,
   clinics = [],
   selectedClinicId,
   onClinicChange,
@@ -71,6 +81,8 @@ export default function PageHeaderWithMonthNav({
     if (isPreviousMonth) return "Tháng trước";
     return `Tháng ${selectedMonth.format("MM/YYYY")}`;
   };
+
+  const isCurrentMonth = selectedMonth.isSame(dayjs(), "month");
 
   return (
     <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
@@ -128,6 +140,32 @@ export default function PageHeaderWithMonthNav({
               disabled={loading}
               disabledDate={disabledDate}
             />
+          </Col>
+
+          {/* Navigation Buttons */}
+          <Col>
+            <Space>
+              <Button
+                icon={<LeftOutlined />}
+                title="Tháng trước"
+                onClick={onPreviousMonth}
+                disabled={loading}
+              />
+              <Button
+                title="Tháng này"
+                type={isCurrentMonth ? "primary" : "default"}
+                onClick={onCurrentMonth}
+                disabled={loading}
+              >
+                Tháng này
+              </Button>
+              <Button
+                icon={<RightOutlined />}
+                title="Tháng sau"
+                onClick={onNextMonth}
+                disabled={loading}
+              />
+            </Space>
           </Col>
         </Row>
       </Col>

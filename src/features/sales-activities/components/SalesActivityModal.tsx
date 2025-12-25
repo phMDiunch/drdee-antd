@@ -64,7 +64,8 @@ export default function SalesActivityModal({
   const defaultValues = useMemo(() => {
     if (mode === "add") {
       return {
-        consultedServiceId: "",
+        consultedServiceId:
+          consultedServices.length === 1 ? consultedServices[0].id : "",
         contactType: "call" as const,
         contactDate: dayjs().format("YYYY-MM-DDTHH:mm"),
         content: "",
@@ -84,7 +85,7 @@ export default function SalesActivityModal({
       content: "",
       nextContactDate: null,
     };
-  }, [mode, initialData]);
+  }, [mode, initialData, consultedServices]);
 
   const {
     control,
