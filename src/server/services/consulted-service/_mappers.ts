@@ -76,7 +76,7 @@ export function mapConsultedServiceToResponse(
     debt: row.debt,
 
     // Status & dates
-    consultationDate: row.consultationDate.toISOString(),
+    consultationDate: row.consultationDate?.toISOString() ?? null,
     serviceConfirmDate: row.serviceConfirmDate?.toISOString() ?? null,
     serviceStatus: row.serviceStatus,
     treatmentStatus: row.treatmentStatus,

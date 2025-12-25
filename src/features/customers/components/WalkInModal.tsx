@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCreateAppointment } from "@/features/appointments";
 import { useWorkingEmployees } from "@/features/employees";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/shared/providers/user-provider";
 import type { CustomerDailyResponse } from "@/shared/validation/customer.schema";
 
@@ -33,7 +32,6 @@ export default function WalkInModal({ open, customer, onClose }: Props) {
   const { user: currentUser } = useCurrentUser();
   const createMutation = useCreateAppointment();
   const { data: employees } = useWorkingEmployees();
-  const qc = useQueryClient();
 
   const onSubmit = async (formData: WalkInForm) => {
     await createMutation.mutateAsync({
@@ -48,8 +46,6 @@ export default function WalkInModal({ open, customer, onClose }: Props) {
       checkInTime: new Date(),
     });
 
-    // Refetch daily list
-    qc.invalidateQueries({ queryKey: ["customers", "daily"] });
     reset();
     onClose();
   };

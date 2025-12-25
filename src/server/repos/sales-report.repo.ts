@@ -70,7 +70,7 @@ type AggregationMap = Map<
 
 type ServiceRecord = {
   serviceConfirmDate?: Date | null;
-  consultationDate?: Date;
+  consultationDate?: Date | null;
   customerId: string;
   finalPrice?: number;
   [key: string]: unknown;

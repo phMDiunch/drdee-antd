@@ -14,6 +14,7 @@ import { consultedServiceRepo } from "@/server/repos/consulted-service.repo";
 import { dentalServiceRepo } from "@/server/repos/dental-service.repo";
 import { employeeRepo } from "@/server/repos/employee.repo";
 import { customerRepo } from "@/server/repos/customer.repo";
+import { appointmentRepo } from "@/server/repos/appointment.repo";
 import { mapConsultedServiceToResponse } from "./consulted-service/_mappers";
 import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
 
@@ -273,20 +274,17 @@ export const consultedServiceService = {
 
     const data = parsed.data;
 
-    // 1. Check appointment check-in requirement
-    const checkedInAppointment =
+    // 1. Auto-detect appointmentId from check-in status
+    const appointment =
       await consultedServiceRepo.findTodayCheckedInAppointment({
         customerId: data.customerId,
         clinicId: data.clinicId,
       });
 
-    if (!checkedInAppointment) {
-      throw new ServiceError(
-        "CHECKIN_REQUIRED",
-        "Khách hàng chưa check-in hôm nay",
-        400
-      );
-    }
+    const appointmentId = appointment ? appointment.id : null;
+    const consultationDate = appointment
+      ? appointment.appointmentDateTime
+      : null;
 
     // 2. Fetch dental service for denormalized data
     const dentalService = await dentalServiceRepo.getById(data.dentalServiceId);
@@ -348,7 +346,7 @@ export const consultedServiceService = {
     // 6. Prepare create input
     const createInput = {
       ...data,
-      appointmentId: checkedInAppointment.id,
+      appointmentId, // null = online consultation, value = checked-in
       consultedServiceName: dentalService.name,
       consultedServiceUnit: dentalService.unit,
       price: dentalService.price,
@@ -357,7 +355,7 @@ export const consultedServiceService = {
       amountPaid: 0,
       serviceStatus: "Chưa chốt" as const,
       treatmentStatus: "Chưa điều trị" as const,
-      consultationDate: new Date(),
+      consultationDate, // null when online, set when checked-in
       createdById: currentUser!.employeeId!,
       updatedById: currentUser!.employeeId!,
     };
@@ -546,6 +544,43 @@ export const consultedServiceService = {
   },
 
   /**
+   * Auto-bind pending consulted services to appointment after check-in
+   * Finds all services with appointmentId = null and binds them to the checked-in appointment
+   */
+  async autoBindPendingServices(
+    customerId: string,
+    appointmentId: string,
+    currentUser: UserCore | null
+  ) {
+    // Find all pending services (appointmentId = null)
+    const pendingServices = await consultedServiceRepo.findMany({
+      customerId,
+      appointmentId: null,
+    });
+
+    if (pendingServices.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // Get appointment to set consultationDate
+    const appointment = await appointmentRepo.getById(appointmentId);
+    if (!appointment) {
+      throw new ServiceError("NOT_FOUND", "Không tìm thấy lịch hẹn", 404);
+    }
+
+    // Bind all pending services
+    for (const service of pendingServices) {
+      await consultedServiceRepo.update(service.id, {
+        appointmentId,
+        consultationDate: appointment.appointmentDateTime,
+        updatedById: currentUser?.employeeId ?? undefined,
+      });
+    }
+
+    return { success: true, count: pendingServices.length };
+  },
+
+  /**
    * Confirm consulted service (set status to "Đã chốt")
    */
   async confirm(id: string, currentUser: UserCore | null) {
@@ -557,7 +592,16 @@ export const consultedServiceService = {
       throw new ServiceError("NOT_FOUND", "Không tìm thấy dịch vụ tư vấn", 404);
     }
 
-    // 2. Validate: already confirmed
+    // 2. Validate: must have appointmentId (cannot confirm online consultation)
+    if (!existing.appointmentId) {
+      throw new ServiceError(
+        "APPOINTMENT_REQUIRED",
+        "Không thể chốt dịch vụ tư vấn online. Khách hàng cần check-in trước.",
+        400
+      );
+    }
+
+    // 3. Validate: already confirmed
     if (existing.serviceStatus === "Đã chốt") {
       throw new ServiceError(
         "ALREADY_CONFIRMED",
@@ -566,7 +610,7 @@ export const consultedServiceService = {
       );
     }
 
-    // 3. Confirm
+    // 4. Confirm
     const updated = await consultedServiceRepo.confirm(
       id,
       currentUser!.employeeId!

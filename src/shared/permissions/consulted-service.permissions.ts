@@ -52,6 +52,7 @@ export type PermissionUser = {
 export type ConsultedServiceForPermission = {
   serviceStatus: string;
   serviceConfirmDate?: Date | string | null;
+  appointmentId?: string | null; // For online consultation check
   clinicId?: string | null;
   customerClinicId?: string | null; // Customer's current clinic (for permission check after customer transfer)
 };
@@ -369,6 +370,15 @@ export const consultedServicePermissions = {
         allowed: false,
         reason:
           "Không có quyền chốt dịch vụ của khách hàng thuộc chi nhánh khác",
+      };
+    }
+
+    // Must have appointmentId (cannot confirm online consultation)
+    if (!service.appointmentId) {
+      return {
+        allowed: false,
+        reason:
+          "Không thể chốt dịch vụ tư vấn online. Khách hàng cần check-in trước.",
       };
     }
 

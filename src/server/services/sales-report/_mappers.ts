@@ -39,7 +39,7 @@ type RawKpiData = {
 
 type RawDetailRecord = {
   id: string;
-  consultationDate: Date;
+  consultationDate: Date | null;
   serviceConfirmDate: Date | null;
   finalPrice: number;
   serviceStatus: string;
@@ -280,7 +280,7 @@ export function mapDetailRecords(
 ): ConsultedServiceDetail[] {
   return services.map((service) => ({
     id: service.id,
-    consultationDate: service.consultationDate.toISOString(),
+    consultationDate: service.consultationDate?.toISOString() || null,
     serviceConfirmDate: service.serviceConfirmDate?.toISOString() || null,
     finalPrice: service.finalPrice,
     serviceStatus: service.serviceStatus,

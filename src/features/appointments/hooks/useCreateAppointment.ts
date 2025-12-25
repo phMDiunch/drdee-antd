@@ -15,9 +15,15 @@ export function useCreateAppointment() {
   return useMutation({
     mutationFn: (data: CreateAppointmentRequest) =>
       createAppointmentAction(data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       notify.success(APPOINTMENT_MESSAGES.CREATE_SUCCESS);
       qc.invalidateQueries({ queryKey: ["appointments"] });
+
+      // If walk-in (checkInTime provided), invalidate consulted-services
+      // because backend auto-binds pending services
+      if (variables.checkInTime) {
+        qc.invalidateQueries({ queryKey: ["consulted-services"] });
+      }
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

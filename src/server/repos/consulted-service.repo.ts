@@ -13,12 +13,13 @@ import type {
  * Following appointment.repo.ts gold standard
  */
 export type ConsultedServiceCreateInput = CreateConsultedServiceRequest & {
-  appointmentId: string; // 🔒 Server-controlled: từ check-in lookup
+  appointmentId: string | null; // 🔒 Server-controlled: null = online, value = checked-in
   consultedServiceName: string; // 🔒 Denormalized: từ DentalService
   consultedServiceUnit: string; // 🔒 Denormalized: từ DentalService
   price: number; // 🔒 Denormalized: từ DentalService
   finalPrice: number; // 🔒 Calculated: preferentialPrice * quantity
   debt: number; // 🔒 Calculated: finalPrice - amountPaid (only when serviceStatus = "Đã chốt")
+  consultationDate: Date | null; // 🔒 Server-controlled: null when online, set when checked-in
   createdById: string; // 🔒 Server-controlled: từ currentUser.employeeId
   updatedById: string; // 🔒 Server-controlled: từ currentUser.employeeId
 };
@@ -29,6 +30,8 @@ export type ConsultedServiceUpdateInput = Partial<
     "id" | "customerId" | "clinicId" | "dentalServiceId"
   >
 > & {
+  appointmentId?: string | null; // 🔒 Server-controlled: for auto-binding
+  consultationDate?: Date | null; // 🔒 Server-controlled: for auto-binding
   finalPrice?: number; // 🔒 Recalculated if quantity or preferentialPrice changes
   debt?: number; // 🔒 Recalculated if finalPrice or amountPaid changes (only for confirmed services)
   updatedById?: string; // 🔒 Server-controlled: track who made the update
@@ -287,8 +290,19 @@ export const consultedServiceRepo = {
   },
 
   /**
-   * Find today's checked-in appointment for customer
-   * Used to validate check-in requirement when creating consulted service
+   * Find consulted services by criteria
+   * Used for finding pending services (appointmentId = null) for auto-binding
+   */
+  async findMany(where: Prisma.ConsultedServiceWhereInput) {
+    return prisma.consultedService.findMany({
+      where,
+      include: consultedServiceInclude,
+    });
+  },
+
+  /**
+   * Find today's checked-in appointment for a customer at a clinic
+   * Used for auto-detecting appointmentId when creating consulted service
    */
   async findTodayCheckedInAppointment(params: {
     customerId: string;
@@ -316,6 +330,7 @@ export const consultedServiceRepo = {
       },
       select: {
         id: true,
+        appointmentDateTime: true,
         checkInTime: true,
       },
     });

@@ -24,7 +24,7 @@ interface SalesActivitiesTabProps {
   consultedServices: Array<{
     id: string;
     consultedServiceName: string;
-    consultationDate: string;
+    consultationDate: string | null;
     toothPositions: string[];
     serviceStatus: string;
     stage: string | null;

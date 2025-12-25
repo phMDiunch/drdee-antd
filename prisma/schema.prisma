@@ -363,7 +363,7 @@ model ConsultedService {
 
   // Liên kết Dữ liệu
   customerId      String // Khách hàng
-  appointmentId   String // Lịch hẹn tư vấn 
+  appointmentId   String? // Lịch hẹn tư vấn (nullable - null khi tư vấn online)
   dentalServiceId String // Dịch vụ tư vấn
   clinicId        String // Chi nhánh diễn ra tư vấn
 
@@ -390,7 +390,7 @@ model ConsultedService {
   debt              Int // Công nợ còn lại
 
   // Trạng thái & Ngày quan trọng
-  consultationDate   DateTime  @default(now()) @db.Timestamptz // Ngày tư vấn
+  consultationDate   DateTime? @db.Timestamptz // Ngày tư vấn (nullable - set khi bind với appointment)
   serviceConfirmDate DateTime? @db.Timestamptz // Ngày khách hàng đồng ý
   serviceStatus      String    @default("Chưa chốt") // "Chưa chốt", "Đã chốt"
   treatmentStatus    String    @default("Chưa điều trị") // "Chưa điều trị", "Đang điều trị", "Hoàn thành"

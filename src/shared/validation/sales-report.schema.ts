@@ -196,7 +196,7 @@ export type SalesSummaryResponse = z.infer<typeof SalesSummaryResponseSchema>;
  */
 export const ConsultedServiceDetailSchema = z.object({
   id: z.string(),
-  consultationDate: z.string(), // ISO date - ngày tư vấn
+  consultationDate: z.string().nullable(), // ISO date - ngày tư vấn (nullable for online consultations)
   serviceConfirmDate: z.string().nullable(), // ISO date - ngày chốt (nullable cho dịch vụ chưa chốt)
   finalPrice: z.number(),
   serviceStatus: z.string(),

@@ -290,7 +290,7 @@ export type GetConsultedServicesDailyQuery = z.infer<
 export const ConsultedServiceResponseSchema = z.object({
   id: z.string(),
   customerId: z.string(),
-  appointmentId: z.string(),
+  appointmentId: z.string().nullable(), // Nullable - null khi tư vấn online
   dentalServiceId: z.string(),
   clinicId: z.string(),
   customerClinicId: z.string().nullable().optional(), // Customer's current clinic for permission checks
@@ -317,7 +317,7 @@ export const ConsultedServiceResponseSchema = z.object({
   debt: z.number(),
 
   // Status & dates
-  consultationDate: z.string().datetime(),
+  consultationDate: z.string().datetime().nullable(), // Nullable - null khi tư vấn online
   serviceConfirmDate: z.string().datetime().nullable(),
   serviceStatus: z.enum(SERVICE_STATUSES),
   treatmentStatus: z.enum(TREATMENT_STATUSES),

@@ -1,5 +1,6 @@
 // src/server/services/appointment.service.ts
 import { ServiceError } from "./errors";
+import { consultedServiceService } from "./consulted-service.service";
 import {
   CreateAppointmentRequestSchema,
   UpdateAppointmentRequestSchema,
@@ -269,6 +270,16 @@ export const appointmentService = {
     };
 
     const created = await appointmentRepo.create(data);
+
+    // Auto-bind pending consulted services if created with checkInTime (walk-in)
+    if (parsed.checkInTime) {
+      await consultedServiceService.autoBindPendingServices(
+        created.customerId,
+        created.id,
+        currentUser
+      );
+    }
+
     const mapped = mapAppointmentToResponse(created);
     return AppointmentResponseSchema.parse(mapped);
   },
@@ -408,6 +419,16 @@ export const appointmentService = {
     };
 
     const updated = await appointmentRepo.update(id, updates);
+
+    // Auto-bind pending consulted services after check-in
+    if (isCheckIn) {
+      await consultedServiceService.autoBindPendingServices(
+        updated.customerId,
+        updated.id,
+        currentUser
+      );
+    }
+
     const mapped = mapAppointmentToResponse(updated);
     return AppointmentResponseSchema.parse(mapped);
   },

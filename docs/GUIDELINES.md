@@ -589,6 +589,12 @@ qc.invalidateQueries({ queryKey: ["customers"] });
 
 // Delete: invalidate list only
 qc.invalidateQueries({ queryKey: ["customers"] });
+
+// Cross-domain side-effect: invalidate affected queries
+// Example: Appointment check-in auto-binds pending consulted services
+if (variables.checkInTime) {
+  qc.invalidateQueries({ queryKey: ["consulted-services"] });
+}
 ```
 
 **Caching Strategy Summary:**

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Col, Row, Tooltip, Typography } from "antd";
+import { Alert, Button, Col, Row, Space, Tooltip, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import {
   useConsultedServicesByCustomer,
@@ -53,6 +53,11 @@ export default function ConsultedServicesTab({
   const { data, isLoading } = useConsultedServicesByCustomer(customerId);
   const services = useMemo(() => data?.items ?? [], [data?.items]);
 
+  // Filter services chưa chốt (pending services) for warning banner
+  const pendingServices = useMemo(() => {
+    return services.filter((service) => service.serviceStatus === "Chưa chốt");
+  }, [services]);
+
   // Modal state
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingService, setEditingService] =
@@ -65,8 +70,8 @@ export default function ConsultedServicesTab({
   const confirmMutation = useConfirmConsultedService();
   const assignSaleMutation = useAssignConsultingSale();
 
-  // Check if user can add service (checked-in today)
-  const canAddService = !!todayCheckIn;
+  // Check-in status for dynamic button UI
+  const isCheckedIn = !!todayCheckIn;
 
   // Handlers
   const handleCreate = useCallback(() => {
@@ -158,22 +163,52 @@ export default function ConsultedServicesTab({
         <Col>
           <Tooltip
             title={
-              !canAddService
-                ? "Khách chưa check-in hôm nay"
-                : "Thêm dịch vụ tư vấn"
+              isCheckedIn
+                ? "Dịch vụ sẽ gắn với lịch hẹn hôm nay"
+                : "Dịch vụ tạo online (chưa có lịch hẹn)"
             }
           >
             <Button
-              type="primary"
+              type={isCheckedIn ? "primary" : "default"}
               icon={<PlusOutlined />}
               onClick={handleCreate}
-              disabled={!canAddService}
             >
-              Thêm dịch vụ tư vấn
+              {isCheckedIn
+                ? "Thêm dịch vụ tư vấn tại phòng khám"
+                : "Thêm dịch vụ tư vấn online"}
             </Button>
           </Tooltip>
         </Col>
       </Row>
+
+      {/* Warning Banner - Pending Services */}
+      {pendingServices.length > 0 && (
+        <Alert
+          type="error"
+          showIcon
+          closable
+          style={{ marginBottom: 16 }}
+          message={
+            <strong>
+              Khách hàng đang có {pendingServices.length} dịch vụ chưa chốt
+            </strong>
+          }
+          description={
+            <div>
+              {pendingServices.map((service) => (
+                <div key={service.id} style={{ marginBottom: 4 }}>
+                  • {service.consultedServiceName}
+                  {service.toothPositions?.length > 0 &&
+                    ` (${service.toothPositions.join(", ")})`}
+                </div>
+              ))}
+              <div style={{ marginTop: 8 }}>
+                <strong>Vui lòng kiểm tra kỹ trước khi tạo dịch vụ mới</strong>
+              </div>
+            </div>
+          }
+        />
+      )}
 
       {/* Table - Using shared ConsultedServiceTable component */}
       <ConsultedServiceTable
@@ -192,7 +227,7 @@ export default function ConsultedServicesTab({
       />
 
       {/* Create Modal */}
-      {createModalOpen && todayCheckIn && (
+      {createModalOpen && (
         <CreateConsultedServiceModal
           open={createModalOpen}
           customer={{

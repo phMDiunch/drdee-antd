@@ -36,6 +36,12 @@ export function useUpdateAppointment() {
 
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["appointment"] });
+
+      // If checking in, invalidate consulted-services
+      // because backend auto-binds pending services
+      if (body.checkInTime && !body.checkOutTime) {
+        qc.invalidateQueries({ queryKey: ["consulted-services"] });
+      }
     },
     onError: (e: unknown) =>
       notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),

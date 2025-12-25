@@ -119,12 +119,16 @@ export default function ConsultedServiceTable({
                 a: ConsultedServiceResponse,
                 b: ConsultedServiceResponse
               ) => {
-                return (
-                  dayjs(a.consultationDate).valueOf() -
-                  dayjs(b.consultationDate).valueOf()
-                );
+                const aDate = a.consultationDate
+                  ? dayjs(a.consultationDate).valueOf()
+                  : 0;
+                const bDate = b.consultationDate
+                  ? dayjs(b.consultationDate).valueOf()
+                  : 0;
+                return aDate - bDate;
               },
-              render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+              render: (date: string | null) =>
+                date ? dayjs(date).format("DD/MM/YYYY") : "-",
             },
           ]
         : []) as ColumnsType<ConsultedServiceResponse>),
