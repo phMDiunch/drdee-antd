@@ -200,7 +200,7 @@ export default function PendingServicesView() {
       <ConsultedServiceTable
         data={services}
         loading={isLoading}
-        view="pending"
+        view="follow-up"
         onConfirm={handleConfirm}
         onEdit={handleEdit}
         onDelete={handleDelete}

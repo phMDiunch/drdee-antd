@@ -48,7 +48,7 @@ export const menuItems: MenuItem[] = [
     label: "Dịch vụ tư vấn",
     children: [
       { key: "/consulted-services/daily", label: "Theo ngày" },
-      { key: "/consulted-services/pending", label: "Chưa chốt" },
+      { key: "/consulted-services/follow-up", label: "Follow-up" },
     ],
   },
   {

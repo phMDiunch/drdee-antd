@@ -294,7 +294,7 @@ export const consultedServiceRepo = {
   },
 
   /**
-   * List pending consulted services (status = "Chưa chốt")
+   * List pending consulted services (status = "Chưa chốt" AND requiresFollowUp = true)
    * Filter by clinicId and month (createdAt)
    */
   async listPending(params: {
@@ -310,6 +310,9 @@ export const consultedServiceRepo = {
       createdAt: {
         gte: monthStart,
         lte: monthEnd,
+      },
+      dentalService: {
+        requiresFollowUp: true,
       },
     };
 

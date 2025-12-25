@@ -30,7 +30,7 @@ type Props = {
   data: ConsultedServiceResponse[];
   loading?: boolean;
   isCustomerDetailView?: boolean; // Customer Detail context: hide customer column
-  view?: "daily" | "pending" | "customer"; // View type to determine which columns to show
+  view?: "daily" | "follow-up" | "customer"; // View type to determine which columns to show
   onConfirm: (id: string) => void;
   onEdit: (service: ConsultedServiceResponse) => void;
   onDelete: (id: string) => void;
@@ -113,8 +113,8 @@ export default function ConsultedServiceTable({
             },
           ]
         : []),
-      // Customer Detail View: Add "Ngày tư vấn" column
-      ...((isCustomerDetailView
+      // Customer Detail View or Follow-up View: Add "Ngày tư vấn" column
+      ...((isCustomerDetailView || view === "follow-up"
         ? [
             {
               title: "Ngày tư vấn",
@@ -249,8 +249,8 @@ export default function ConsultedServiceTable({
           return name || <Text type="secondary">—</Text>;
         },
       },
-      // Hide "Bác sĩ điều trị" in pending view
-      ...((view !== "pending"
+      // Hide "Bác sĩ điều trị" in follow-up view
+      ...((view !== "follow-up"
         ? [
             {
               title: "Bác sĩ điều trị",
@@ -262,8 +262,8 @@ export default function ConsultedServiceTable({
             },
           ]
         : []) as ColumnsType<ConsultedServiceResponse>),
-      // Hide "Ngày chốt" in pending view
-      ...((view !== "pending"
+      // Hide "Ngày chốt" in follow-up view
+      ...((view !== "follow-up"
         ? [
             {
               title: "Ngày chốt",
