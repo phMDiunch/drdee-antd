@@ -2,7 +2,10 @@ import type { Customer, Clinic, Employee } from "@prisma/client";
 
 // Customer với all relations từ Prisma
 type CustomerWithRelations = Customer & {
-  clinic?: Pick<Clinic, "id" | "clinicCode" | "name" | "colorCode"> | null;
+  clinic?: Pick<
+    Clinic,
+    "id" | "clinicCode" | "name" | "shortName" | "colorCode"
+  > | null;
   primaryContact?: Pick<Customer, "id" | "fullName" | "phone"> | null;
   createdBy?: Pick<Employee, "id" | "fullName"> | null;
   updatedBy?: Pick<Employee, "id" | "fullName"> | null;
@@ -45,6 +48,7 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
           id: row.clinic.id,
           clinicCode: row.clinic.clinicCode,
           name: row.clinic.name,
+          shortName: row.clinic.shortName ?? "",
           colorCode: row.clinic.colorCode ?? "",
         }
       : null,

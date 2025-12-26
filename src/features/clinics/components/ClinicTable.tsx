@@ -31,8 +31,13 @@ export default function ClinicTable({
 }: Props) {
   const columns: ColumnsType<ClinicResponse> = [
     { title: "Mã", dataIndex: "clinicCode", key: "clinicCode", width: 140 },
+    {
+      title: "Tên viết tắt",
+      dataIndex: "shortName",
+      key: "shortName",
+      width: 140,
+    },
     { title: "Tên phòng khám", dataIndex: "name", key: "name" },
-    { title: "Tên viết tắt", dataIndex: "shortName", key: "shortName", width: 150 },
     { title: "Điện thoại", dataIndex: "phone", key: "phone", width: 160 },
     { title: "Địa chỉ", dataIndex: "address", key: "address" },
     {

@@ -243,6 +243,7 @@ export const ProfileResponseSchema = z.object({
       id: z.string(),
       clinicCode: z.string(),
       name: z.string(),
+      shortName: z.string(),
       colorCode: z.string().nullable(),
     })
     .nullable(),

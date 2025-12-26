@@ -81,22 +81,7 @@ async function generateCustomerCode(clinicId: string): Promise<string> {
   const month = String(now.getMonth() + 1).padStart(2, "0"); // MM format
   const yearMonth = `${String(year).padStart(2, "0")}${month}`;
 
-  const rawCode = clinic.clinicCode.trim();
-  const upperCode = rawCode.toUpperCase();
-
-  let prefix: string;
-
-  if (upperCode.includes("450")) {
-    prefix = "MK";
-  } else if (upperCode.includes("143")) {
-    prefix = "TDT";
-  } else if (upperCode.includes("153")) {
-    prefix = "DN";
-  } else {
-    // Fallback: derive prefix from letters only
-    const lettersOnly = upperCode.replace(/[^A-Z]/g, "");
-    prefix = lettersOnly || upperCode;
-  }
+  const prefix = clinic.clinicCode.trim().toUpperCase();
 
   // Find last customer code with same prefix and year-month
   const lastCustomer = await customerRepo.findLastCustomerCodeByClinic(

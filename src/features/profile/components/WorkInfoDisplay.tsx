@@ -38,9 +38,7 @@ export default function WorkInfoDisplay({ profile }: Props) {
         </Descriptions.Item>
 
         <Descriptions.Item label="Phòng khám" span={2}>
-          {profile.clinic
-            ? `${profile.clinic.clinicCode} - ${profile.clinic.name}`
-            : "—"}
+          {profile.clinic ? `${profile.clinic.shortName}` : "—"}
         </Descriptions.Item>
 
         <Descriptions.Item label="Phòng ban">

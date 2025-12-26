@@ -176,7 +176,7 @@ export default function UpdateAppointmentModal({
   const clinicOptions = useMemo(() => {
     if (!clinicsData) return [];
     return clinicsData.map((clinic) => ({
-      label: clinic.clinicCode, // Use clinicCode instead of name
+      label: clinic.shortName,
       value: clinic.id,
     }));
   }, [clinicsData]);

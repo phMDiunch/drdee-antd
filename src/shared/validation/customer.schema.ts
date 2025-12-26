@@ -225,6 +225,7 @@ export const CustomerResponseSchema = z.object({
       id: z.string().uuid(),
       clinicCode: z.string(),
       name: z.string(),
+      shortName: z.string(),
       colorCode: z.string().regex(HEX6_RE),
     })
     .nullable()

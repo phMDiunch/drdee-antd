@@ -18,7 +18,7 @@ interface PageHeaderWithMonthNavProps {
   onPreviousMonth: () => void;
   onCurrentMonth: () => void;
   onNextMonth: () => void;
-  clinics?: Array<{ id: string; clinicCode: string }>;
+  clinics?: Array<{ id: string; shortName: string }>;
   selectedClinicId?: string;
   onClinicChange?: (clinicId: string | undefined) => void;
   showClinicFilter?: boolean;
@@ -120,7 +120,7 @@ export default function PageHeaderWithMonthNav({
                 disabled={loading}
                 options={[
                   ...clinics.map((clinic) => ({
-                    label: clinic.clinicCode,
+                    label: clinic.shortName,
                     value: clinic.id,
                   })),
                 ]}

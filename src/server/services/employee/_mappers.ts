@@ -28,6 +28,7 @@ export function mapEmployeeToResponse(row: EmployeeWithRelations) {
           id: row.clinic.id,
           clinicCode: row.clinic.clinicCode,
           name: row.clinic.name,
+          shortName: row.clinic.shortName,
           colorCode: row.clinic.colorCode,
         }
       : null,

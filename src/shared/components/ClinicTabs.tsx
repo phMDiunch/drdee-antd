@@ -32,7 +32,7 @@ export default function ClinicTabs({ value, onChange }: Props) {
 
   const items = useMemo(
     () =>
-      filteredClinics?.map((c) => ({ key: c.id, label: c.clinicCode })) || [],
+      filteredClinics?.map((c) => ({ key: c.id, label: c.shortName })) || [],
     [filteredClinics]
   );
 

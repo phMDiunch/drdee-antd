@@ -194,8 +194,8 @@ export default function ConvertLeadModal({
   const { data: clinicsData } = useClinics();
   const clinicOptions = useMemo(
     () =>
-      clinicsData?.map((clinic: { id: string; clinicCode: string }) => ({
-        label: clinic.clinicCode,
+      clinicsData?.map((clinic: { id: string; shortName: string }) => ({
+        label: clinic.shortName,
         value: clinic.id,
       })) || [],
     [clinicsData]

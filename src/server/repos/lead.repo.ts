@@ -35,7 +35,7 @@ export const leadRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, colorCode: true },
+          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
         },
         createdBy: { select: { id: true, fullName: true } },
       },
@@ -53,7 +53,7 @@ export const leadRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, colorCode: true },
+          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },
@@ -72,7 +72,7 @@ export const leadRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, colorCode: true },
+          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
         },
       },
     });
@@ -127,7 +127,7 @@ export const leadRepo = {
         orderBy,
         include: {
           clinic: {
-            select: { id: true, name: true, clinicCode: true, colorCode: true },
+            select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
           },
           createdBy: { select: { id: true, fullName: true } },
         },
@@ -147,7 +147,7 @@ export const leadRepo = {
       data,
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, colorCode: true },
+          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
         },
         updatedBy: { select: { id: true, fullName: true } },
       },

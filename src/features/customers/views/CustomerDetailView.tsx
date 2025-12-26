@@ -255,7 +255,7 @@ export default function CustomerDetailView({
                     icon={<BankOutlined />}
                     color={customer.clinic.colorCode}
                   >
-                    {customer.clinic.clinicCode}
+                    {customer.clinic.shortName}
                   </Tag>
                 )}
               </Space>

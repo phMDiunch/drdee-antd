@@ -15,7 +15,7 @@ type LaboOrderWithRelations = LaboOrder & {
   sentBy?: Pick<Employee, "id" | "fullName"> | null;
   supplier?: Pick<Supplier, "id" | "name" | "shortName"> | null;
   laboItem?: Pick<LaboItem, "id" | "name" | "serviceGroup" | "unit"> | null;
-  clinic?: Pick<Clinic, "id" | "clinicCode" | "name"> | null;
+  clinic?: Pick<Clinic, "id" | "clinicCode" | "name" | "shortName"> | null;
   receivedBy?: Pick<Employee, "id" | "fullName"> | null;
   createdBy?: Pick<Employee, "id" | "fullName"> | null;
   updatedBy?: Pick<Employee, "id" | "fullName"> | null;
@@ -127,6 +127,7 @@ export function mapLaboOrderToResponse(row: LaboOrderWithRelations) {
           id: row.clinic.id,
           clinicCode: row.clinic.clinicCode,
           name: row.clinic.name,
+          shortName: row.clinic.shortName,
         }
       : undefined,
 

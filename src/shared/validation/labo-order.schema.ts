@@ -343,6 +343,7 @@ export const LaboOrderResponseSchema = z.object({
       id: z.string().uuid(),
       clinicCode: z.string(),
       name: z.string(),
+      shortName: z.string(),
     })
     .optional(),
 });

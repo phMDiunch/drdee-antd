@@ -46,7 +46,7 @@ export default function ClinicsPageView({ isAdmin }: Props) {
     return data.filter(
       (item) =>
         item.name?.toLowerCase().includes(term) ||
-        item.clinicCode?.toLowerCase().includes(term) ||
+        item.shortName?.toLowerCase().includes(term) ||
         item.address?.toLowerCase().includes(term)
     );
   }, [data, searchTerm]);

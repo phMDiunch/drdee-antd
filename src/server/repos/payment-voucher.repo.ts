@@ -1,6 +1,6 @@
 // src/server/repos/payment-voucher.repo.ts
 import { prisma } from "@/services/prisma/prisma";
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { type Prisma, PrismaClient } from "@prisma/client";
 import type {
   CreatePaymentVoucherRequest,
   UpdatePaymentVoucherRequest,
@@ -61,12 +61,7 @@ const paymentVoucherInclude = {
           finalPrice: true,
         },
       },
-      createdBy: {
-        select: {
-          id: true,
-          fullName: true,
-        },
-      },
+
     },
   },
   createdBy: {
@@ -82,10 +77,7 @@ const paymentVoucherInclude = {
     },
   },
   clinic: {
-    select: {
-      id: true,
-      name: true,
-    },
+    select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
   },
 } satisfies Prisma.PaymentVoucherInclude;
 
@@ -94,20 +86,7 @@ const paymentVoucherInclude = {
  * This ensures consistency between customer codes and payment numbers
  */
 function deriveClinicPrefix(clinicCode: string): string {
-  const rawCode = clinicCode.trim();
-  const upperCode = rawCode.toUpperCase();
-
-  if (upperCode.includes("450")) {
-    return "MK";
-  } else if (upperCode.includes("143")) {
-    return "TDT";
-  } else if (upperCode.includes("153")) {
-    return "DN";
-  } else {
-    // Fallback: derive prefix from letters only
-    const lettersOnly = upperCode.replace(/[^A-Z]/g, "");
-    return lettersOnly || upperCode.substring(0, 3);
-  }
+  return clinicCode.trim().toUpperCase();
 }
 
 /**

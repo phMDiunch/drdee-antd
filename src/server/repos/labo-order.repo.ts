@@ -65,6 +65,8 @@ const includeFullLaboOrder = {
       id: true,
       clinicCode: true,
       name: true,
+      shortName: true,
+      colorCode: true,
     },
   },
   sentBy: {

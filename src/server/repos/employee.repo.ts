@@ -55,7 +55,9 @@ export const employeeRepo = {
         jobTitle: true,
         role: true,
         department: true,
-        clinicId: true,
+        clinic: {
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+        },
       },
       orderBy: { fullName: "asc" },
     });

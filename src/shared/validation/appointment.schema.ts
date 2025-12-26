@@ -296,6 +296,7 @@ export const AppointmentResponseSchema = z.object({
     id: z.string().uuid(),
     clinicCode: z.string(),
     name: z.string(),
+    shortName: z.string(),
     colorCode: z.string().nullable(),
   }),
 

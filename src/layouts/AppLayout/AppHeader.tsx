@@ -131,12 +131,12 @@ export default function AppHeader({
               <Text strong style={{ fontSize: 16 }}>
                 {isMdUp ? "Nha khoa DR DEE" : "DR DEE"}
               </Text>
-              {clinicData?.clinicCode && (
+              {clinicData?.shortName && (
                 <Tag
                   color={clinicData.colorCode || "blue"}
                   style={{ margin: 0, fontSize: 12 }}
                 >
-                  {clinicData.clinicCode}
+                  {clinicData.shortName}
                 </Tag>
               )}
             </Space>

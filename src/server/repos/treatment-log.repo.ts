@@ -77,7 +77,10 @@ const treatmentLogInclude = {
   clinic: {
     select: {
       id: true,
+      clinicCode: true,
       name: true,
+      shortName: true,
+      colorCode: true,
     },
   },
   createdBy: {
@@ -208,7 +211,10 @@ export const treatmentLogRepo = {
         clinic: {
           select: {
             id: true,
+            clinicCode: true,
             name: true,
+            shortName: true,
+            colorCode: true,
           },
         },
         customer: {
@@ -327,7 +333,10 @@ export const treatmentLogRepo = {
         clinic: {
           select: {
             id: true,
+            clinicCode: true,
             name: true,
+            shortName: true,
+            colorCode: true,
           },
         },
         createdBy: {

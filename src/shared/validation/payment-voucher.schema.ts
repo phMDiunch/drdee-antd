@@ -153,6 +153,7 @@ export const PaymentVoucherResponseSchema = z.object({
   clinic: z.object({
     id: z.string(),
     name: z.string(),
+    shortName: z.string(),
   }),
   customerClinicId: z.string().nullable().optional(), // Customer's current clinic for permission checks
   details: z.array(PaymentVoucherDetailResponseSchema),

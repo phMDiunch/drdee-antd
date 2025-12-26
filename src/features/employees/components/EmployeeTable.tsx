@@ -53,13 +53,13 @@ export default function EmployeeTable({
   onResendInvite,
 }: Props) {
   // Memoize filter values separately to prevent columns regeneration
-  const clinicCodes = useMemo(
+  const clinicOptions = useMemo(
     () =>
       Array.from(
         new Set(
           data
-            .map((item) => item.clinic?.clinicCode)
-            .filter((code): code is string => !!code)
+            .map((item) => item.clinic?.shortName)
+            .filter((name): name is string => !!name)
         )
       ).sort(),
     [data]
@@ -126,21 +126,19 @@ export default function EmployeeTable({
       },
       {
         title: "Chi nhánh",
-        dataIndex: "clinicCode",
+        dataIndex: "clinicCode", // We keep index for key/data consistency or change it to shortName if available in record
         key: "clinicCode",
         sorter: (a, b) =>
-          (a.clinic?.clinicCode || "").localeCompare(
-            b.clinic?.clinicCode || ""
-          ),
+          (a.clinic?.shortName || "").localeCompare(b.clinic?.shortName || ""),
         filterSearch: true,
-        filters: clinicCodes.map((code) => ({
-          text: code,
-          value: code,
+        filters: clinicOptions.map((name) => ({
+          text: name,
+          value: name,
         })),
-        onFilter: (value, record) => record.clinic?.clinicCode === value,
+        onFilter: (value, record) => record.clinic?.shortName === value,
         render: (_: unknown, row) => (
           <Tag color={row.clinic?.colorCode || "default"}>
-            {row.clinic?.clinicCode}
+            {row.clinic?.shortName}
           </Tag>
         ),
       },
@@ -214,8 +212,8 @@ export default function EmployeeTable({
                   !row.email
                     ? "Nhân viên chưa có email"
                     : row.uid
-                      ? "Nhân viên đã có tài khoản Supabase"
-                      : "Gửi lại lời mời"
+                    ? "Nhân viên đã có tài khoản Supabase"
+                    : "Gửi lại lời mời"
                 }
               >
                 <Button
@@ -266,7 +264,7 @@ export default function EmployeeTable({
       },
     ];
   }, [
-    clinicCodes,
+    clinicOptions,
     departments,
     jobTitles,
     disabled,

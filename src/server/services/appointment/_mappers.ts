@@ -20,7 +20,10 @@ type AppointmentWithRelations = Appointment & {
     Employee,
     "id" | "fullName" | "employeeCode" | "favoriteColor"
   > | null;
-  clinic: Pick<Clinic, "id" | "clinicCode" | "name" | "colorCode">;
+  clinic: Pick<
+    Clinic,
+    "id" | "clinicCode" | "name" | "shortName" | "colorCode"
+  >;
   createdBy: Pick<Employee, "id" | "fullName">;
   updatedBy: Pick<Employee, "id" | "fullName">;
 };
@@ -74,6 +77,7 @@ export function mapAppointmentToResponse(row: AppointmentWithRelations) {
       id: row.clinic.id,
       clinicCode: row.clinic.clinicCode,
       name: row.clinic.name,
+      shortName: row.clinic.shortName ?? null,
       colorCode: row.clinic.colorCode ?? null,
     },
 

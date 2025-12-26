@@ -7,6 +7,7 @@ type EmployeeWithClinic = Employee & {
     id: string;
     clinicCode: string;
     name: string;
+    shortName: string | null;
     colorCode: string | null;
   } | null;
 };
@@ -58,6 +59,7 @@ export function mapEmployeeToProfileResponse(
           id: employee.clinic.id,
           clinicCode: employee.clinic.clinicCode,
           name: employee.clinic.name,
+          shortName: employee.clinic.shortName || "",
           colorCode: employee.clinic.colorCode,
         }
       : null,

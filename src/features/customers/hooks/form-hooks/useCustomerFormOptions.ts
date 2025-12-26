@@ -142,7 +142,7 @@ export function useCustomerFormOptions({
   // Clinics for select
   const { data: clinics } = useClinics(false);
   const clinicOptions = useMemo(
-    () => (clinics ?? []).map((c) => ({ label: c.clinicCode, value: c.id })),
+    () => (clinics ?? []).map((c) => ({ label: c.shortName, value: c.id })),
     [clinics]
   );
 

@@ -20,16 +20,13 @@ type PaymentVoucherWithRelations = PaymentVoucher & {
   clinic: {
     id: string;
     name: string;
+    shortName: string | null;
   };
   details: (PaymentVoucherDetail & {
     consultedService: {
       id: string;
       consultedServiceName: string;
       finalPrice: number;
-    };
-    createdBy: {
-      id: string;
-      fullName: string;
     };
   })[];
   createdBy: {
@@ -66,6 +63,7 @@ export function mapPaymentVoucherToResponse(
     clinic: {
       id: voucher.clinic.id,
       name: voucher.clinic.name,
+      shortName: voucher.clinic.shortName ?? voucher.customer.clinicId ?? "", // Fallback
     },
     customerClinicId: voucher.customer.clinicId, // Customer's current clinic for permission checks
     details: voucher.details.map((detail) => ({

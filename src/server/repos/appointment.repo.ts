@@ -135,7 +135,7 @@ export const appointmentRepo = {
             },
           },
           clinic: {
-            select: { id: true, clinicCode: true, name: true, colorCode: true },
+            select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
           },
           createdBy: { select: { id: true, fullName: true } },
           updatedBy: { select: { id: true, fullName: true } },
@@ -211,7 +211,7 @@ export const appointmentRepo = {
           },
         },
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },
@@ -254,7 +254,7 @@ export const appointmentRepo = {
           },
         },
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },
@@ -296,7 +296,7 @@ export const appointmentRepo = {
           },
         },
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },
@@ -337,7 +337,7 @@ export const appointmentRepo = {
           },
         },
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },

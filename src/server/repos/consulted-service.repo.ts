@@ -98,10 +98,7 @@ const consultedServiceInclude = {
     },
   },
   clinic: {
-    select: {
-      id: true,
-      name: true,
-    },
+    select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
   },
 } satisfies Prisma.ConsultedServiceInclude;
 

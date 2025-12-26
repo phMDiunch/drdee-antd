@@ -87,7 +87,7 @@ export const customerRepo = {
         orderBy,
         include: {
           clinic: {
-            select: { id: true, clinicCode: true, name: true, colorCode: true },
+            select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
           },
           primaryContact: { select: { id: true, fullName: true, phone: true } },
           createdBy: { select: { id: true, fullName: true } },
@@ -122,7 +122,7 @@ export const customerRepo = {
     // Build include object conditionally
     const include: Prisma.CustomerInclude = {
       clinic: {
-        select: { id: true, clinicCode: true, name: true, colorCode: true },
+        select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
       },
       primaryContact: { select: { id: true, fullName: true, phone: true } },
       createdBy: { select: { id: true, fullName: true } },
@@ -180,7 +180,7 @@ export const customerRepo = {
       data,
       include: {
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         primaryContact: { select: { id: true, fullName: true, phone: true } },
         createdBy: { select: { id: true, fullName: true } },
@@ -198,7 +198,7 @@ export const customerRepo = {
       data,
       include: {
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         primaryContact: { select: { id: true, fullName: true, phone: true } },
         createdBy: { select: { id: true, fullName: true } },
@@ -221,7 +221,7 @@ export const customerRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, clinicCode: true, name: true, colorCode: true },
+          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
         },
         primaryContact: {
           select: {

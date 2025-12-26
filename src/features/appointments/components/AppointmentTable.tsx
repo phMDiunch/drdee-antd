@@ -124,7 +124,7 @@ export default function AppointmentTable({
         width: 80,
         render: (clinic) => (
           <Tag color={clinic.colorCode} style={{ fontSize: 11 }}>
-            {clinic.clinicCode}
+            {clinic.shortName}
           </Tag>
         ),
       },

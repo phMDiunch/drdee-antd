@@ -221,6 +221,7 @@ export const EmployeeResponseSchema = EmployeeCommonFieldsSchema.extend({
       id: z.string().uuid(),
       clinicCode: z.string(),
       name: z.string(),
+      shortName: z.string(),
       colorCode: z.string().regex(HEX6_RE),
     })
     .nullable()
