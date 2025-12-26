@@ -37,6 +37,7 @@ Hàng 3: [phone      ] [email                   ]
 
 - `clinicCode`: Required, unique, regex `/^[A-Za-z0-9_.-]{2,20}$/`
 - `name`: Required, unique
+- `shortName`: Required, unique, max 20 chars
 - `address`: Required
 - `phone`: Optional, VN format `/^(0)\d{9}$/`
 - `email`: Optional, email format
@@ -59,6 +60,7 @@ Hàng 3: [phone      ] [email                   ]
 | -------------- | ----- | ------- | ------------------------------ |
 | Mã             | 140px | Text    | clinicCode                     |
 | Tên phòng khám | Auto  | Text    | name                           |
+| Tên viết tắt   | 150px | Text    | shortName                      |
 | Điện thoại     | 160px | Text    | phone                          |
 | Địa chỉ        | Auto  | Text    | address                        |
 | Màu            | 120px | Tag     | colorCode với background color |

@@ -9,6 +9,7 @@ export function mapClinicToResponse(row: Clinic) {
     id: row.id,
     clinicCode: row.clinicCode,
     name: row.name,
+    shortName: row.shortName,
     address: row.address,
     phone: row.phone ?? null,
     email: row.email ?? null,

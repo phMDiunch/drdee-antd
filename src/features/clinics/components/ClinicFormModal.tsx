@@ -30,6 +30,7 @@ type Props = {
 const defaultClinicFormValues: CreateClinicRequest = {
   clinicCode: "",
   name: "",
+  shortName: "",
   address: "",
   phone: undefined,
   email: undefined,
@@ -58,6 +59,7 @@ export default function ClinicFormModal({
         id: initial.id,
         clinicCode: initial.clinicCode,
         name: initial.name,
+        shortName: initial.shortName,
         address: initial.address,
         phone: initial.phone ?? undefined,
         email: initial.email ?? undefined,
@@ -90,6 +92,7 @@ export default function ClinicFormModal({
         id: values.id || (initial?.id as string),
         clinicCode: values.clinicCode,
         name: values.name,
+        shortName: values.shortName,
         address: values.address,
         phone: values.phone,
         email: values.email,
@@ -100,6 +103,7 @@ export default function ClinicFormModal({
       const payload: CreateClinicRequest = {
         clinicCode: values.clinicCode,
         name: values.name,
+        shortName: values.shortName,
         address: values.address,
         phone: values.phone,
         email: values.email,
@@ -144,7 +148,7 @@ export default function ClinicFormModal({
             />
           </Col>
 
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={12}>
             <Controller
               name="name"
               control={control}
@@ -156,6 +160,23 @@ export default function ClinicFormModal({
                   help={fieldState.error?.message}
                 >
                   <Input {...field} placeholder="Phòng khám Hà Nội 01" />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={4}>
+            <Controller
+              name="shortName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Tên viết tắt"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input {...field} placeholder="HN-01" maxLength={20} />
                 </Form.Item>
               )}
             />

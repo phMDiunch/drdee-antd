@@ -14,6 +14,11 @@ export const HEX6_RE = /^#([0-9A-Fa-f]{6})$/;
 export const ClinicBaseSchema = z.object({
   clinicCode: z.string().trim().min(1, "Mã phòng khám là bắt buộc"),
   name: z.string().trim().min(1, "Tên phòng khám là bắt buộc"),
+  shortName: z
+    .string()
+    .trim()
+    .min(1, "Tên viết tắt là bắt buộc")
+    .max(20, "Tên viết tắt không quá 20 ký tự"),
   address: z.string().trim().min(1, "Địa chỉ là bắt buộc"),
   phone: z
     .string()
@@ -56,6 +61,7 @@ export const ClinicResponseSchema = z.object({
   id: z.string().uuid(),
   clinicCode: z.string(),
   name: z.string(),
+  shortName: z.string(),
   address: z.string(),
   phone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),

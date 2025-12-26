@@ -34,7 +34,7 @@ export default function SalesActivityExpandedContent({
 }: Props) {
   const { data, isLoading } = useSalesActivities({
     consultedServiceId,
-    pageSize: 5, // Chỉ lấy 5 activities gần nhất
+    pageSize: 10, // Chỉ lấy 10 activities gần nhất
     sortField: "contactDate",
     sortDirection: "desc",
   });

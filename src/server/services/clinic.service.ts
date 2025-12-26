@@ -18,6 +18,10 @@ function normalizeName(name: string) {
   return name.trim();
 }
 
+function normalizeShortName(shortName: string) {
+  return shortName.trim();
+}
+
 export const clinicService = {
   /**
    * GET /clinics
@@ -53,19 +57,22 @@ export const clinicService = {
     const data: CreateClinicRequest = {
       clinicCode: normalizeClinicCode(parsed.data.clinicCode),
       name: normalizeName(parsed.data.name),
+      shortName: normalizeShortName(parsed.data.shortName),
       address: parsed.data.address.trim(),
       phone: parsed.data.phone ?? null,
       email: parsed.data.email ?? null,
       colorCode: parsed.data.colorCode.trim(),
     };
 
-    // Unique validate (clinicCode, name)
-    const [byCode, byName] = await Promise.all([
+    // Unique validate (clinicCode, name, shortName)
+    const [byCode, byName, byShortName] = await Promise.all([
       clinicRepo.getByClinicCode(data.clinicCode),
       clinicRepo.getByName(data.name),
+      clinicRepo.getByShortName(data.shortName),
     ]);
     if (byCode) throw ERR.CONFLICT("Mã phòng khám đã tồn tại.");
     if (byName) throw ERR.CONFLICT("Tên phòng khám đã tồn tại.");
+    if (byShortName) throw ERR.CONFLICT("Tên viết tắt đã tồn tại.");
 
     const created = await clinicRepo.create(data);
     return mapClinicToResponse(created);
@@ -92,6 +99,7 @@ export const clinicService = {
     const data = {
       clinicCode: normalizeClinicCode(parsed.data.clinicCode),
       name: normalizeName(parsed.data.name),
+      shortName: normalizeShortName(parsed.data.shortName),
       address: parsed.data.address.trim(),
       phone: parsed.data.phone ?? null,
       email: parsed.data.email ?? null,
@@ -109,6 +117,11 @@ export const clinicService = {
       const dup = await clinicRepo.getByName(data.name);
       if (dup && dup.id !== id)
         throw ERR.CONFLICT("Tên phòng khám đã tồn tại.");
+    }
+
+    if (data.shortName && data.shortName !== existing.shortName) {
+      const dup = await clinicRepo.getByShortName(data.shortName);
+      if (dup && dup.id !== id) throw ERR.CONFLICT("Tên viết tắt đã tồn tại.");
     }
 
     const updated = await clinicRepo.update(id, data);

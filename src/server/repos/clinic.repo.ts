@@ -24,6 +24,9 @@ export const clinicRepo = {
   async getByName(name: string) {
     return prisma.clinic.findUnique({ where: { name } });
   },
+  async getByShortName(shortName: string) {
+    return prisma.clinic.findUnique({ where: { shortName } });
+  },
 
   async create(data: CreateClinicRequest) {
     return prisma.clinic.create({ data });

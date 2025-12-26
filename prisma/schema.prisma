@@ -27,6 +27,7 @@ model Clinic {
   // Thông tin cơ bản
   clinicCode String    @unique // Mã phòng khám
   name       String    @unique // Tên phòng khám
+  shortName  String?   @unique // Tên viết tắt
   address    String // Địa chỉ phòng khám
   phone      String? // Số điện thoại liên hệ
   email      String? // Email liên hệ
