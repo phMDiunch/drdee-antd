@@ -242,6 +242,8 @@ export const SalesActivityResponseSchema = z.object({
       id: z.string(),
       fullName: z.string(),
       phone: z.string().nullable(),
+      customerCode: z.string().nullable(),
+      dob: z.string().nullable(), // ISO date string
     }),
   }),
   sale: z.object({
@@ -263,4 +265,26 @@ export const SalesActivitiesListResponseSchema = z.object({
 
 export type SalesActivitiesListResponse = z.infer<
   typeof SalesActivitiesListResponseSchema
+>;
+
+/**
+ * Daily Sales Activities Response Schema (BACKEND)
+ * Dùng ở: GET /api/v1/sales-activities/daily response
+ */
+export const DailySalesActivitiesResponseSchema = z.object({
+  items: z.array(SalesActivityResponseSchema),
+  statistics: z.object({
+    totalActivities: z.number().int().min(0),
+    totalCustomers: z.number().int().min(0),
+    totalServices: z.number().int().min(0),
+    contactTypeDistribution: z.object({
+      call: z.number().int().min(0),
+      message: z.number().int().min(0),
+      meet: z.number().int().min(0),
+    }),
+  }),
+});
+
+export type DailySalesActivitiesResponse = z.infer<
+  typeof DailySalesActivitiesResponseSchema
 >;

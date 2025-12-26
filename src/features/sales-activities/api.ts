@@ -7,6 +7,7 @@
 import { COMMON_MESSAGES } from "@/shared/constants/messages";
 import {
   SalesActivitiesListResponseSchema,
+  DailySalesActivitiesResponseSchema,
   type GetSalesActivitiesQuery,
 } from "@/shared/validation/sales-activity.schema";
 
@@ -39,6 +40,38 @@ export async function getSalesActivitiesApi(params?: GetSalesActivitiesQuery) {
   const parsed = SalesActivitiesListResponseSchema.safeParse(json);
   if (!parsed.success) {
     throw new Error("Dữ liệu hoạt động liên hệ không hợp lệ.");
+  }
+
+  return parsed.data;
+}
+
+/**
+ * Get daily sales activities with statistics
+ * GET /api/v1/sales-activities/daily
+ * @param params - Query parameters (date: YYYY-MM-DD, clinicId: UUID)
+ * @returns Daily sales activities with statistics
+ */
+export async function getDailySalesActivitiesApi(params: {
+  date: string;
+  clinicId: string;
+}) {
+  const queryParams: Record<string, string> = {
+    date: params.date,
+    clinicId: params.clinicId,
+  };
+
+  const query = new URLSearchParams(queryParams);
+
+  const res = await fetch(`/api/v1/sales-activities/daily?${query}`);
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json?.error || COMMON_MESSAGES.UNKNOWN_ERROR);
+  }
+
+  const parsed = DailySalesActivitiesResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new Error("Dữ liệu hoạt động liên hệ hàng ngày không hợp lệ.");
   }
 
   return parsed.data;

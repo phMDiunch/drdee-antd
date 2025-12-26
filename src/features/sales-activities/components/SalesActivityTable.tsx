@@ -11,9 +11,10 @@ import {
   Tag,
   Popconfirm,
 } from "antd";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, PhoneOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import Link from "next/link";
 import type { SalesActivityResponse } from "@/shared/validation/sales-activity.schema";
 import { useCurrentUser } from "@/shared/providers";
 import {
@@ -27,6 +28,7 @@ type Props = {
   loading?: boolean;
   onEdit: (activity: SalesActivityResponse) => void;
   onDelete: (activity: SalesActivityResponse) => void;
+  showCustomerColumn?: boolean; // Show customer column for Daily View
 };
 
 export default function SalesActivityTable({
@@ -34,11 +36,54 @@ export default function SalesActivityTable({
   loading = false,
   onEdit,
   onDelete,
+  showCustomerColumn = false,
 }: Props) {
   const { user: currentUser } = useCurrentUser();
 
+  const calculateAge = (dob: string | null) => {
+    if (!dob) return "—";
+    const age = dayjs().diff(dayjs(dob), "year");
+    return `${age} tuổi`;
+  };
+
   const columns = React.useMemo<ColumnsType<SalesActivityResponse>>(
     () => [
+      {
+        title: "Khách hàng",
+        key: "customer",
+        width: 180,
+        render: (_, record) => {
+          const customer = record.consultedService.customer;
+          return (
+            <div>
+              <Space size={4}>
+                <Link
+                  href={`/customers/${customer.id}?tab=sales-activities`}
+                  style={{ fontWeight: 600 }}
+                >
+                  {customer.fullName}
+                </Link>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  ({calculateAge(customer.dob)})
+                </Typography.Text>
+              </Space>
+              <br />
+              <Space size={4} style={{ marginTop: 4 }}>
+                {customer.customerCode && (
+                  <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
+                    {customer.customerCode}
+                  </Tag>
+                )}
+                {customer.phone && (
+                  <Tooltip title={customer.phone}>
+                    <PhoneOutlined style={{ color: "#1890ff", fontSize: 14 }} />
+                  </Tooltip>
+                )}
+              </Space>
+            </div>
+          );
+        },
+      },
       {
         title: "Ngày giờ",
         dataIndex: "contactDate",
@@ -171,9 +216,19 @@ export default function SalesActivityTable({
     [onEdit, onDelete, currentUser]
   );
 
+  // Filter columns based on context
+  const visibleColumns = React.useMemo(() => {
+    if (!showCustomerColumn) {
+      // Customer Detail view: Hide customer column
+      return columns.filter((col) => col.key !== "customer");
+    }
+    // Daily View: Show all columns including customer
+    return columns;
+  }, [columns, showCustomerColumn]);
+
   return (
     <Table
-      columns={columns}
+      columns={visibleColumns}
       dataSource={data}
       rowKey="id"
       loading={loading}
@@ -182,7 +237,7 @@ export default function SalesActivityTable({
         pageSizeOptions: [10, 20, 50, 100],
         showTotal: (total) => `Tổng ${total} hoạt động`,
       }}
-      scroll={{ x: 1200 }}
+      scroll={{ x: showCustomerColumn ? 1380 : 1200 }}
     />
   );
 }

@@ -353,4 +353,71 @@ export const salesActivityService = {
     // Map to response (no schema validation - internal use only)
     return items.map(mapSalesActivityToResponse);
   },
+
+  /**
+   * List sales activities for daily view with statistics
+   *
+   * Process:
+   * 1. Validate date parameter
+   * 2. Determine clinicId based on user role
+   * 3. Fetch daily activities from repo
+   * 4. Calculate statistics (totalActivities, contactTypeDistribution)
+   * 5. Map and return response
+   *
+   * Permission:
+   * - Employee: Auto-filter by own clinicId
+   * - Admin: Use provided clinicId
+   *
+   * Statistics:
+   * - totalActivities: Count all activities
+   * - totalCustomers: Count distinct customers (from repo)
+   * - totalServices: Count distinct services (from repo)
+   * - contactTypeDistribution: Group by contactType
+   */
+  async listDaily(
+    currentUser: UserCore | null,
+    params: { date: string; clinicId?: string }
+  ) {
+    requireAuth(currentUser);
+
+    const { date } = params;
+
+    // Determine clinicId based on user role
+    let clinicId: string;
+    if (currentUser!.role === "admin") {
+      if (!params.clinicId) {
+        throw new ServiceError(
+          "MISSING_CLINIC_ID",
+          "Admin phải chọn chi nhánh",
+          400
+        );
+      }
+      clinicId = params.clinicId;
+    } else {
+      // Employee: Use own clinic
+      if (!currentUser!.clinicId) {
+        throw new ServiceError(
+          "MISSING_CLINIC_ID",
+          "Tài khoản chưa được gán chi nhánh",
+          403
+        );
+      }
+      clinicId = currentUser!.clinicId;
+    }
+
+    // Fetch daily activities with statistics from repo
+    const { items, statistics } = await salesActivityRepo.listDaily({
+      date,
+      clinicId,
+    });
+
+    // Map items to response
+    const mappedItems = items.map(mapSalesActivityToResponse);
+
+    // Return response with statistics
+    return {
+      items: mappedItems,
+      statistics,
+    };
+  },
 };

@@ -61,11 +61,14 @@ export default function SalesActivityModal({
     [mode]
   );
 
+  // Extract stable values to prevent infinite re-render
+  const firstServiceId =
+    consultedServices.length === 1 ? consultedServices[0].id : "";
+
   const defaultValues = useMemo(() => {
     if (mode === "add") {
       return {
-        consultedServiceId:
-          consultedServices.length === 1 ? consultedServices[0].id : "",
+        consultedServiceId: firstServiceId,
         contactType: "call" as const,
         contactDate: dayjs().format("YYYY-MM-DDTHH:mm"),
         content: "",
@@ -85,7 +88,7 @@ export default function SalesActivityModal({
       content: "",
       nextContactDate: null,
     };
-  }, [mode, initialData, consultedServices]);
+  }, [mode, initialData, firstServiceId]);
 
   const {
     control,

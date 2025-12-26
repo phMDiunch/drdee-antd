@@ -16,7 +16,7 @@ type SalesActivityWithRelations = SalesActivityLog & {
     ConsultedService,
     "id" | "consultedServiceName" | "stage"
   > & {
-    customer: Pick<Customer, "id" | "fullName" | "phone">;
+    customer: Pick<Customer, "id" | "fullName" | "phone" | "customerCode" | "dob">;
   };
   sale: Pick<Employee, "id" | "fullName">;
 };
@@ -57,6 +57,8 @@ export function mapSalesActivityToResponse(
         id: activity.consultedService.customer.id,
         fullName: activity.consultedService.customer.fullName,
         phone: activity.consultedService.customer.phone,
+        customerCode: activity.consultedService.customer.customerCode,
+        dob: activity.consultedService.customer.dob?.toISOString() || null,
       },
     },
     sale: {

@@ -12,6 +12,7 @@ import {
   MedicineBoxOutlined,
   ExperimentOutlined,
   InboxOutlined,
+  PhoneOutlined,
 } from "@ant-design/icons";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -56,6 +57,12 @@ export const menuItems: MenuItem[] = [
     icon: <ExperimentOutlined />,
     label: "Lịch sử điều trị",
     children: [{ key: "/treatment-logs/daily", label: "Theo ngày" }],
+  },
+  {
+    key: "sales-activities",
+    icon: <PhoneOutlined />,
+    label: "Hoạt động Sale",
+    children: [{ key: "/sales-activities", label: "Theo ngày" }],
   },
   {
     key: "payments",

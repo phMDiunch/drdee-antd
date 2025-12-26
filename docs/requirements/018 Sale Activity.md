@@ -283,9 +283,158 @@ model SalesActivityLog {
 
 ---
 
+## 📊 Daily View (Theo dõi hoạt động sale hàng ngày)
+
+### Structure
+
+```
+<PageHeaderWithDateNav />           // Shared component with date navigation
+<ClinicTabs />                      // Admin chọn clinic
+<SalesActivityStatistics />         // 4 KPI cards
+<SalesActivityFilters />            // Display count + Export
+<SalesActivityTable />              // Data table
+```
+
+### Statistics (4 Cards)
+
+| Metric                  | Logic                                                    | Display Format  |
+| ----------------------- | -------------------------------------------------------- | --------------- |
+| Tổng số liên hệ         | Count all sales activities hôm nay                       | "45 liên hệ"    |
+| Số khách được liên hệ   | Count unique customers có sales activity hôm nay         | "32 khách"      |
+| Số dịch vụ được follow  | Count unique consultedServices có sales activity hôm nay | "28 dịch vụ"    |
+| Tỷ lệ theo loại liên hệ | Distribution: Call / Message / Meet                      | "📞 20 💬 15 👥 10" |
+
+**Query Logic**:
+
+- **Tổng số liên hệ**: `SELECT COUNT(*) FROM SalesActivityLog WHERE DATE(contactDate) = TODAY AND clinicId = ?`
+- **Số khách được liên hệ**: `SELECT COUNT(DISTINCT consultedService.customerId) FROM SalesActivityLog JOIN ConsultedService WHERE DATE(contactDate) = TODAY`
+- **Số dịch vụ được follow**: `SELECT COUNT(DISTINCT consultedServiceId) FROM SalesActivityLog WHERE DATE(contactDate) = TODAY`
+- **Tỷ lệ theo loại**: Frontend calculation - group by contactType
+
+### Filters
+
+- **Display**: "X hoạt động liên hệ hôm nay" (X = số sales activities)
+- **Actions**:
+  - Button "Xuất Excel" (export daily data)
+- **No Search, No Create, No Refresh button** (tạo từ Customer Detail; React Query auto-refetch)
+
+### Table Columns
+
+**Component**: Reuse `SalesActivityTable` từ Customer Detail (same component, different props)
+
+| Column           | Width | Sort/Filter | Description                                                                                    |
+| ---------------- | ----- | ----------- | ---------------------------------------------------------------------------------------------- |
+| Giờ liên hệ      | 100px | ✅ Sort     | `contactDate` (HH:mm) - Sort by: contactDate DESC (default)                                   |
+| Khách hàng       | 180px | -           | Line 1: Tên (link)<br>Line 2: Mã + SĐT (text-muted)                                           |
+| Dịch vụ          | 200px | ✅ Filter   | `consultedService.consultedServiceName` + stage badge                                          |
+| Loại liên hệ     | 120px | ✅ Filter   | Icon + Label: 📞 Call / 💬 Message / 👥 Meet                                                   |
+| Nội dung         | 300px | -           | `content` (truncate at 60 chars, tooltip on hover)                                             |
+| Follow-up        | 100px | ✅ Filter   | `nextContactDate` (DD/MM) hoặc "-"                                                             |
+| Sale staff       | 140px | ✅ Filter   | `sale.fullName`                                                                                |
+| Thao tác         | 120px | -           | Edit ✏️ \| Delete 🗑️ (fixed="right", conditional by permission)                               |
+
+**Notes**:
+
+- **Reuse existing component**: `SalesActivityTable` đã implement ở Customer Detail
+  - Pass props: `showCustomerColumn={true}` + `showDateColumn={false}` + `showTimeColumn={true}`
+  - Cột "Khách hàng" CHỈ hiện ở Daily View (cần biết ai là khách)
+  - Cột "Ngày liên hệ" ẨN ở Daily View (vì đã filter theo 1 ngày, redundant)
+  - Cột "Giờ liên hệ" HIỆN ở Daily View (hiển thị timeline trong ngày)
+- **Khách hàng**:
+  - Tên: Link → navigate to `/customers/{customerId}?tab=sales-activities` (Customer Detail - Sales Activity Tab)
+  - SĐT: Hiển thị phone number từ customer
+- **Nội dung**:
+  - Truncate at 60 chars với "..."
+  - Tooltip hiển thị full content on hover (maxWidth: 400px)
+- **Sort/Filter**: Client-side (dữ liệu daily < 500 records)
+- **Default sort**: Contact Date DESC (newest first) - `defaultSortOrder: "descend"` on Giờ liên hệ column
+- **Total width**: ~1400px (compact, focus vào content)
+
+### Permissions
+
+- **View Access**:
+  - Employee: Xem sales activities của clinic mình
+  - Admin: Chọn clinic và xem
+- **Actions**:
+  - Edit: Conditional display (show nếu Admin hoặc Employee + saleId match)
+  - Delete: Conditional display (same as Edit)
+
+### Navigation
+
+**Sidebar Menu**: Thêm menu item mới
+
+```
+📋 Quản lý (Section)
+  ├── 📅 Lịch hẹn
+  ├── 🦷 Dịch vụ tư vấn
+  ├── 💊 Lịch sử điều trị
+  ├── 📞 Hoạt động Sale  ← NEW
+  └── ...
+```
+
+**Menu Config**:
+
+- Label: "Hoạt động Sale"
+- Icon: PhoneOutlined (hoặc CustomerServiceOutlined)
+- Path: `/sales-activities`
+- Permission: Accessible by all authenticated users (Employee + Admin)
+
+---
+
 ## API Routes & Server Actions
 
 ### API Routes (Queries - GET)
+
+#### GET /api/v1/sales-activities/daily
+
+**Description**: Lấy sales activities của 1 ngày cụ thể cho Daily View
+
+**Query params**:
+
+```typescript
+{
+  date: string;     // YYYY-MM-DD format (required)
+  clinicId: string; // UUID (required for Employee, optional for Admin)
+}
+```
+
+**Response**:
+
+```typescript
+{
+  items: SalesActivityLog[];
+  statistics: {
+    totalActivities: number;        // Tổng số liên hệ
+    totalCustomers: number;         // Số khách được liên hệ
+    totalServices: number;          // Số dịch vụ được follow
+    contactTypeDistribution: {      // Phân bố theo loại
+      call: number;
+      message: number;
+      meet: number;
+    };
+  };
+}
+```
+
+**Business Logic**:
+
+- Filter: `DATE(contactDate) = params.date AND clinicId = params.clinicId`
+- Include: consultedService (consultedServiceName, customer with fullName + phone + customerCode), sale (fullName)
+- Sort: `contactDate DESC` (newest first)
+- **Statistics Calculation**:
+  - `totalActivities`: Count all filtered activities
+  - `totalCustomers`: Count distinct `consultedService.customerId` from filtered activities
+  - `totalServices`: Count distinct `consultedServiceId` from filtered activities
+  - `contactTypeDistribution`: Group by contactType and count
+
+**Permission Check**:
+
+- Employee: Auto-filter by user's clinicId (ignore params.clinicId)
+- Admin: Use params.clinicId (required)
+
+**Caching**: No cache (sales activity data changes frequently during the day)
+
+---
 
 #### GET /api/v1/sales-activities
 
@@ -401,6 +550,61 @@ GET /api/v1/sales-activities?customerId=xxx&pageSize=200&sortField=contactDate&s
 
 ## 🗄️ Implementation Details
 
+### Frontend Architecture
+
+#### Daily View Hooks
+
+##### `useDailySalesActivities(date: string, clinicId: string)`
+
+**Purpose**: Fetch daily sales activities với statistics
+
+**Query Key**: `["sales-activities", "daily", date, clinicId]`
+
+**API Call**: `GET /api/v1/sales-activities/daily?date=&clinicId=`
+
+**Return**:
+
+```typescript
+{
+  data: {
+    items: SalesActivityLog[];
+    statistics: {
+      totalActivities: number;
+      totalCustomers: number;
+      totalServices: number;
+      contactTypeDistribution: {
+        call: number;
+        message: number;
+        meet: number;
+      };
+    };
+  };
+  isLoading: boolean;
+  error: Error | null;
+}
+```
+
+**Caching Strategy**:
+
+```typescript
+staleTime: 60 * 1000,             // 1 phút (transactional data)
+gcTime: 5 * 60 * 1000,            // 5 phút
+refetchOnWindowFocus: true,       // Fetch lại khi chuyển tab
+```
+
+**Usage**:
+
+```typescript
+// In SalesActivityDailyView component
+const { user } = useCurrentUser();
+const { selectedDate } = useDateNavigation();
+const [selectedClinicId, setSelectedClinicId] = useState(user?.clinicId);
+
+const { data, isLoading } = useDailySalesActivities(selectedDate, selectedClinicId);
+```
+
+---
+
 ### File Structure
 
 ```
@@ -416,14 +620,25 @@ src/
 │           └── _mappers.ts                 # Data transformation
 ├── app/api/v1/
 │   └── sales-activities/
-│       └── route.ts                        # GET endpoint
+│       ├── route.ts                        # GET /api/v1/sales-activities
+│       └── daily/
+│           └── route.ts                    # GET /api/v1/sales-activities/daily ⭐ NEW
 └── features/sales-activities/
     ├── api.ts                             # React Query hooks
     ├── constants.ts                       # Contact type labels
     ├── hooks/                             # Mutation hooks
+    │   ├── useCreateSalesActivity.ts
+    │   ├── useUpdateSalesActivity.ts
+    │   ├── useDeleteSalesActivity.ts
+    │   ├── useSalesActivities.ts
+    │   └── useDailySalesActivities.ts     # ⭐ NEW - Daily View hook
     ├── components/
     │   ├── SalesActivityModal.tsx         # Create/Edit modal
-    │   └── SalesActivityTable.tsx         # Table with actions
+    │   ├── SalesActivityTable.tsx         # Table with actions (reusable)
+    │   ├── SalesActivityStatistics.tsx    # ⭐ NEW - Daily View statistics
+    │   └── SalesActivityFilters.tsx       # ⭐ NEW - Daily View filters
+    ├── views/
+    │   └── SalesActivityDailyView.tsx     # ⭐ NEW - Daily View page
     └── index.ts                           # Public exports
 ```
 
@@ -525,7 +740,35 @@ CustomerDetailView → SalesActivitiesTab
 - [x] Customer Detail → Sales Activity Tab integration
 - [x] Permission logic (backend + frontend)
 
-### Phase 2: Enhanced Features (Future)
+### Phase 2: Daily View (Planned)
+
+- [ ] **Backend - Repository Layer** (`src/server/repos/sales-activity.repo.ts`)
+  - [ ] Add `listDaily()` method with date range filter
+  - [ ] Add statistics calculation queries
+- [ ] **Backend - Service Layer** (`src/server/services/sales-activity/service.ts`)
+  - [ ] Add `listDaily()` with business logic
+  - [ ] Calculate statistics (totalActivities, totalCustomers, totalServices, contactTypeDistribution)
+- [ ] **Backend - API Routes**
+  - [ ] `GET /api/v1/sales-activities/daily` - Daily view with statistics
+- [ ] **Frontend - API Client** (`src/features/sales-activities/api.ts`)
+  - [ ] `getDailySalesActivitiesApi()` - Fetch daily data
+- [ ] **Frontend - Hooks** (`src/features/sales-activities/hooks/`)
+  - [ ] `useDailySalesActivities()` - React Query hook for daily view
+- [ ] **Frontend - Components**
+  - [ ] `SalesActivityDailyView.tsx` - Main daily view page
+  - [ ] `SalesActivityStatistics.tsx` - 4 KPI cards
+  - [ ] `SalesActivityFilters.tsx` - Display count + Export button
+  - [ ] Update `SalesActivityTable.tsx` - Add props for Daily View mode
+- [ ] **Navigation**
+  - [ ] Add sidebar menu item "Hoạt động Sale"
+  - [ ] Configure route `/sales-activities`
+- [ ] **Testing**
+  - [ ] Manual testing: Statistics accuracy
+  - [ ] Manual testing: Table display and filters
+  - [ ] Manual testing: Permission checks (Employee/Admin)
+  - [ ] Manual testing: Date navigation
+
+### Phase 3: Enhanced Features (Future)
 
 - [ ] Activity templates
 - [ ] Bulk operations

@@ -30,6 +30,8 @@ const salesActivityInclude = {
           id: true,
           fullName: true,
           phone: true,
+          customerCode: true,
+          dob: true,
         },
       },
     },
@@ -150,5 +152,54 @@ export const salesActivityRepo = {
       orderBy: { contactDate: "desc" },
       take: 200, // Load all with reasonable limit
     });
+  },
+
+  /**
+   * List sales activities for daily view with statistics
+   * Used for Daily View page
+   * Returns: { items, totalCustomers, totalServices }
+   */
+  async listDaily(params: { date: string; clinicId: string }) {
+    const { date, clinicId } = params;
+
+    const dateStart = new Date(date);
+    dateStart.setHours(0, 0, 0, 0);
+
+    const dateEnd = new Date(date);
+    dateEnd.setHours(23, 59, 59, 999);
+
+    const items = await prisma.salesActivityLog.findMany({
+      where: {
+        contactDate: { gte: dateStart, lte: dateEnd },
+        consultedService: { clinicId },
+      },
+      include: salesActivityInclude,
+      orderBy: { contactDate: "desc" },
+    });
+
+    // Strategy: Calculate everything from one source (items) in JS
+    const customerIds = new Set<string>();
+    const serviceIds = new Set<string>();
+    const distribution = { call: 0, message: 0, meet: 0 };
+
+    items.forEach((item) => {
+      customerIds.add(item.consultedService.customer.id);
+      serviceIds.add(item.consultedServiceId);
+
+      const type = item.contactType as keyof typeof distribution;
+      if (distribution[type] !== undefined) {
+        distribution[type]++;
+      }
+    });
+
+    return {
+      items,
+      statistics: {
+        totalActivities: items.length,
+        totalCustomers: customerIds.size,
+        totalServices: serviceIds.size,
+        contactTypeDistribution: distribution,
+      },
+    };
   },
 };
