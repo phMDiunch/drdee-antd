@@ -157,9 +157,10 @@ export const salesActivityRepo = {
   /**
    * List sales activities for daily view with statistics
    * Used for Daily View page
+   * Filter by clinicId (optional - if not provided, return all clinics)
    * Returns: { items, totalCustomers, totalServices }
    */
-  async listDaily(params: { date: string; clinicId: string }) {
+  async listDaily(params: { date: string; clinicId?: string }) {
     const { date, clinicId } = params;
 
     const dateStart = new Date(date);
@@ -171,7 +172,7 @@ export const salesActivityRepo = {
     const items = await prisma.salesActivityLog.findMany({
       where: {
         contactDate: { gte: dateStart, lte: dateEnd },
-        consultedService: { clinicId },
+        ...(clinicId && { consultedService: { clinicId } }),
       },
       include: salesActivityInclude,
       orderBy: { contactDate: "desc" },

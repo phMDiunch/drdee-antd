@@ -1,6 +1,6 @@
-// src/app/(private)/consulted-services/pending/page.tsx
-import { PendingServicesView } from "@/features/consulted-services";
+// src/app/(private)/consulted-services/follow-up/page.tsx
+import { FollowUpServicesView } from "@/features/consulted-services";
 
-export default function PendingServicesPage() {
-  return <PendingServicesView />;
+export default function FollowUpServicesPage() {
+  return <FollowUpServicesView />;
 }

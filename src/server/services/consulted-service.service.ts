@@ -256,14 +256,28 @@ export const consultedServiceService = {
     const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
 
     // Scope clinic access
+    // Admin hoặc Sale Online: có thể xem tất cả clinic hoặc chọn clinic cụ thể
+    // Employee khác: chỉ xem clinic của mình
     let effectiveClinicId: string | undefined = clinicId;
-    if (currentUser?.role !== "admin") {
-      effectiveClinicId = currentUser?.clinicId ?? undefined;
-    }
 
-    if (!effectiveClinicId) {
-      throw new ServiceError("MISSING_CLINIC", "Vui lòng chọn chi nhánh", 400);
+    const isSaleOnline = currentUser?.jobTitle
+      ?.toLowerCase()
+      .includes("sale online");
+    const canViewAllClinics = currentUser?.role === "admin" || isSaleOnline;
+
+    if (!canViewAllClinics) {
+      // Employee thường: chỉ xem clinic của mình
+      effectiveClinicId = currentUser?.clinicId ?? undefined;
+
+      if (!effectiveClinicId) {
+        throw new ServiceError(
+          "MISSING_CLINIC",
+          "Bạn chưa được gán chi nhánh",
+          400
+        );
+      }
     }
+    // Nếu là admin/sale online và không chọn clinic: effectiveClinicId = undefined => xem tất cả
 
     const result = await consultedServiceRepo.listPending({
       clinicId: effectiveClinicId,

@@ -298,14 +298,14 @@ export const consultedServiceRepo = {
    * Filter by clinicId and month (createdAt)
    */
   async listPending(params: {
-    clinicId: string;
+    clinicId?: string; // Optional - nếu undefined thì lấy tất cả clinic
     monthStart: Date;
     monthEnd: Date;
   }) {
     const { clinicId, monthStart, monthEnd } = params;
 
     const where: Prisma.ConsultedServiceWhereInput = {
-      clinicId,
+      ...(clinicId ? { clinicId } : {}), // Chỉ filter theo clinicId nếu có
       serviceStatus: "Chưa chốt",
       createdAt: {
         gte: monthStart,

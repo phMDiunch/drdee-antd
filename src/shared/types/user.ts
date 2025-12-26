@@ -12,4 +12,5 @@ export type UserCore = {
   // Dành cho khi đã có bảng Employee/Clinic
   employeeId?: string | null;
   clinicId?: string | null;
+  jobTitle?: string | null; // Chức danh (để check sale online)
 };

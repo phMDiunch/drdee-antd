@@ -7,10 +7,19 @@ import { COMMON_MESSAGES } from "@/shared/constants/messages";
 
 /**
  * GET /api/v1/sales-activities/daily - Daily sales activities with statistics
- * Query params: date (YYYY-MM-DD), clinicId (UUID, optional for Employee)
+ * Query params:
+ *   - date (YYYY-MM-DD, required)
+ *   - clinicId (UUID, optional)
+ *
  * Used by: useDailySalesActivities() hook
+ *
  * Returns: { items: SalesActivityResponse[], statistics: { totalActivities, totalCustomers, totalServices, contactTypeDistribution } }
- * Permission: Employee (auto-filter by clinicId), Admin (use provided clinicId)
+ *
+ * Permission Rules:
+ * - Admin: Can choose any clinic or view all (if clinicId not provided)
+ * - Employee with jobTitle "Chuyên viên sale online": Can choose any clinic or view all
+ * - Regular Employee: Can only view their own clinic
+ *
  * Cache: No cache (sales activity data changes frequently during the day)
  */
 export async function GET(req: Request) {

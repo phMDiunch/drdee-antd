@@ -1,9 +1,9 @@
-// src/features/consulted-services/views/PendingServicesView.tsx
+// src/features/consulted-services/views/FollowUpServicesView.tsx
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
+import dayjs from "dayjs";
 import PageHeaderWithMonthNav from "@/shared/components/PageHeaderWithMonthNav";
-import ClinicTabs from "@/shared/components/ClinicTabs";
 import {
   ConsultedServiceStatistics,
   ConsultedServiceFilters,
@@ -23,6 +23,7 @@ import {
 } from "@/features/sales-activities";
 import { useMonthNavigation } from "@/shared/hooks/useMonthNavigation";
 import { useCurrentUser } from "@/shared/providers";
+import { useClinics } from "@/features/clinics";
 import { useNotify } from "@/shared/hooks/useNotify";
 import type {
   ConsultedServiceResponse,
@@ -30,9 +31,10 @@ import type {
 } from "@/shared/validation/consulted-service.schema";
 import type { CreateSalesActivityFormData } from "@/shared/validation/sales-activity.schema";
 
-export default function PendingServicesView() {
+export default function FollowUpServicesView() {
   const { user: currentUser } = useCurrentUser();
   const notify = useNotify();
+  const { data: clinics } = useClinics(true); // Get active clinics
 
   const {
     selectedMonth,
@@ -42,13 +44,25 @@ export default function PendingServicesView() {
     handleMonthChange,
   } = useMonthNavigation();
 
-  const [selectedClinicId, setSelectedClinicId] = useState<string | undefined>(
-    currentUser?.clinicId || undefined
-  );
+  // Determine if user can view all clinics
+  const isSaleOnline = currentUser?.jobTitle
+    ?.toLowerCase()
+    .includes("sale online");
+  const canViewAllClinics = currentUser?.role === "admin" || isSaleOnline;
+
+  const [filters, setFilters] = useState<{
+    month: string;
+    clinicId?: string;
+  }>({
+    month: selectedMonth.format("YYYY-MM"),
+    clinicId: canViewAllClinics
+      ? undefined
+      : currentUser?.clinicId || undefined,
+  });
 
   const { data, isLoading } = useConsultedServicesPending({
-    month: selectedMonth.format("YYYY-MM"),
-    clinicId: selectedClinicId!,
+    month: filters.month,
+    clinicId: filters.clinicId,
   });
 
   const services = React.useMemo(() => data?.items ?? [], [data?.items]);
@@ -70,6 +84,36 @@ export default function PendingServicesView() {
   const createActivityMutation = useCreateSalesActivity();
 
   // Handlers
+  const handleFilterChange = useCallback(
+    (newFilters: Partial<typeof filters>) => {
+      setFilters((prev) => ({ ...prev, ...newFilters }));
+    },
+    []
+  );
+
+  const handleMonthChangeWithFilter = useCallback(
+    (date: dayjs.Dayjs | null) => {
+      if (date) {
+        handleMonthChange(date);
+        handleFilterChange({ month: date.format("YYYY-MM") });
+      }
+    },
+    [handleMonthChange, handleFilterChange]
+  );
+
+  // Sync filter when month changes via navigation buttons
+  useEffect(() => {
+    handleFilterChange({ month: selectedMonth.format("YYYY-MM") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]);
+
+  const handleClinicChange = useCallback(
+    (clinicId: string | undefined) => {
+      handleFilterChange({ clinicId });
+    },
+    [handleFilterChange]
+  );
+
   const handleConfirm = useCallback(
     (id: string) => {
       confirmMutation.mutate(id);
@@ -166,22 +210,28 @@ export default function PendingServicesView() {
     }
   }, [services, selectedMonth, notify]);
 
+  // Filter clinics based on user role
+  const filteredClinics = canViewAllClinics
+    ? clinics || []
+    : clinics?.filter((c) => c.id === currentUser?.clinicId) || [];
+
+  // Show clinic filter only for users who can view all clinics with multiple clinics
+  const showClinicFilter = canViewAllClinics && filteredClinics.length > 1;
+
   return (
     <div>
       <PageHeaderWithMonthNav
         title="Dịch vụ chưa chốt"
         selectedMonth={selectedMonth}
-        onMonthChange={(month) => handleMonthChange(month)}
+        onMonthChange={handleMonthChangeWithFilter}
         onPreviousMonth={goToPreviousMonth}
         onCurrentMonth={goToCurrentMonth}
         onNextMonth={goToNextMonth}
+        clinics={filteredClinics}
+        selectedClinicId={filters.clinicId}
+        onClinicChange={handleClinicChange}
+        showClinicFilter={showClinicFilter}
         loading={isLoading}
-        showClinicFilter={false}
-      />
-
-      <ClinicTabs
-        value={selectedClinicId}
-        onChange={(id) => setSelectedClinicId(id)}
       />
 
       <ConsultedServiceStatistics

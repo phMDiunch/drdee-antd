@@ -382,19 +382,16 @@ export const salesActivityService = {
 
     const { date } = params;
 
-    // Determine clinicId based on user role
-    let clinicId: string;
-    if (currentUser!.role === "admin") {
-      if (!params.clinicId) {
-        throw new ServiceError(
-          "MISSING_CLINIC_ID",
-          "Admin phải chọn chi nhánh",
-          400
-        );
-      }
-      clinicId = params.clinicId;
+    // Determine clinicId based on user role and jobTitle
+    let clinicId: string | undefined;
+    const isAdmin = currentUser!.role === "admin";
+    const isSaleOnline = currentUser!.jobTitle === "Chuyên viên sale online";
+
+    if (isAdmin || isSaleOnline) {
+      // Admin or Sale Online: Can choose clinic or view all
+      clinicId = params.clinicId; // undefined means view all
     } else {
-      // Employee: Use own clinic
+      // Regular Employee: Only their own clinic
       if (!currentUser!.clinicId) {
         throw new ServiceError(
           "MISSING_CLINIC_ID",

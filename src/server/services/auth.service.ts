@@ -25,6 +25,7 @@ export async function getSessionUser(): Promise<UserCore | null> {
     fullName: (authUser.user_metadata?.fullName as string) ?? null,
     avatarUrl: (authUser.user_metadata?.avatarUrl as string) ?? null,
     clinicId: null,
+    jobTitle: null, // Sẽ được lấy từ bảng Employee
   };
 
   const metadata = authUser.user_metadata as Record<string, unknown> | null;
@@ -47,6 +48,7 @@ export async function getSessionUser(): Promise<UserCore | null> {
         role: true,
         avatarUrl: true,
         clinicId: true,
+        jobTitle: true, // Thêm jobTitle để check sale online
       },
     });
 
@@ -59,6 +61,7 @@ export async function getSessionUser(): Promise<UserCore | null> {
         fullName: employee.fullName ?? user.fullName,
         avatarUrl: employee.avatarUrl ?? user.avatarUrl,
         clinicId: employee.clinicId ?? user.clinicId,
+        jobTitle: employee.jobTitle ?? null, // Thêm jobTitle
       };
     }
   } catch {

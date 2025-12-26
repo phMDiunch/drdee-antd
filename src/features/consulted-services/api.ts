@@ -65,7 +65,13 @@ export async function getConsultedServicesDailyApi(
 export async function getConsultedServicesPendingApi(
   params: GetConsultedServicesPendingQuery
 ): Promise<ConsultedServicesDailyResponse> {
-  const query = new URLSearchParams(params as Record<string, string>);
+  // Filter out undefined values before creating URLSearchParams
+  const queryParams: Record<string, string> = { month: params.month };
+  if (params.clinicId) {
+    queryParams.clinicId = params.clinicId;
+  }
+
+  const query = new URLSearchParams(queryParams);
   const res = await fetch(`${CONSULTED_SERVICE_ENDPOINTS.PENDING}?${query}`);
   const json = await res.json();
 
