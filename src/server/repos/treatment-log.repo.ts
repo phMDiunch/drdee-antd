@@ -13,6 +13,7 @@ import type {
 export type TreatmentLogCreateInput = CreateTreatmentLogRequest & {
   customerId: string; // 🔒 Server-derived: từ consultedService.customerId
   treatmentDate: Date; // 🔒 Server-derived: từ appointment.appointmentDateTime hoặc now()
+  clinicId: string; // 🔒 Server-derived: từ appointment.clinicId (nơi khách hàng đến điều trị)
   createdById: string; // 🔒 Server-controlled: từ currentUser.employeeId
   updatedById: string; // 🔒 Server-controlled: từ currentUser.employeeId
   imageUrls: string[]; // 🔒 Server-controlled: default []
@@ -272,12 +273,11 @@ export const treatmentLogRepo = {
   async listDaily(params: { date: string; clinicId: string }) {
     const { date, clinicId } = params;
 
-    // Parse date string (YYYY-MM-DD) to Date range
-    const dateStart = new Date(date);
-    dateStart.setHours(0, 0, 0, 0);
-
-    const dateEnd = new Date(date);
-    dateEnd.setHours(23, 59, 59, 999);
+    // Parse date string (YYYY-MM-DD) to UTC Date range
+    // Database stores timestamps in UTC (Timestamptz), so we need UTC date range
+    const [year, month, day] = date.split("-").map(Number);
+    const dateStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const dateEnd = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
 
     // Fetch treatment logs for the day
     const items = await prisma.treatmentLog.findMany({

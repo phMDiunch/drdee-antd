@@ -146,6 +146,7 @@ export const treatmentLogService = {
       ...parsed,
       customerId: consultedService.customerId,
       treatmentDate: appointment.appointmentDateTime,
+      clinicId: appointment.clinicId, // Clinic where customer actually visited
       imageUrls: [],
       xrayUrls: [],
       createdById: currentUser!.employeeId!,
@@ -359,11 +360,13 @@ export const treatmentLogService = {
 
     // Calculate statistics
     const totalTreatmentLogs = items.length;
+    // Treatment rate: treatedCustomers / checkedInCustomers * 100
+    // Should not exceed 100% if all data is consistent
     const treatmentRate =
       totalCheckedInCustomers > 0
         ? Math.round(
             (totalTreatedCustomers / totalCheckedInCustomers) * 100 * 100
-          ) / 100 // Round to 2 decimal places
+          ) / 100
         : 0;
 
     // Map treatment logs to response format
