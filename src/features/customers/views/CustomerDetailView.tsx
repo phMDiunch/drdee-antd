@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Row,
   Col,
@@ -50,10 +51,30 @@ interface CustomerDetailViewProps {
  * Phase 1: Summary Cards + Tab system with CustomerInfoTab
  * Phase 2+: Populate other tabs when modules are ready
  */
+// Valid tab keys
+const VALID_TABS = [
+  "info",
+  "appointments",
+  "consultedServices",
+  "salesActivities",
+  "payments",
+  "treatmentLogs",
+  "treatmentCare",
+  "laboOrders",
+] as const;
+
 export default function CustomerDetailView({
   customerId,
 }: CustomerDetailViewProps) {
-  const [activeTab, setActiveTab] = useState<string>("info");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Derive activeTab from URL (single source of truth)
+  const tabFromUrl = searchParams.get("tab") || "info";
+  const activeTab = (VALID_TABS as readonly string[]).includes(tabFromUrl)
+    ? tabFromUrl
+    : "info";
+
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
 
@@ -284,7 +305,13 @@ export default function CustomerDetailView({
       <Card>
         <Tabs
           activeKey={activeTab}
-          onChange={setActiveTab}
+          onChange={(newTab) => {
+            const params = new URLSearchParams(searchParams);
+            params.set("tab", newTab);
+            router.push(`/customers/${customerId}?${params.toString()}`, {
+              scroll: false,
+            });
+          }}
           items={[
             {
               key: "info",

@@ -58,7 +58,7 @@ export default function SalesActivityTable({
             <div>
               <Space size={4}>
                 <Link
-                  href={`/customers/${customer.id}?tab=sales-activities`}
+                  href={`/customers/${customer.id}?tab=salesActivities`}
                   style={{ fontWeight: 600 }}
                 >
                   {customer.fullName}

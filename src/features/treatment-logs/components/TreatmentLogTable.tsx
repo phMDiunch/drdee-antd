@@ -83,7 +83,7 @@ export default function TreatmentLogTable({
             render: (_: unknown, record: TreatmentLogResponse) => (
               <div>
                 <Link
-                  href={`/customers/${record.customer.id}?tab=treatment-logs`}
+                  href={`/customers/${record.customer.id}?tab=treatmentLogs`}
                   style={{ fontWeight: 600 }}
                 >
                   {record.customer.fullName}

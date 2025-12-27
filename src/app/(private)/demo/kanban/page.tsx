@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -65,7 +65,7 @@ export default function KanbanDemoPage() {
           isLoadingMore: false,
         };
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, { hasMore: boolean; totalCount: number; isLoadingMore: boolean }>);
 
       setColumnMetadata(meta);
       setLoading(false);

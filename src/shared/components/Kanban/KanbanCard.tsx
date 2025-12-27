@@ -12,11 +12,11 @@ interface KanbanCardProps {
   onClick?: () => void;
 }
 
-export const KanbanCard: React.FC<KanbanCardProps> = ({ 
-  id, 
-  children, 
+export const KanbanCard: React.FC<KanbanCardProps> = ({
+  id,
+  children,
   disabled,
-  onClick 
+  onClick,
 }) => {
   const {
     attributes,
@@ -25,9 +25,9 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ 
+  } = useSortable({
     id,
-    disabled
+    disabled,
   });
 
   const style = {
@@ -39,8 +39,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${styles.cardWrapper} ${isDragging ? styles.cardDragging : ""}`}
-      onClick={(e) => {
+      className={`${styles.cardWrapper} ${
+        isDragging ? styles.cardDragging : ""
+      }`}
+      onClick={() => {
         if (!isDragging && onClick) {
           onClick();
         }

@@ -63,7 +63,7 @@ export default function SalesActivityExpandedContent({
         >
           <Text strong>📝 Lịch sử liên hệ</Text>
           {hasActivities && (
-            <Link href={`/customers/${customerId}?tab=sales-activity`}>
+            <Link href={`/customers/${customerId}?tab=salesActivities`}>
               <Text type="secondary" style={{ fontSize: "13px" }}>
                 Xem tất cả →
               </Text>

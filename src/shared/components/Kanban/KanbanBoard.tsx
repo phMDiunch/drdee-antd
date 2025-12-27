@@ -13,7 +13,7 @@ import {
   DragEndEvent,
   defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { Spin } from "antd";
 import { useNotify } from "@/shared/hooks/useNotify";
 import { KanbanBoardProps } from "./types";
