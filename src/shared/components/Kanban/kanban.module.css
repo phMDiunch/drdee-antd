@@ -1,0 +1,192 @@
+.kanbanBoard {
+  display: flex;
+  overflow-x: auto;
+  gap: 20px;
+  padding: 24px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  min-height: 500px;
+  scroll-behavior: smooth;
+  border: 1px solid #f0f0f0;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.kanbanBoard::-webkit-scrollbar {
+  height: 10px;
+}
+
+.kanbanBoard::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+}
+
+.kanbanBoard::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.kanbanBoard::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+  background-clip: content-box;
+}
+
+.column {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f1f2f4;
+  border-radius: 12px;
+  max-height: 100%;
+  border-top: 5px solid transparent;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.columnOver {
+  background-color: rgba(226, 228, 233, 0.95);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.columnHeader {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  background-color: inherit;
+  border-radius: 12px 12px 0 0;
+  z-index: 10;
+  cursor: pointer;
+}
+
+.columnTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #1a202c;
+  letter-spacing: -0.01em;
+}
+
+.columnStats {
+  font-size: 12px;
+  color: #718096;
+  background: white;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.columnBody {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 150px;
+}
+
+/* Scrollbar for column body */
+.columnBody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.columnBody::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.cardWrapper {
+  cursor: grab;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.cardWrapper:active {
+  cursor: grabbing;
+}
+
+.cardWrapper:hover {
+  transform: translateY(-2px);
+}
+
+.cardDragging {
+  opacity: 0.3;
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+
+.emptyState {
+  padding: 32px 16px;
+  text-align: center;
+  color: #a0aec0;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.loadMoreBtn {
+  margin-top: 8px;
+  border-style: dashed;
+  border-width: 2px;
+  color: #718096;
+}
+
+.warningAlert {
+  margin: 12px;
+  border-radius: 8px;
+}
+
+.collapsedColumn {
+  flex: 0 0 60px;
+  min-width: 60px;
+  overflow: hidden;
+}
+
+.collapsedColumn .columnHeader {
+  writing-mode: vertical-lr;
+  padding: 24px 8px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.collapsedColumn .columnBody,
+.collapsedColumn .columnStats {
+  display: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .kanbanBoard {
+    flex-direction: column;
+    padding: 12px;
+    height: auto !important;
+    overflow-x: hidden;
+  }
+  
+  .column {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: none;
+  }
+
+  .collapsedColumn {
+    flex: 0 0 auto;
+    width: 60px;
+    height: 100%;
+  }
+
+  /* When stacked, don't vertical write if not collapsed */
+  .collapsedColumn .columnHeader {
+    writing-mode: vertical-lr;
+  }
+}

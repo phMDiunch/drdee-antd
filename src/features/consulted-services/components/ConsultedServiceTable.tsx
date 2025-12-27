@@ -23,6 +23,7 @@ import {
 import type { ConsultedServiceResponse } from "@/shared/validation/consulted-service.schema";
 import { useCurrentUser } from "@/shared/providers";
 import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
+import { CUSTOMER_SOURCES } from "@/features/customers/constants";
 
 const { Text } = Typography;
 
@@ -146,6 +147,17 @@ export default function ConsultedServiceTable({
         filters: serviceNames.map((name) => ({ text: name, value: name })),
         onFilter: (value, record) => record.consultedServiceName === value,
         ellipsis: true,
+      },
+      {
+        title: "Nguồn",
+        dataIndex: "source",
+        key: "source",
+        width: 120,
+        render: (source: string | null) => {
+          if (!source) return <Text type="secondary">—</Text>;
+          const sourceConfig = CUSTOMER_SOURCES.find((s) => s.value === source);
+          return sourceConfig?.label ?? source;
+        },
       },
       {
         title: "SL",

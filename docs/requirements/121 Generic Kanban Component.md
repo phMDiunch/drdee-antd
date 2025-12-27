@@ -2,7 +2,6 @@
 
 > **Date**: 2025-12-15  
 > **Status**: 📝 PROPOSAL - Design Document  
-> **Parent**: 119 FINAL Implementation Plan - Phase 2  
 > **Scope**: Generic Kanban component for multiple modules
 
 ---
