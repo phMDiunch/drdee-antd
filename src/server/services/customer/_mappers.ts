@@ -26,6 +26,7 @@ export function mapCustomerToResponse(row: CustomerWithRelations) {
     firstVisitDate: row.firstVisitDate
       ? row.firstVisitDate.toISOString()
       : null,
+    convertedAt: row.convertedAt ? row.convertedAt.toISOString() : null,
     dob: row.dob ? row.dob.toISOString() : null, // Convert Date to ISO string or null
     gender: row.gender,
     phone: row.phone,

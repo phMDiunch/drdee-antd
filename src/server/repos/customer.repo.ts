@@ -87,7 +87,13 @@ export const customerRepo = {
         orderBy,
         include: {
           clinic: {
-            select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+            select: {
+              id: true,
+              clinicCode: true,
+              name: true,
+              shortName: true,
+              colorCode: true,
+            },
           },
           primaryContact: { select: { id: true, fullName: true, phone: true } },
           createdBy: { select: { id: true, fullName: true } },
@@ -122,7 +128,13 @@ export const customerRepo = {
     // Build include object conditionally
     const include: Prisma.CustomerInclude = {
       clinic: {
-        select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+        select: {
+          id: true,
+          clinicCode: true,
+          name: true,
+          shortName: true,
+          colorCode: true,
+        },
       },
       primaryContact: { select: { id: true, fullName: true, phone: true } },
       createdBy: { select: { id: true, fullName: true } },
@@ -151,9 +163,9 @@ export const customerRepo = {
       where: {
         type: "CUSTOMER", // ⭐ Only CUSTOMER type (not LEAD)
         clinicId,
-        createdAt: { gte: dateStart, lt: dateEnd },
+        firstVisitDate: { gte: dateStart, lt: dateEnd },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { firstVisitDate: "desc" },
       include,
     });
 
@@ -180,7 +192,13 @@ export const customerRepo = {
       data,
       include: {
         clinic: {
-          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            clinicCode: true,
+            name: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         primaryContact: { select: { id: true, fullName: true, phone: true } },
         createdBy: { select: { id: true, fullName: true } },
@@ -198,7 +216,13 @@ export const customerRepo = {
       data,
       include: {
         clinic: {
-          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            clinicCode: true,
+            name: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         primaryContact: { select: { id: true, fullName: true, phone: true } },
         createdBy: { select: { id: true, fullName: true } },
@@ -221,7 +245,13 @@ export const customerRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            clinicCode: true,
+            name: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         primaryContact: {
           select: {

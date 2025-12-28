@@ -203,6 +203,7 @@ export const CustomerResponseSchema = z.object({
   // Nullable fields - backward compatibility
   customerCode: z.string().nullable(),
   firstVisitDate: z.string().datetime().nullable(), // ⭐ NEW: First visit date
+  convertedAt: z.string().datetime().nullable(), // ⭐ NEW: When LEAD converted to CUSTOMER
   dob: z.string().datetime().nullable(), // NULLABLE - data cũ có thể null
   gender: z.string().nullable(), // NULLABLE - data cũ có thể null
   phone: z.string().nullable(),

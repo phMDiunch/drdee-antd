@@ -366,12 +366,19 @@ export const leadService = {
         serviceOfInterest: parsed.data.serviceOfInterest,
         note: parsed.data.note,
         firstVisitDate: new Date(), // ⭐ Set first visit date
+        convertedAt: new Date(), // ⭐ Track conversion date
         updatedById: currentUser.employeeId,
         updatedAt: new Date(),
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            name: true,
+            clinicCode: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },

@@ -300,7 +300,7 @@ export const customerService = {
 
     const { date, clinicId, includeAppointments } = parsed.data;
 
-    // Parse date or use today - for CUSTOMER creation date
+    // Parse date or use today - for CUSTOMER first visit date
     const targetDate = date ? new Date(date) : new Date();
     const year = targetDate.getFullYear();
     const month = targetDate.getMonth();

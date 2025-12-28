@@ -35,7 +35,13 @@ export const leadRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            name: true,
+            clinicCode: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         createdBy: { select: { id: true, fullName: true } },
       },
@@ -53,7 +59,13 @@ export const leadRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            name: true,
+            clinicCode: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         createdBy: { select: { id: true, fullName: true } },
         updatedBy: { select: { id: true, fullName: true } },
@@ -72,7 +84,13 @@ export const leadRepo = {
       },
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            name: true,
+            clinicCode: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
       },
     });
@@ -101,17 +119,35 @@ export const leadRepo = {
     endOfDay.setHours(23, 59, 59, 999);
 
     const where: Prisma.CustomerWhereInput = {
-      type: "LEAD", // Always filter LEAD
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
+      OR: [
+        {
+          // LEAD created on selected date
+          type: "LEAD",
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+        {
+          // CUSTOMER converted on selected date (was LEAD before)
+          type: "CUSTOMER",
+          convertedAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+      ],
     };
 
     if (params.search) {
-      where.OR = [
-        { phone: { contains: params.search, mode: "insensitive" } },
-        { fullName: { contains: params.search, mode: "insensitive" } },
+      // Add search to the outer where (applies to both OR conditions)
+      where.AND = [
+        {
+          OR: [
+            { phone: { contains: params.search, mode: "insensitive" } },
+            { fullName: { contains: params.search, mode: "insensitive" } },
+          ],
+        },
       ];
     }
 
@@ -127,7 +163,13 @@ export const leadRepo = {
         orderBy,
         include: {
           clinic: {
-            select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+            select: {
+              id: true,
+              clinicCode: true,
+              name: true,
+              shortName: true,
+              colorCode: true,
+            },
           },
           createdBy: { select: { id: true, fullName: true } },
         },
@@ -147,7 +189,13 @@ export const leadRepo = {
       data,
       include: {
         clinic: {
-          select: { id: true, name: true, clinicCode: true, shortName: true, colorCode: true },
+          select: {
+            id: true,
+            name: true,
+            clinicCode: true,
+            shortName: true,
+            colorCode: true,
+          },
         },
         updatedBy: { select: { id: true, fullName: true } },
       },

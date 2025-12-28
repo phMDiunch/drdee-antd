@@ -250,6 +250,7 @@ model Customer {
   // ⭐ NEW: Customer Type & First Visit
   type           String // "LEAD" | "CUSTOMER" (controlled by app)
   firstVisitDate DateTime? @db.Timestamptz // When customer first visited clinic
+  convertedAt    DateTime? @db.Timestamptz // When LEAD converted to CUSTOMER
 
   // Thông tin cơ bản
   fullName String // Họ tên
