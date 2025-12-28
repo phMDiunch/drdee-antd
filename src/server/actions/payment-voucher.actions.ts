@@ -9,13 +9,14 @@ import type {
 
 /**
  * Server Action: Create new payment voucher
- * Usage: const result = await createPaymentVoucherAction(data);
+ * Usage: const result = await createPaymentVoucherAction(data, accountType);
  */
 export async function createPaymentVoucherAction(
-  data: CreatePaymentVoucherRequest
+  data: CreatePaymentVoucherRequest,
+  accountType: "COMPANY" | "PERSONAL"
 ) {
   const user = await getSessionUser();
-  return await paymentVoucherService.create(user, data);
+  return await paymentVoucherService.create(user, data, accountType);
 }
 
 /**

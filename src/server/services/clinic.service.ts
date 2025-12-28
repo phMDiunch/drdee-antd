@@ -62,6 +62,14 @@ export const clinicService = {
       phone: parsed.data.phone ?? null,
       email: parsed.data.email ?? null,
       colorCode: parsed.data.colorCode.trim(),
+
+      // Bank account fields
+      companyBankName: parsed.data.companyBankName,
+      companyBankAccountNo: parsed.data.companyBankAccountNo,
+      companyBankAccountName: parsed.data.companyBankAccountName,
+      personalBankName: parsed.data.personalBankName,
+      personalBankAccountNo: parsed.data.personalBankAccountNo,
+      personalBankAccountName: parsed.data.personalBankAccountName,
     };
 
     // Unique validate (clinicCode, name, shortName)
@@ -105,6 +113,14 @@ export const clinicService = {
       email: parsed.data.email ?? null,
       colorCode: parsed.data.colorCode.trim(),
       archivedAt: parsed.data.archivedAt ?? existing.archivedAt,
+
+      // Bank account fields
+      companyBankName: parsed.data.companyBankName,
+      companyBankAccountNo: parsed.data.companyBankAccountNo,
+      companyBankAccountName: parsed.data.companyBankAccountName,
+      personalBankName: parsed.data.personalBankName,
+      personalBankAccountNo: parsed.data.personalBankAccountNo,
+      personalBankAccountName: parsed.data.personalBankAccountName,
     };
 
     // Unique validate (exclude self)

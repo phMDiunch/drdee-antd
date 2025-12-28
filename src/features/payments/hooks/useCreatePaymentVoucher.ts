@@ -13,8 +13,13 @@ export function useCreatePaymentVoucher() {
   const notify = useNotify();
 
   return useMutation({
-    mutationFn: (data: CreatePaymentVoucherRequest) =>
-      createPaymentVoucherAction(data),
+    mutationFn: ({
+      values,
+      accountType,
+    }: {
+      values: CreatePaymentVoucherRequest;
+      accountType: "COMPANY" | "PERSONAL";
+    }) => createPaymentVoucherAction(values, accountType),
     onSuccess: () => {
       notify.success(PAYMENT_MESSAGES.CREATE_SUCCESS);
       qc.invalidateQueries({ queryKey: ["payment-vouchers"] });

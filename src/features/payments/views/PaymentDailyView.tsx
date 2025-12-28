@@ -213,14 +213,27 @@ export default function PaymentDailyView() {
 
       {/* Hidden printable content for immediate printing */}
       <div style={{ position: "absolute", left: -10000, top: -10000 }}>
-        {printVoucher && (
+        {printVoucher && clinicData && (
           <div ref={printRef}>
             <PrintableReceipt
               voucher={printVoucher}
               clinicInfo={{
-                name: clinicData?.name || "PHÒNG KHÁM NHA KHOA",
-                address: clinicData?.address || "",
-                phone: clinicData?.phone || "",
+                name: clinicData.name || "PHÒNG KHÁM NHA KHOA",
+                address: clinicData.address || "",
+                phone: clinicData.phone || "",
+                // Add bank info based on accountTypeUsed
+                bankName:
+                  printVoucher.accountTypeUsed === "COMPANY"
+                    ? clinicData.companyBankName || undefined
+                    : clinicData.personalBankName || undefined,
+                bankAccountNo:
+                  printVoucher.accountTypeUsed === "COMPANY"
+                    ? clinicData.companyBankAccountNo || undefined
+                    : clinicData.personalBankAccountNo || undefined,
+                bankAccountName:
+                  printVoucher.accountTypeUsed === "COMPANY"
+                    ? clinicData.companyBankAccountName || undefined
+                    : clinicData.personalBankAccountName || undefined,
               }}
             />
           </div>

@@ -35,6 +35,14 @@ const defaultClinicFormValues: CreateClinicRequest = {
   phone: undefined,
   email: undefined,
   colorCode: "#28B463",
+
+  // Bank fields
+  companyBankName: "",
+  companyBankAccountNo: "",
+  companyBankAccountName: "",
+  personalBankName: "",
+  personalBankAccountNo: "",
+  personalBankAccountName: "",
 };
 
 export default function ClinicFormModal({
@@ -64,6 +72,14 @@ export default function ClinicFormModal({
         phone: initial.phone ?? undefined,
         email: initial.email ?? undefined,
         colorCode: initial.colorCode,
+
+        // Bank fields
+        companyBankName: initial.companyBankName ?? "",
+        companyBankAccountNo: initial.companyBankAccountNo ?? "",
+        companyBankAccountName: initial.companyBankAccountName ?? "",
+        personalBankName: initial.personalBankName ?? "",
+        personalBankAccountNo: initial.personalBankAccountNo ?? "",
+        personalBankAccountName: initial.personalBankAccountName ?? "",
       };
     }
     return defaultClinicFormValues;
@@ -97,6 +113,14 @@ export default function ClinicFormModal({
         phone: values.phone,
         email: values.email,
         colorCode: values.colorCode,
+
+        // Bank fields
+        companyBankName: values.companyBankName,
+        companyBankAccountNo: values.companyBankAccountNo,
+        companyBankAccountName: values.companyBankAccountName,
+        personalBankName: values.personalBankName,
+        personalBankAccountNo: values.personalBankAccountNo,
+        personalBankAccountName: values.personalBankAccountName,
       };
       onSubmit(payload);
     } else {
@@ -108,6 +132,14 @@ export default function ClinicFormModal({
         phone: values.phone,
         email: values.email,
         colorCode: values.colorCode,
+
+        // Bank fields
+        companyBankName: values.companyBankName,
+        companyBankAccountNo: values.companyBankAccountNo,
+        companyBankAccountName: values.companyBankAccountName,
+        personalBankName: values.personalBankName,
+        personalBankAccountNo: values.personalBankAccountNo,
+        personalBankAccountName: values.personalBankAccountName,
       };
       onSubmit(payload);
     }
@@ -262,6 +294,140 @@ export default function ClinicFormModal({
                     {...field}
                     value={field.value ?? ""}
                     placeholder="clinic@example.com"
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+        </Row>
+
+        {/* Company Bank Account */}
+        <Row gutter={12}>
+          <Col xs={24} lg={8}>
+            <Controller
+              name="companyBankName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Tên ngân hàng (Công ty)"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input
+                    {...field}
+                    placeholder="VD: BIDV, VCB..."
+                    maxLength={50}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="companyBankAccountNo"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Số tài khoản (Công ty)"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input
+                    {...field}
+                    placeholder="VD: 2610143271"
+                    maxLength={30}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="companyBankAccountName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Tên chủ TK (Công ty)"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input
+                    {...field}
+                    placeholder="VD: CONG TY ABC"
+                    maxLength={100}
+                    style={{ textTransform: "uppercase" }}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+        </Row>
+
+        {/* Personal Bank Account */}
+        <Row gutter={12}>
+          <Col xs={24} lg={8}>
+            <Controller
+              name="personalBankName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Tên ngân hàng (Cá nhân)"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input
+                    {...field}
+                    placeholder="VD: BIDV, VCB..."
+                    maxLength={50}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="personalBankAccountNo"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Số tài khoản (Cá nhân)"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input
+                    {...field}
+                    placeholder="VD: 2610143271"
+                    maxLength={30}
+                  />
+                </Form.Item>
+              )}
+            />
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Controller
+              name="personalBankAccountName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Form.Item
+                  label="Tên chủ TK (Cá nhân)"
+                  required
+                  validateStatus={fieldState.error ? "error" : ""}
+                  help={fieldState.error?.message}
+                >
+                  <Input
+                    {...field}
+                    placeholder="VD: NGUYEN VAN A"
+                    maxLength={100}
+                    style={{ textTransform: "uppercase" }}
                   />
                 </Form.Item>
               )}

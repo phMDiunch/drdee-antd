@@ -146,6 +146,7 @@ export const PaymentVoucherResponseSchema = z.object({
   paymentDate: z.string(),
   totalAmount: z.number(),
   notes: z.string().nullable(),
+  accountTypeUsed: z.enum(["COMPANY", "PERSONAL"]).nullable().optional(), // Track which account was used
   cashier: z.object({
     id: z.string(),
     fullName: z.string(),
@@ -271,6 +272,11 @@ export const UnpaidServiceSchema = z.object({
   amountPaid: z.number(), // Đã thanh toán
   debt: z.number(), // Còn nợ (finalPrice - amountPaid)
   serviceStatus: z.string(),
+  dentalService: z.object({
+    id: z.string(),
+    name: z.string(),
+    paymentAccountType: z.enum(["COMPANY", "PERSONAL"]),
+  }),
 });
 
 export type UnpaidService = z.infer<typeof UnpaidServiceSchema>;

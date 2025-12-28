@@ -8,6 +8,7 @@ import type { PaymentVoucherResponse } from "@/shared/validation/payment-voucher
 import { getPaymentMethodConfig } from "../constants";
 import ClinicLogo from "../../../shared/components/ClinicLogo";
 import QRPayment from "@/shared/components/QRPayment";
+import type { BankConfig } from "@/shared/constants/payment";
 
 const { Title, Text } = Typography;
 
@@ -18,6 +19,10 @@ interface Props {
     address: string;
     phone: string;
     logo?: string;
+    // Bank info based on accountTypeUsed
+    bankName?: string;
+    bankAccountNo?: string;
+    bankAccountName?: string;
   };
 }
 
@@ -33,6 +38,18 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
       backgroundColor: "white",
       margin: "0 auto",
     };
+
+    // Build BankConfig if clinic has bank info
+    const bankConfig: BankConfig | undefined =
+      clinicInfo?.bankName &&
+      clinicInfo?.bankAccountNo &&
+      clinicInfo?.bankAccountName
+        ? {
+            bankName: clinicInfo.bankName,
+            accountNumber: clinicInfo.bankAccountNo,
+            accountName: clinicInfo.bankAccountName,
+          }
+        : undefined;
 
     const ReceiptBody = ({ copyLabel }: { copyLabel: string }) => (
       <>
@@ -70,11 +87,13 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
 
           <div style={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
             {/* QR Code - Only on Copy 2 */}
-            {copyLabel === "LIÊN 2" && (
+            {copyLabel === "LIÊN 2" && bankConfig && (
               <div>
                 <QRPayment
                   amount={voucher.totalAmount || 0}
                   voucherCode={voucher.paymentNumber}
+                  bankConfig={bankConfig}
+                  accountType={voucher.accountTypeUsed || "COMPANY"}
                   size={60}
                 />
               </div>
@@ -190,14 +209,6 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
           />
         </div>
 
-        {/* Notes */}
-        {voucher.notes && (
-          <div style={{ margin: "8px 0", fontSize: 14 }}>
-            <Text strong>Ghi chú: </Text>
-            <Text>{voucher.notes}</Text>
-          </div>
-        )}
-
         {/* Signatures */}
         <div
           style={{
@@ -261,10 +272,10 @@ const PrintableReceipt = forwardRef<HTMLDivElement, Props>(
         `}</style>
         {/* Two copies per A4 page */}
         <div className="receipt-copy receipt-copy-1">
-          <ReceiptBody copyLabel="LIÊN 1" />
+          <ReceiptBody copyLabel="LIÊN 1 - Khách hàng" />
         </div>
         <div className="receipt-copy receipt-copy-2">
-          <ReceiptBody copyLabel="LIÊN 2" />
+          <ReceiptBody copyLabel="LIÊN 2 - Phòng khám" />
         </div>
 
         {/* Removed dashed mid-page divider as requested */}

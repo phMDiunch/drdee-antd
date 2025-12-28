@@ -17,6 +17,7 @@ export type PaymentVoucherCreateInput = CreatePaymentVoucherRequest & {
   totalAmount: number; // 🔒 Calculated: sum of details amounts
   cashierId: string; // 🔒 Server-controlled: currentUser.employeeId
   clinicId: string; // 🔒 Server-controlled: from currentUser or admin selection
+  accountTypeUsed: string; // 🔒 Server-controlled: "COMPANY" | "PERSONAL" - track which account was used
   createdById: string; // 🔒 Server-controlled: currentUser.employeeId
   updatedById: string; // 🔒 Server-controlled: currentUser.employeeId
 };
@@ -61,7 +62,6 @@ const paymentVoucherInclude = {
           finalPrice: true,
         },
       },
-
     },
   },
   createdBy: {
@@ -77,7 +77,13 @@ const paymentVoucherInclude = {
     },
   },
   clinic: {
-    select: { id: true, clinicCode: true, name: true, shortName: true, colorCode: true },
+    select: {
+      id: true,
+      clinicCode: true,
+      name: true,
+      shortName: true,
+      colorCode: true,
+    },
   },
 } satisfies Prisma.PaymentVoucherInclude;
 
@@ -542,6 +548,13 @@ export const paymentVoucherRepo = {
         amountPaid: true,
         debt: true,
         serviceStatus: true,
+        dentalService: {
+          select: {
+            id: true,
+            name: true,
+            paymentAccountType: true,
+          },
+        },
       },
       orderBy: {
         serviceConfirmDate: "desc",

@@ -49,6 +49,20 @@ export async function getSessionUser(): Promise<UserCore | null> {
         avatarUrl: true,
         clinicId: true,
         jobTitle: true, // Thêm jobTitle để check sale online
+        clinic: {
+          select: {
+            id: true,
+            clinicCode: true,
+            name: true,
+            shortName: true,
+            companyBankName: true,
+            companyBankAccountNo: true,
+            companyBankAccountName: true,
+            personalBankName: true,
+            personalBankAccountNo: true,
+            personalBankAccountName: true,
+          },
+        },
       },
     });
 
@@ -62,6 +76,7 @@ export async function getSessionUser(): Promise<UserCore | null> {
         avatarUrl: employee.avatarUrl ?? user.avatarUrl,
         clinicId: employee.clinicId ?? user.clinicId,
         jobTitle: employee.jobTitle ?? null, // Thêm jobTitle
+        clinic: employee.clinic ?? null, // Thêm clinic object
       };
     }
   } catch {

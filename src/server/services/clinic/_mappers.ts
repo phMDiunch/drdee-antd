@@ -15,6 +15,15 @@ export function mapClinicToResponse(row: Clinic) {
     email: row.email ?? null,
     colorCode: row.colorCode,
     archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
+
+    // Bank account fields
+    companyBankName: row.companyBankName ?? null,
+    companyBankAccountNo: row.companyBankAccountNo ?? null,
+    companyBankAccountName: row.companyBankAccountName ?? null,
+    personalBankName: row.personalBankName ?? null,
+    personalBankAccountNo: row.personalBankAccountNo ?? null,
+    personalBankAccountName: row.personalBankAccountName ?? null,
+
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

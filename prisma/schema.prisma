@@ -34,6 +34,14 @@ model Clinic {
   colorCode  String? // Mã màu để phân biệt phòng khám trên UI
   archivedAt DateTime? @db.Timestamptz // Ngày phòng khám ngừng hoạt động
 
+  // Thông tin tài khoản ngân hàng
+  companyBankName         String? // Tên ngân hàng công ty
+  companyBankAccountNo    String? // Số tài khoản công ty
+  companyBankAccountName  String? // Tên chủ tài khoản công ty
+  personalBankName        String? // Tên ngân hàng cá nhân
+  personalBankAccountNo   String? // Số tài khoản cá nhân
+  personalBankAccountName String? // Tên chủ tài khoản cá nhân
+
   // Metadata
   createdAt DateTime @default(now()) @db.Timestamptz // Ngày tạo
   updatedAt DateTime @updatedAt @db.Timestamptz // Ngày cập nhật cuối
@@ -443,13 +451,14 @@ model ConsultedService {
 model PaymentVoucher {
   id String @id @default(uuid())
 
-  paymentNumber String   @unique // Số phiếu thu
-  customerId    String // Khách hàng
-  paymentDate   DateTime @default(now()) @db.Timestamptz // Ngày và giờ thu tiền
-  totalAmount   Int // Tổng tiền của cả phiếu thu
-  notes         String? // Nội dung thu tiền: Đặt cọc, Thanh toán tiếp, Hoàn tất thanh toán
-  cashierId     String // Nhân viên thu tiền
-  clinicId      String // Chi nhánh thực hiện thu tiền
+  paymentNumber   String   @unique // Số phiếu thu
+  customerId      String // Khách hàng
+  paymentDate     DateTime @default(now()) @db.Timestamptz // Ngày và giờ thu tiền
+  totalAmount     Int // Tổng tiền của cả phiếu thu
+  notes           String? // Nội dung thu tiền: Đặt cọc, Thanh toán tiếp, Hoàn tất thanh toán
+  cashierId       String // Nhân viên thu tiền
+  clinicId        String // Chi nhánh thực hiện thu tiền
+  accountTypeUsed String? // "COMPANY" | "PERSONAL" - Track tài khoản đã dùng
 
   // Metadata
   createdById String

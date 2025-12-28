@@ -41,6 +41,11 @@ interface UnpaidService {
   totalPaid?: number;
   amountPaid?: number;
   serviceStatus?: string;
+  dentalService: {
+    id: string;
+    name: string;
+    paymentAccountType: "COMPANY" | "PERSONAL";
+  };
   // For edit mode - additional fields
   currentDebt?: number;
   previousAmount?: number;
@@ -202,6 +207,11 @@ export default function UpdatePaymentVoucherModal({
         previousAmount, // Store for display
         finalPrice: service.finalPrice || 0,
         totalPaid, // Calculated from finalPrice - currentDebt
+        dentalService: unpaidService?.dentalService || {
+          id: "",
+          name: service.serviceName,
+          paymentAccountType: "COMPANY" as const,
+        },
       };
     });
   }, [selectedServices, unpaidServices, voucher.details]);

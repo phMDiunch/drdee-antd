@@ -40,7 +40,11 @@ export const paymentVoucherService = {
   /**
    * Create new payment voucher
    */
-  async create(currentUser: UserCore | null, body: unknown) {
+  async create(
+    currentUser: UserCore | null,
+    body: unknown,
+    accountType: "COMPANY" | "PERSONAL"
+  ) {
     requireAuth(currentUser);
 
     const parsed = CreatePaymentVoucherRequestSchema.parse(body);
@@ -112,6 +116,7 @@ export const paymentVoucherService = {
       totalAmount,
       cashierId: currentUser!.employeeId!,
       clinicId,
+      accountTypeUsed: accountType, // Store which account was used
       createdById: currentUser!.employeeId!,
       updatedById: currentUser!.employeeId!,
     };

@@ -56,6 +56,7 @@ export function mapPaymentVoucherToResponse(
     paymentDate: voucher.paymentDate.toISOString(),
     totalAmount: voucher.totalAmount,
     notes: voucher.notes,
+    accountTypeUsed: voucher.accountTypeUsed as "COMPANY" | "PERSONAL" | null,
     cashier: {
       id: voucher.cashierId,
       fullName: voucher.cashier.fullName,

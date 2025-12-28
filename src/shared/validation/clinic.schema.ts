@@ -29,6 +29,34 @@ export const ClinicBaseSchema = z.object({
   email: z.string().trim().email("Email không hợp lệ").optional().nullable(),
   colorCode: z.string().trim().regex(HEX6_RE, "Mã màu là bắt buộc"),
   archivedAt: z.date().optional().nullable(), // client gửi khi cần; server set khi archive
+
+  // Company Bank Account - Required
+  companyBankName: z
+    .string()
+    .trim()
+    .min(1, "Tên ngân hàng công ty là bắt buộc"),
+  companyBankAccountNo: z
+    .string()
+    .trim()
+    .min(1, "Số tài khoản công ty là bắt buộc"),
+  companyBankAccountName: z
+    .string()
+    .trim()
+    .min(1, "Tên chủ TK công ty là bắt buộc"),
+
+  // Personal Bank Account - Required
+  personalBankName: z
+    .string()
+    .trim()
+    .min(1, "Tên ngân hàng cá nhân là bắt buộc"),
+  personalBankAccountNo: z
+    .string()
+    .trim()
+    .min(1, "Số tài khoản cá nhân là bắt buộc"),
+  personalBankAccountName: z
+    .string()
+    .trim()
+    .min(1, "Tên chủ TK cá nhân là bắt buộc"),
 });
 
 /**
@@ -67,6 +95,15 @@ export const ClinicResponseSchema = z.object({
   email: z.string().nullable().optional(),
   colorCode: z.string(),
   archivedAt: z.string().datetime().nullable().optional(),
+
+  // Bank fields (nullable for old data without bank info)
+  companyBankName: z.string().nullable().optional(),
+  companyBankAccountNo: z.string().nullable().optional(),
+  companyBankAccountName: z.string().nullable().optional(),
+  personalBankName: z.string().nullable().optional(),
+  personalBankAccountNo: z.string().nullable().optional(),
+  personalBankAccountName: z.string().nullable().optional(),
+
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

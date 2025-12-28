@@ -2,16 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  Button,
-  Col,
-  Empty,
-  Row,
-  Space,
-  Spin,
-  Typography,
-  message,
-} from "antd";
+import { Button, Col, Empty, Row, Space, Spin, Typography, App } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import {
   PaymentVoucherTable,
@@ -54,6 +45,8 @@ export default function PaymentsTab({
   clinicId, // Used for print clinic info
   onDataChange,
 }: PaymentsTabProps) {
+  const { message } = App.useApp();
+
   // Create current customer object for modal
   const currentCustomer = {
     id: customerId,
@@ -129,13 +122,25 @@ export default function PaymentsTab({
     deleteMutation.mutate(id);
   };
 
-  const handleCreateFinish = (values: CreatePaymentVoucherRequest) => {
-    createMutation.mutate(values, {
-      onSuccess: () => {
-        setOpenCreate(false);
-        onDataChange?.();
-      },
-    });
+  const handleCreateFinish = (
+    values: CreatePaymentVoucherRequest,
+    accountType: "COMPANY" | "PERSONAL"
+  ) => {
+    createMutation.mutate(
+      { values, accountType },
+      {
+        onSuccess: (data) => {
+          setOpenCreate(false);
+          onDataChange?.();
+          // Auto-print receipt after successful payment
+          if (data) {
+            setTimeout(() => {
+              handlePrint(data);
+            }, 100);
+          }
+        },
+      }
+    );
   };
 
   const handleEditFinish = (
@@ -160,23 +165,38 @@ export default function PaymentsTab({
     // Defer to next tick for hidden receipt to render
     setTimeout(() => {
       if (!printRef.current) return;
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        message.error(
-          "Không thể mở cửa sổ in. Vui lòng kiểm tra popup blocker."
-        );
+
+      // Create hidden iframe for printing
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.visibility = "hidden";
+
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        message.error("Không thể tạo iframe in. Vui lòng thử lại.");
+        document.body.removeChild(iframe);
+        setPrintVoucher(null);
         return;
       }
+
       const printContent = printRef.current.innerHTML;
-      printWindow.document.write(`
+
+      // Write content to iframe
+      iframeDoc.open();
+      iframeDoc.write(`
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8" />
-            <title>Phiếu Thu - ${printVoucher?.paymentNumber || "N/A"}</title>
+            <title>Phiếu Thu - ${voucher.paymentNumber || "N/A"}</title>
             <style>
               * { box-sizing: border-box; }
-              body { font-family: 'Times New Roman', serif; color: #000; }
+              body { font-family: 'Times New Roman', serif; color: #000; margin: 0; }
               .printable-receipt { margin: 0 auto; }
               @media print {
                 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -194,15 +214,29 @@ export default function PaymentsTab({
           </body>
         </html>
       `);
-      printWindow.document.close();
-      printWindow.onload = () => {
+      iframeDoc.close();
+
+      // Wait for content to load, then print
+      iframe.onload = () => {
         setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-          setPrintVoucher(null);
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (error) {
+            console.error("Print error:", error);
+            message.error("Không thể in. Vui lòng thử lại.");
+          } finally {
+            // Clean up iframe after print dialog closes
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+              }
+              setPrintVoucher(null);
+            }, 100);
+          }
         }, 300);
       };
-    }, 0);
+    }, 100);
   };
 
   // Loading state
@@ -315,14 +349,27 @@ export default function PaymentsTab({
 
       {/* Hidden printable content for immediate printing */}
       <div style={{ position: "absolute", left: -10000, top: -10000 }}>
-        {printVoucher && (
+        {printVoucher && clinicData && (
           <div ref={printRef}>
             <PrintableReceipt
               voucher={printVoucher}
               clinicInfo={{
-                name: clinicData?.name || "PHÒNG KHÁM NHA KHOA",
-                address: clinicData?.address || "",
-                phone: clinicData?.phone || "",
+                name: clinicData.name || "PHÒNG KHÁM NHA KHOA",
+                address: clinicData.address || "",
+                phone: clinicData.phone || "",
+                // Add bank info based on accountTypeUsed
+                bankName:
+                  printVoucher.accountTypeUsed === "COMPANY"
+                    ? clinicData.companyBankName || undefined
+                    : clinicData.personalBankName || undefined,
+                bankAccountNo:
+                  printVoucher.accountTypeUsed === "COMPANY"
+                    ? clinicData.companyBankAccountNo || undefined
+                    : clinicData.personalBankAccountNo || undefined,
+                bankAccountName:
+                  printVoucher.accountTypeUsed === "COMPANY"
+                    ? clinicData.companyBankAccountName || undefined
+                    : clinicData.personalBankAccountName || undefined,
               }}
             />
           </div>
