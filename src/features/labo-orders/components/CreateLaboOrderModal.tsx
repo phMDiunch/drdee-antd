@@ -18,11 +18,11 @@ import "dayjs/locale/vi";
 import viVN from "antd/es/date-picker/locale/vi_VN";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCustomersSearch } from "@/features/customers/hooks/useCustomerSearch";
-import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmployees";
-import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
-import { useLaboItems } from "@/features/labo-items/hooks/useLaboItems";
-import { useLaboServices } from "@/features/labo-services/hooks/useLaboServices";
+import { useCustomersSearch } from "@/features/customers/hooks/queries";
+import { useWorkingEmployees } from "@/features/employees/hooks/queries";
+import { useSuppliers } from "@/features/suppliers/hooks/queries";
+import { useLaboItems } from "@/features/labo-items/hooks/queries";
+import { useLaboServices } from "@/features/labo-services/hooks/queries";
 import type {
   CreateLaboOrderFormData,
   CreateLaboOrderRequest,

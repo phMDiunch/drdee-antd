@@ -14,11 +14,8 @@ export { default as SalesActivityStatistics } from "./components/SalesActivitySt
 export { default as SalesActivityFilters } from "./components/SalesActivityFilters";
 
 // Hooks
-export * from "./hooks/useSalesActivities";
-export * from "./hooks/useCreateSalesActivity";
-export * from "./hooks/useUpdateSalesActivity";
-export * from "./hooks/useDeleteSalesActivity";
-export * from "./hooks/useDailySalesActivities";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // Constants
 export * from "./constants";

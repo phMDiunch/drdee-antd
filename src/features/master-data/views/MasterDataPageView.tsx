@@ -6,8 +6,10 @@ import { Typography, Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import MasterDataList from "@/features/master-data/components/MasterDataList";
 import MasterDataFormModal from "@/features/master-data/components/MasterDataFormModal";
-import { useCreateMasterData } from "@/features/master-data/hooks/useCreateMasterData";
-import { useUpdateMasterData } from "@/features/master-data/hooks/useUpdateMasterData";
+import {
+  useCreateMasterData,
+  useUpdateMasterData,
+} from "@/features/master-data/hooks/mutations";
 import type {
   MasterDataResponse,
   CreateMasterDataRequest,

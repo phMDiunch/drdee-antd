@@ -8,10 +8,12 @@ import { LaboOrderStatistics } from "../components/LaboOrderStatistics";
 import { LaboOrderTable } from "../components/LaboOrderTable";
 import { LaboOrderFilters } from "../components/LaboOrderFilters";
 import { UpdateLaboOrderModal } from "../components/UpdateLaboOrderModal";
-import { useLaboOrdersDaily } from "../hooks/useLaboOrdersDaily";
-import { useReceiveLaboOrder } from "../hooks/useReceiveLaboOrder";
-import { useDeleteLaboOrder } from "../hooks/useDeleteLaboOrder";
-import { useUpdateLaboOrder } from "../hooks/useUpdateLaboOrder";
+import { useLaboOrdersDaily } from "../hooks/queries";
+import {
+  useReceiveLaboOrder,
+  useDeleteLaboOrder,
+  useUpdateLaboOrder,
+} from "../hooks/mutations";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
 import type {

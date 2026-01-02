@@ -37,7 +37,7 @@ import SalesActivitiesTab from "../components/detail-tabs/SalesActivitiesTab";
 import PaymentsTab from "../components/detail-tabs/PaymentsTab";
 import FinancialSummaryCard from "../components/FinancialSummaryCard";
 import ConvertLeadModal from "../components/ConvertLeadModal";
-import { useConvertLead } from "@/features/leads/hooks/useLeadMutations";
+import { useConvertLead } from "@/features/leads";
 import dayjs from "dayjs";
 
 const { Text } = Typography;

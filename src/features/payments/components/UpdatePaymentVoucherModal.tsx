@@ -23,7 +23,7 @@ import { DollarOutlined } from "@ant-design/icons";
 import { formatCurrency } from "@/shared/utils/date";
 import { useCurrentUser } from "@/shared/providers";
 import { useUnpaidServices } from "@/features/payments";
-import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmployees";
+import { useWorkingEmployees } from "@/features/employees/hooks/queries";
 import { PAYMENT_METHODS } from "../constants";
 import type {
   PaymentVoucherResponse,

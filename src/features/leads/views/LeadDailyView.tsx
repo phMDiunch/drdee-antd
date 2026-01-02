@@ -5,12 +5,12 @@ import LeadStatistics from "../components/LeadStatistics";
 import LeadFilters from "../components/LeadFilters";
 import LeadTable from "../components/LeadTable";
 import LeadFormModal from "../components/LeadFormModal";
-import { useLeadsDaily } from "../hooks/useLeadsDaily";
 import {
+  useLeadsDaily,
   useCreateLead,
   useUpdateLead,
   useDeleteLead,
-} from "../hooks/useLeadMutations";
+} from "@/features/leads";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import type {
   CreateLeadRequest,

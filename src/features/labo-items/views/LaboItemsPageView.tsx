@@ -6,12 +6,14 @@ import { Button, Switch, Space, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import LaboItemTable from "@/features/labo-items/components/LaboItemTable";
 import LaboItemFormModal from "@/features/labo-items/components/LaboItemFormModal";
-import { useLaboItems } from "@/features/labo-items/hooks/useLaboItems";
-import { useCreateLaboItem } from "@/features/labo-items/hooks/useCreateLaboItem";
-import { useUpdateLaboItem } from "@/features/labo-items/hooks/useUpdateLaboItem";
-import { useDeleteLaboItem } from "@/features/labo-items/hooks/useDeleteLaboItem";
-import { useArchiveLaboItem } from "@/features/labo-items/hooks/useArchiveLaboItem";
-import { useUnarchiveLaboItem } from "@/features/labo-items/hooks/useUnarchiveLaboItem";
+import { useLaboItems } from "@/features/labo-items/hooks/queries";
+import {
+  useCreateLaboItem,
+  useUpdateLaboItem,
+  useDeleteLaboItem,
+  useArchiveLaboItem,
+  useUnarchiveLaboItem,
+} from "@/features/labo-items/hooks/mutations";
 import type {
   LaboItemResponse,
   CreateLaboItemRequest,

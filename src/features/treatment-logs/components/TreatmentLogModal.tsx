@@ -24,8 +24,8 @@ import {
   type UpdateTreatmentLogFormData,
   type TreatmentLogResponse,
 } from "@/shared/validation/treatment-log.schema";
-import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmployees";
-import { useClinics } from "@/features/clinics/hooks/useClinics";
+import { useWorkingEmployees } from "@/features/employees/hooks/queries";
+import { useClinics } from "@/features/clinics/hooks/queries";
 import { useCurrentUser } from "@/shared/providers";
 import type { AppointmentForTreatmentResponse } from "@/shared/validation/treatment-log.schema";
 import { treatmentLogPermissions } from "@/shared/permissions/treatment-log.permissions";

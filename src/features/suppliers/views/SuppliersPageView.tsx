@@ -6,12 +6,14 @@ import { Button, Switch, Space, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import SupplierTable from "@/features/suppliers/components/SupplierTable";
 import SupplierFormModal from "@/features/suppliers/components/SupplierFormModal";
-import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
-import { useCreateSupplier } from "@/features/suppliers/hooks/useCreateSupplier";
-import { useUpdateSupplier } from "@/features/suppliers/hooks/useUpdateSupplier";
-import { useDeleteSupplier } from "@/features/suppliers/hooks/useDeleteSupplier";
-import { useArchiveSupplier } from "@/features/suppliers/hooks/useArchiveSupplier";
-import { useUnarchiveSupplier } from "@/features/suppliers/hooks/useUnarchiveSupplier";
+import { useSuppliers } from "@/features/suppliers/hooks/queries";
+import {
+  useCreateSupplier,
+  useUpdateSupplier,
+  useDeleteSupplier,
+  useArchiveSupplier,
+  useUnarchiveSupplier,
+} from "@/features/suppliers/hooks/mutations";
 import { useMasterData } from "@/features/master-data";
 import type {
   SupplierResponse,

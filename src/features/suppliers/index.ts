@@ -5,13 +5,8 @@ export * from "./api";
 export * from "./constants";
 
 // Hooks
-export * from "./hooks/useSuppliers";
-export * from "./hooks/useSupplierById";
-export * from "./hooks/useCreateSupplier";
-export * from "./hooks/useUpdateSupplier";
-export * from "./hooks/useDeleteSupplier";
-export * from "./hooks/useArchiveSupplier";
-export * from "./hooks/useUnarchiveSupplier";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // Components
 export { default as SupplierTable } from "./components/SupplierTable";

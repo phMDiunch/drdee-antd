@@ -5,7 +5,7 @@ import type {
 } from "@/shared/validation/customer.schema";
 import { useClinics } from "@/features/clinics";
 import { useWorkingEmployees } from "@/features/employees";
-import { useCustomersSearch } from "../useCustomerSearch";
+import { useCustomersSearch } from "../queries";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import provinces from "@/data/vietnamAdministrativeUnits.json";
 

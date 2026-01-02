@@ -21,7 +21,7 @@ import {
 import provinces from "@/data/vietnamAdministrativeUnits.json";
 import { usePhoneDuplicateCheck } from "@/features/customers";
 import { useWorkingEmployees } from "@/features/employees";
-import { useCustomerSearch } from "@/features/customers/hooks/useCustomerSearch";
+import { useCustomerSearch } from "@/features/customers/hooks/queries";
 import {
   CreateLeadRequestSchema,
   type CreateLeadRequest,

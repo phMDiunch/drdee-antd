@@ -511,105 +511,115 @@ export async function getCustomerDetailApi(id: string) {
 
 ### 4.2. React Query Hooks (`src/features/<features>/hooks/`)
 
-**Hook Naming Convention:**
+**File Structure:**
 
-| Hook Type      | Pattern                 | Example               |
-| -------------- | ----------------------- | --------------------- |
-| List (query)   | `use<FeaturePlural>()`  | `useClinics()`        |
-| Detail (query) | `use<Feature>ById()`    | `useClinicById(id)`   |
-| Create         | `useCreate<Feature>()`  | `useCreateClinic()`   |
-| Update         | `useUpdate<Feature>()`  | `useUpdateClinic(id)` |
-| Delete         | `useDelete<Feature>()`  | `useDeleteClinic()`   |
-| Archive        | `useArchive<Feature>()` | `useArchiveClinic()`  |
+```
+hooks/
+├── queries.ts    # All useQuery hooks (list, detail, daily, search)
+└── mutations.ts  # All useMutation hooks (create, update, delete, archive)
+```
 
-**Query Keys Pattern:**
+**Hook Naming:**
+
+| Type    | Pattern                 | Example               |
+| ------- | ----------------------- | --------------------- |
+| List    | `use<FeaturePlural>()`  | `useClinics()`        |
+| Detail  | `use<Feature>ById()`    | `useClinicById(id)`   |
+| Daily   | `use<Feature>Daily()`   | `useCustomersDaily()` |
+| Search  | `use<Feature>Search()`  | `useCustomerSearch()` |
+| Create  | `useCreate<Feature>()`  | `useCreateClinic()`   |
+| Update  | `useUpdate<Feature>()`  | `useUpdateClinic()`   |
+| Delete  | `useDelete<Feature>()`  | `useDeleteClinic()`   |
+| Archive | `useArchive<Feature>()` | `useArchiveClinic()`  |
+
+**Query Keys (constants.ts):**
 
 ```typescript
-// src/features/<feature>/constants.ts
 export const <FEATURE>_QUERY_KEYS = {
   list: (params?) => ["<feature-plural>", params] as const,
+  daily: (date?, clinicId?) => ["<feature-plural>", "daily", { date, clinicId }] as const,
   byId: (id: string) => ["<feature-singular>", id] as const,
-} as const;
-
-// Ví dụ:
-export const CLINIC_QUERY_KEYS = {
-  list: (includeArchived?: boolean) =>
-    ["clinics", { includeArchived }] as const,
-  byId: (id: string) => ["clinic", id] as const,
+  search: (q, options?) => ["<feature-plural>", "search", q, options] as const,
 } as const;
 ```
 
-**Query Hook - Master Data Pattern:**
+**queries.ts Pattern:**
 
 ```typescript
-// useClinics.ts (Master Data)
-export function useClinics(includeArchived?: boolean) {
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { get<Feature>Api } from "../api";
+import { <FEATURE>_QUERY_KEYS } from "../constants";
+
+/** JSDoc: Purpose + Cache strategy */
+export function use<Feature>(params?) {
   return useQuery({
-    queryKey: CLINIC_QUERY_KEYS.list(includeArchived),
-    queryFn: () => getClinicsApi(includeArchived),
-    staleTime: Infinity, // Dữ liệu không bao giờ bị coi là "cũ"
-    gcTime: 1000 * 60 * 60 * 24, // Giữ trong memory 24h
+    queryKey: <FEATURE>_QUERY_KEYS.list(params),
+    queryFn: () => get<Feature>Api(params),
+    staleTime: /* see table below */,
+    gcTime: /* see table below */,
+    enabled: !!condition, // For conditional queries
   });
 }
 ```
 
-**Query Hook - Transactional Data Pattern:**
+**mutations.ts Pattern:**
 
 ```typescript
-// useCustomers.ts (Transactional Data)
-export function useCustomers(params?: GetCustomersQuery) {
-  return useQuery({
-    queryKey: ["customers", params],
-    queryFn: () => getCustomersApi(params),
-    staleTime: 60 * 1000, // 1 phút
-    gcTime: 5 * 60 * 1000, // 5 phút
-    refetchOnWindowFocus: true, // Fetch lại khi chuyển tab
-  });
-}
-```
+"use client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNotify } from "@/shared/hooks/useNotify";
+import { create<Feature>Action } from "@/server/actions/<feature>.actions";
+import { <FEATURE>_MESSAGES } from "../constants";
 
-**Mutation Hook:**
+/** JSDoc: Purpose + Invalidation strategy */
+export function useCreate<Feature>() {
+  const qc = useQueryClient();
+  const notify = useNotify();
 
-```typescript
-export function useCreateCustomer() {
   return useMutation({
-    mutationFn: createCustomerAction,
+    mutationFn: create<Feature>Action,
     onSuccess: () => {
-      notify.success(CUSTOMER_MESSAGES.CREATE_SUCCESS);
-      qc.invalidateQueries({ queryKey: ["customers"] });
+      notify.success(<FEATURE>_MESSAGES.CREATE_SUCCESS);
+      qc.invalidateQueries({ queryKey: ["<feature-plural>"] });
     },
-    onError: (e) =>
-      notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
+    onError: (e) => notify.error(e, { fallback: COMMON_MESSAGES.UNKNOWN_ERROR }),
   });
-}
-
-// Update: invalidate detail + list
-qc.invalidateQueries({ queryKey: CUSTOMER_QUERY_KEYS.byId(id) });
-qc.invalidateQueries({ queryKey: ["customers"] });
-
-// Delete: invalidate list only
-qc.invalidateQueries({ queryKey: ["customers"] });
-
-// Cross-domain side-effect: invalidate affected queries
-// Example: Appointment check-in auto-binds pending consulted services
-if (variables.checkInTime) {
-  qc.invalidateQueries({ queryKey: ["consulted-services"] });
 }
 ```
 
-**Caching Strategy Summary:**
+**Caching Strategy:**
 
-| Data Type        | staleTime  | gcTime | refetchOnWindowFocus | refetchOnMount | refetchOnReconnect |
-| ---------------- | ---------- | ------ | -------------------- | -------------- | ------------------ |
-| **Master Data**  | `Infinity` | 24h    | `false`              | `false`        | `false`            |
-| **Transactions** | 1 min      | 5 min  | `true`               | (default)      | (default)          |
+| Data Type    | staleTime  | gcTime | refetchOnWindowFocus |
+| ------------ | ---------- | ------ | -------------------- |
+| Master Data  | `Infinity` | 24h    | `false`              |
+| Transactions | 1 min      | 5 min  | `true`               |
+| Daily Views  | 30s        | 5 min  | (default)            |
+| Search       | 30s        | 5 min  | (default)            |
+
+**Invalidation Strategy:**
+
+| Action | Invalidate      | Example                             |
+| ------ | --------------- | ----------------------------------- |
+| Create | List            | `["customers"]`                     |
+| Update | Detail + List   | `byId(id)` + `["customers"]`        |
+| Delete | List            | `["customers"]`                     |
+| Cross  | Affected domain | Check-in → `["consulted-services"]` |
+
+**Organization Rules:**
+
+- **queries.ts:** Group by type (List → Detail → Daily → Search)
+- **mutations.ts:** Group by type (Create → Update → Delete → Archive)
+- JSDoc bắt buộc cho mỗi hook (purpose + cache/invalidation)
+- Export all hooks
 
 **Quy tắc:**
 
-- ✅ Pattern đơn giản (KHÔNG dùng optimistic updates) - đáng tin cậy, nhất quán, dễ debug
-- ✅ Luôn dùng `useNotify()` (KHÔNG BAO GIỜ dùng `App.useApp().message`)
-- ✅ Cấu trúc nhất quán cho tất cả mutations
-- ✅ Dữ liệu luôn đồng bộ với server (đánh đổi: loading nhỏ để đảm bảo ổn định)
+- ✅ 2 files: `queries.ts` + `mutations.ts` (ngoại lệ: feature nhỏ gom vào `index.ts`)
+- ✅ Mutations gọi Server Actions (KHÔNG gọi API trực tiếp)
+- ✅ `useNotify()` (KHÔNG dùng `App.useApp().message`)
+- ✅ Pattern đơn giản (KHÔNG optimistic updates)
+- ✅ Dữ liệu đồng bộ với server (tradeoff: loading nhỏ cho reliability)
 
 ### 4.3. Components (`src/features/<features>/components/`)
 
@@ -737,22 +747,24 @@ export default function CustomerDailyView() {
 // src/features/customers/index.ts
 export { default as CustomerDailyView } from "./views/CustomerDailyView";
 export { default as CustomerTable } from "./components/CustomerTable";
-export * from "./hooks/useCustomers";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 export * from "./constants";
 // NOTE: KHÔNG export api.ts (internal)
 ```
 
 **Rules:**
 
-- ✅ Export: views, components, hooks, constants
+- ✅ Export: views, components, hooks (queries + mutations), constants
 - ❌ KHÔNG export: `api.ts` (internal)
 
 **Usage:**
 
 ```typescript
-// ✅ External: import { CustomerDailyView } from "@/features/customers"
-// ✅ Internal: import { useCustomers } from "../hooks/useCustomers"
-// ❌ Deep path: import from "@/features/customers/hooks/..."
+// ✅ External: import { CustomerDailyView, useCustomers, useCreateCustomer } from "@/features/customers"
+// ✅ Internal: import { useCustomers, useCustomerById } from "../hooks/queries"
+// ✅ Internal: import { useCreateCustomer, useUpdateCustomer } from "../hooks/mutations"
+// ❌ Deep path: import from "@/features/customers/hooks/queries" (external)
 ```
 
 ---

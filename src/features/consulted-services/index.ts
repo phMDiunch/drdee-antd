@@ -14,16 +14,8 @@ export { default as CreateConsultedServiceModal } from "./components/CreateConsu
 export { default as UpdateConsultedServiceModal } from "./components/UpdateConsultedServiceModal";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useConsultedServicesDaily";
-export * from "./hooks/useConsultedServicesPending";
-export * from "./hooks/useConsultedServices";
-export * from "./hooks/useConsultedService";
-export * from "./hooks/useConsultedServicesByCustomer";
-export * from "./hooks/useCreateConsultedService";
-export * from "./hooks/useUpdateConsultedService";
-export * from "./hooks/useDeleteConsultedService";
-export * from "./hooks/useConfirmConsultedService";
-export * from "./hooks/useAssignConsultingSale";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

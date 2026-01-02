@@ -5,13 +5,8 @@ export * from "./api";
 export * from "./constants";
 
 // Hooks
-export * from "./hooks/useMaterials";
-export * from "./hooks/useMaterialById";
-export * from "./hooks/useCreateMaterial";
-export * from "./hooks/useUpdateMaterial";
-export * from "./hooks/useDeleteMaterial";
-export * from "./hooks/useArchiveMaterial";
-export * from "./hooks/useUnarchiveMaterial";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // Components
 export { default as MaterialTable } from "./components/MaterialTable";

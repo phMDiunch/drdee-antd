@@ -5,6 +5,6 @@ export { default as LeadFormModal } from "./components/LeadFormModal";
 export { default as LeadStatistics } from "./components/LeadStatistics";
 export { default as LeadFilters } from "./components/LeadFilters";
 
-export * from "./hooks/useLeadsDaily";
-export * from "./hooks/useLeadMutations";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 export * from "./constants";

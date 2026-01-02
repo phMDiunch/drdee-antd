@@ -12,13 +12,8 @@ export { default as AppointmentFilters } from "./components/AppointmentFilters";
 export { default as AppointmentTable } from "./components/AppointmentTable";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useAppointments";
-export * from "./hooks/useAppointmentsDaily";
-export * from "./hooks/useAppointment";
-export * from "./hooks/useCreateAppointment";
-export * from "./hooks/useUpdateAppointment";
-export * from "./hooks/useDeleteAppointment";
-export * from "./hooks/useDentistAvailability";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

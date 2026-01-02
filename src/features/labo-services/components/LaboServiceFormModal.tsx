@@ -16,8 +16,8 @@ import {
   UpdateLaboServiceRequestSchema,
 } from "@/shared/validation/labo-service.schema";
 import { LABO_WARRANTY_OPTIONS, LABO_WARRANTY_LABELS } from "../constants";
-import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
-import { useLaboItems } from "@/features/labo-items/hooks/useLaboItems";
+import { useSuppliers } from "@/features/suppliers/hooks/queries";
+import { useLaboItems } from "@/features/labo-items/hooks/queries";
 
 type Props = {
   open: boolean;

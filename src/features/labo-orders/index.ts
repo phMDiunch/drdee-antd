@@ -8,12 +8,8 @@ export * from "./components/CreateLaboOrderModal";
 export * from "./components/UpdateLaboOrderModal";
 
 // Hooks
-export * from "./hooks/useLaboOrdersDaily";
-export * from "./hooks/useLaboOrdersByCustomer";
-export * from "./hooks/useCreateLaboOrder";
-export * from "./hooks/useUpdateLaboOrder";
-export * from "./hooks/useDeleteLaboOrder";
-export * from "./hooks/useReceiveLaboOrder";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // Views
 export * from "./views/LaboOrderDailyView";

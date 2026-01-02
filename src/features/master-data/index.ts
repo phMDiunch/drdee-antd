@@ -9,11 +9,8 @@ export { default as MasterDataFormModal } from "./components/MasterDataFormModal
 export { default as MasterDataList } from "./components/MasterDataList";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useMasterData";
-export * from "./hooks/useMasterDataCategories";
-export * from "./hooks/useCreateMasterData";
-export * from "./hooks/useUpdateMasterData";
-export * from "./hooks/useDeleteMasterData";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

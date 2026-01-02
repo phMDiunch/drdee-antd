@@ -24,7 +24,7 @@ import {
   type CustomerSource,
 } from "@/features/customers/constants";
 import provinces from "@/data/vietnamAdministrativeUnits.json";
-import { useCustomersSearch } from "@/features/customers/hooks/useCustomerSearch";
+import { useCustomersSearch } from "@/features/customers/hooks/queries";
 import { useClinics } from "@/features/clinics";
 import { useWorkingEmployees } from "@/features/employees";
 import { useCurrentUser } from "@/shared/providers";

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useLookupCustomerPhone } from "../useCustomerSearch";
+import { useLookupCustomerPhone } from "../queries";
 import type { CustomerDetailResponse } from "@/shared/validation/customer.schema";
 
 type UsePhoneDuplicateCheckParams = {

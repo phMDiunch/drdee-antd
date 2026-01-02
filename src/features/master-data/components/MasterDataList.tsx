@@ -4,8 +4,8 @@
 import React, { useMemo } from "react";
 import { Collapse, Table, Button, Space, Popconfirm, Tooltip } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import { useMasterData } from "../hooks/useMasterData";
-import { useDeleteMasterData } from "../hooks/useDeleteMasterData";
+import { useMasterData } from "../hooks/queries";
+import { useDeleteMasterData } from "../hooks/mutations";
 import type { MasterDataResponse } from "@/shared/validation/master-data.schema";
 import type { ColumnsType } from "antd/es/table";
 

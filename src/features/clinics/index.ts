@@ -9,13 +9,8 @@ export { default as ClinicFormModal } from "./components/ClinicFormModal";
 export { default as ClinicTable } from "./components/ClinicTable";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useClinics";
-export * from "./hooks/useClinicById";
-export * from "./hooks/useCreateClinic";
-export * from "./hooks/useUpdateClinic";
-export * from "./hooks/useDeleteClinic";
-export * from "./hooks/useArchiveClinic";
-export * from "./hooks/useUnarchiveClinic";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

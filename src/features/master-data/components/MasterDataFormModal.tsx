@@ -5,7 +5,7 @@ import React, { useEffect, useMemo } from "react";
 import { Modal, Input, Row, Col, AutoComplete } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMasterDataCategories } from "../hooks/useMasterDataCategories";
+import { useMasterDataCategories } from "../hooks/queries";
 import type {
   MasterDataResponse,
   CreateMasterDataRequest,

@@ -23,11 +23,11 @@ import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmployees";
+import { useWorkingEmployees } from "@/features/employees/hooks/queries";
 import { useCurrentUser } from "@/shared/providers";
 import { consultedServicePermissions } from "@/shared/permissions/consulted-service.permissions";
 import { CUSTOMER_SOURCES } from "@/features/customers/constants";
-import { useCustomersSearch } from "@/features/customers/hooks/useCustomerSearch";
+import { useCustomersSearch } from "@/features/customers/hooks/queries";
 import ToothSelectorModal from "./ToothSelectorModal";
 import type {
   ConsultedServiceResponse,

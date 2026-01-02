@@ -8,9 +8,11 @@ import SalesActivityStatistics from "../components/SalesActivityStatistics";
 import SalesActivityFilters from "../components/SalesActivityFilters";
 import SalesActivityTable from "../components/SalesActivityTable";
 import SalesActivityModal from "../components/SalesActivityModal";
-import { useDailySalesActivities } from "../hooks/useDailySalesActivities";
-import { useUpdateSalesActivity } from "../hooks/useUpdateSalesActivity";
-import { useDeleteSalesActivity } from "../hooks/useDeleteSalesActivity";
+import {
+  useDailySalesActivities,
+  useUpdateSalesActivity,
+  useDeleteSalesActivity,
+} from "@/features/sales-activities";
 import { useDateNavigation } from "@/shared/hooks/useDateNavigation";
 import { useCurrentUser } from "@/shared/providers";
 import type {

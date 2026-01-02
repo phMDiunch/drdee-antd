@@ -6,12 +6,14 @@ import { Button, Switch, Space, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import DentalServiceTable from "@/features/dental-services/components/DentalServiceTable";
 import DentalServiceFormModal from "@/features/dental-services/components/DentalServiceFormModal";
-import { useDentalServices } from "@/features/dental-services//hooks/useDentalServices";
-import { useCreateDentalService } from "@/features/dental-services//hooks/useCreateDentalService";
-import { useUpdateDentalService } from "@/features/dental-services//hooks/useUpdateDentalService";
-import { useDeleteDentalService } from "@/features/dental-services//hooks/useDeleteDentalService";
-import { useArchiveDentalService } from "@/features/dental-services//hooks/useArchiveDentalService";
-import { useUnarchiveDentalService } from "@/features/dental-services//hooks/useUnarchiveDentalService";
+import { useDentalServices } from "@/features/dental-services/hooks/queries";
+import {
+  useCreateDentalService,
+  useUpdateDentalService,
+  useDeleteDentalService,
+  useArchiveDentalService,
+  useUnarchiveDentalService,
+} from "@/features/dental-services/hooks/mutations";
 import type {
   DentalServiceResponse,
   CreateDentalServiceRequest,

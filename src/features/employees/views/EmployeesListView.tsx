@@ -8,7 +8,7 @@ import EmployeeFilters from "@/features/employees/components/EmployeeFilters";
 import EmployeeStats from "@/features/employees/components/EmployeeStats";
 import EmployeeTable from "@/features/employees/components/EmployeeTable";
 import EmployeeFormModal from "@/features/employees/components/CreateEmployeeModal";
-import { useClinics } from "@/features/clinics/hooks/useClinics";
+import { useClinics } from "@/features/clinics/hooks/queries";
 import {
   useEmployees,
   useCreateEmployee,
@@ -102,7 +102,9 @@ export default function EmployeesListView() {
         return;
       }
       if (row.uid) {
-        notify.info("Nhân viên đã có tài khoản Supabase, không cần gửi lại lời mời.");
+        notify.info(
+          "Nhân viên đã có tài khoản Supabase, không cần gửi lại lời mời."
+        );
         return;
       }
       setInviteTargetId(row.id);

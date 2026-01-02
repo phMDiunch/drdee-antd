@@ -6,12 +6,14 @@ import { Button, Space, Typography, Input, Switch } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import LaboServiceTable from "@/features/labo-services/components/LaboServiceTable";
 import LaboServiceFormModal from "@/features/labo-services/components/LaboServiceFormModal";
-import { useLaboServices } from "@/features/labo-services/hooks/useLaboServices";
-import { useCreateLaboService } from "@/features/labo-services/hooks/useCreateLaboService";
-import { useUpdateLaboService } from "@/features/labo-services/hooks/useUpdateLaboService";
-import { useDeleteLaboService } from "@/features/labo-services/hooks/useDeleteLaboService";
-import { useArchiveLaboService } from "@/features/labo-services/hooks/useArchiveLaboService";
-import { useUnarchiveLaboService } from "@/features/labo-services/hooks/useUnarchiveLaboService";
+import { useLaboServices } from "@/features/labo-services/hooks/queries";
+import {
+  useCreateLaboService,
+  useUpdateLaboService,
+  useDeleteLaboService,
+  useArchiveLaboService,
+  useUnarchiveLaboService,
+} from "@/features/labo-services/hooks/mutations";
 import type {
   LaboServiceResponse,
   CreateLaboServiceRequest,

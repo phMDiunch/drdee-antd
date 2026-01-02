@@ -12,16 +12,8 @@ export { default as EmployeeStats } from "./components/EmployeeStats";
 export { default as EmployeeFilters } from "./components/EmployeeFilters";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useEmployees";
-export * from "./hooks/useCreateEmployee";
-export * from "./hooks/useEmployeeById";
-export * from "./hooks/useEmployeeForProfileCompletion";
-export * from "./hooks/useCompleteProfilePublic";
-export * from "./hooks/useUpdateEmployee";
-export * from "./hooks/useDeleteEmployee";
-export * from "./hooks/useSetEmployeeStatus";
-export * from "./hooks/useResendEmployeeInvite";
-export * from "./hooks/useWorkingEmployees";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

@@ -23,11 +23,8 @@ export { default as TreatmentCareTab } from "./components/detail-tabs/TreatmentC
 export { default as PaymentsTab } from "./components/detail-tabs/PaymentsTab";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useCustomersDaily";
-export * from "./hooks/useCreateCustomer";
-export * from "./hooks/useCustomerSearch";
-export * from "./hooks/useCustomerDetail";
-export * from "./hooks/useUpdateCustomer";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // Form hooks
 export * from "./hooks/form-hooks/usePhoneDuplicateCheck";

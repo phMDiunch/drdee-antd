@@ -1,11 +1,8 @@
 // src/features/treatment-logs/index.ts
 
 // Hooks
-export * from "./hooks/useCheckedInAppointments";
-export * from "./hooks/useCreateTreatmentLog";
-export * from "./hooks/useUpdateTreatmentLog";
-export * from "./hooks/useDeleteTreatmentLog";
-export * from "./hooks/useDailyTreatmentLogs";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // Components
 export { default as TreatmentLogModal } from "./components/TreatmentLogModal";

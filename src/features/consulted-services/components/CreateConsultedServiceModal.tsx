@@ -19,10 +19,10 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useDentalServices } from "@/features/dental-services/hooks/useDentalServices";
-import { useWorkingEmployees } from "@/features/employees/hooks/useWorkingEmployees";
+import { useDentalServices } from "@/features/dental-services/hooks/queries";
+import { useWorkingEmployees } from "@/features/employees/hooks/queries";
 import { CUSTOMER_SOURCES } from "@/features/customers/constants";
-import { useCustomersSearch } from "@/features/customers/hooks/useCustomerSearch";
+import { useCustomersSearch } from "@/features/customers/hooks/queries";
 import ToothSelectorModal from "./ToothSelectorModal";
 import type { CreateConsultedServiceRequest } from "@/shared/validation/consulted-service.schema";
 

@@ -9,13 +9,8 @@ export { default as LaboItemFormModal } from "./components/LaboItemFormModal";
 export { default as LaboItemTable } from "./components/LaboItemTable";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useLaboItems";
-export * from "./hooks/useLaboItemById";
-export * from "./hooks/useCreateLaboItem";
-export * from "./hooks/useUpdateLaboItem";
-export * from "./hooks/useDeleteLaboItem";
-export * from "./hooks/useArchiveLaboItem";
-export * from "./hooks/useUnarchiveLaboItem";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

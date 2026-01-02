@@ -9,13 +9,8 @@ export { default as DentalServiceFormModal } from "./components/DentalServiceFor
 export { default as DentalServiceTable } from "./components/DentalServiceTable";
 
 // ===== HOOKS (for data fetching) =====
-export * from "./hooks/useDentalServices";
-export * from "./hooks/useDentalServiceById";
-export * from "./hooks/useCreateDentalService";
-export * from "./hooks/useUpdateDentalService";
-export * from "./hooks/useDeleteDentalService";
-export * from "./hooks/useArchiveDentalService";
-export * from "./hooks/useUnarchiveDentalService";
+export * from "./hooks/queries";
+export * from "./hooks/mutations";
 
 // ===== CONSTANTS =====
 export * from "./constants";

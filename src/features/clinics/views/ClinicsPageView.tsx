@@ -4,12 +4,14 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Typography, Switch, Space, Button, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useClinics } from "@/features/clinics/hooks/useClinics";
-import { useCreateClinic } from "@/features/clinics/hooks/useCreateClinic";
-import { useUpdateClinic } from "@/features/clinics/hooks/useUpdateClinic";
-import { useDeleteClinic } from "@/features/clinics/hooks/useDeleteClinic";
-import { useArchiveClinic } from "@/features/clinics/hooks/useArchiveClinic";
-import { useUnarchiveClinic } from "@/features/clinics/hooks/useUnarchiveClinic";
+import { useClinics } from "@/features/clinics/hooks/queries";
+import {
+  useCreateClinic,
+  useUpdateClinic,
+  useDeleteClinic,
+  useArchiveClinic,
+  useUnarchiveClinic,
+} from "@/features/clinics/hooks/mutations";
 import ClinicTable from "@/features/clinics/components/ClinicTable";
 import ClinicFormModal from "@/features/clinics/components/ClinicFormModal";
 import type {

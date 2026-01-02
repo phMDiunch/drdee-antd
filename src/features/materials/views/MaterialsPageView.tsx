@@ -6,12 +6,14 @@ import { Button, Switch, Space, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import MaterialTable from "@/features/materials/components/MaterialTable";
 import MaterialFormModal from "@/features/materials/components/MaterialFormModal";
-import { useMaterials } from "@/features/materials/hooks/useMaterials";
-import { useCreateMaterial } from "@/features/materials/hooks/useCreateMaterial";
-import { useUpdateMaterial } from "@/features/materials/hooks/useUpdateMaterial";
-import { useDeleteMaterial } from "@/features/materials/hooks/useDeleteMaterial";
-import { useArchiveMaterial } from "@/features/materials/hooks/useArchiveMaterial";
-import { useUnarchiveMaterial } from "@/features/materials/hooks/useUnarchiveMaterial";
+import { useMaterials } from "@/features/materials/hooks/queries";
+import {
+  useCreateMaterial,
+  useUpdateMaterial,
+  useDeleteMaterial,
+  useArchiveMaterial,
+  useUnarchiveMaterial,
+} from "@/features/materials/hooks/mutations";
 import { useMasterData } from "@/features/master-data";
 import { MATERIAL_MASTER_DATA_CATEGORIES } from "@/features/materials/constants";
 import type {
