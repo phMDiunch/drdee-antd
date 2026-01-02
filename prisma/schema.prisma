@@ -69,6 +69,9 @@ model Clinic {
 
   // Liên kết đến đơn hàng labo
   laboOrders LaboOrder[]
+
+  // 🚀 Performance Indexes
+  @@index([archivedAt, createdAt(sort: Desc)]) // Optimize: List query with archive filter + sort
 }
 
 model Employee {
@@ -197,7 +200,10 @@ model Employee {
 
   // 🚀 Performance Indexes
   @@index([clinicId, employeeStatus]) // Optimize: Get working employees by clinic
+  @@index([employeeStatus, createdAt(sort: Desc)]) // Optimize: List employees (default mode)
+  @@index([employeeStatus, fullName(sort: Asc)]) // Optimize: List working employees sorted by name
   @@index([email]) // Optimize: Login by email
+  @@index([fullName]) // Optimize: Text search by name (partial match support)
 }
 
 model DentalService {
@@ -242,6 +248,11 @@ model DentalService {
 
   // Liên kết đến dịch vụ tư vấn
   consultedServices ConsultedService[]
+
+  // 🚀 Performance Indexes
+  @@index([archivedAt, name(sort: Asc)]) // Optimize: List query with archive filter + sort by name
+  @@index([serviceGroup, department, archivedAt]) // Optimize: Filter by classification fields
+  @@index([tags]) // Optimize: Search by tags (GIN index for array)
 }
 
 model Customer {
@@ -311,11 +322,15 @@ model Customer {
 
   // Liên kết đến đơn hàng labo
   laboOrders LaboOrder[]
-  // @@index([type, clinicId, createdAt]) // ⭐ NEW: Optimize queries filtering by type (LEAD vs CUSTOMER)
 
   // 🚀 Performance Indexes
-  @@index([clinicId, createdAt]) // Optimize: Daily view - customers by clinic & date
-  @@index([phone]) // Optimize: Search by phone number
+  @@index([type, clinicId, firstVisitDate(sort: Desc)]) // Optimize: Customer daily view - filter by type, clinic, firstVisitDate
+  @@index([type, createdAt(sort: Desc)]) // Optimize: Lead daily view - filter by type, createdAt
+  @@index([type, convertedAt(sort: Desc)]) // Optimize: Lead daily view - converted customers
+  @@index([type, clinicId, createdAt(sort: Desc)]) // Optimize: Customer/Lead list with pagination
+  @@index([phone]) // Optimize: Phone lookup (duplicate check)
+  @@index([customerCode]) // Optimize: CustomerCode search & last code lookup
+  @@index([fullName]) // Optimize: Text search by name (partial match support)
 }
 
 model Appointment {
@@ -363,9 +378,12 @@ model Appointment {
   treatmentLogs TreatmentLog[]
 
   // 🚀 Performance Indexes
-  @@index([clinicId, appointmentDateTime]) // Optimize: Daily view - appointments by clinic & date
-  @@index([customerId]) // Optimize: Customer detail - all appointments
-  @@index([primaryDentistId]) // Optimize: Dentist schedule
+  @@index([clinicId, appointmentDateTime(sort: Asc)]) // Optimize: Daily view - appointments by clinic & date, sorted
+  @@index([customerId, appointmentDateTime(sort: Desc)]) // Optimize: Customer detail - all appointments, newest first
+  @@index([primaryDentistId, appointmentDateTime]) // Optimize: Dentist schedule & availability check
+  @@index([secondaryDentistId, appointmentDateTime]) // Optimize: Secondary dentist schedule & conflicts
+  @@index([status, appointmentDateTime]) // Optimize: Filter by status (checked-in, confirmed, etc.)
+  @@index([appointmentDateTime, clinicId]) // Optimize: Global appointment search by date range
 }
 
 model ConsultedService {
@@ -447,6 +465,16 @@ model ConsultedService {
 
   // Liên kết đến nhật ký liên hệ sale
   salesActivityLogs SalesActivityLog[]
+
+  // 🚀 Performance Indexes
+  @@index([clinicId, consultationDate(sort: Desc)]) // Optimize: Daily view - services by clinic & date
+  @@index([customerId, consultationDate(sort: Desc)]) // Optimize: Customer detail - all services
+  @@index([serviceStatus, createdAt(sort: Desc)]) // Optimize: Pending services follow-up
+  @@index([treatmentStatus, consultationDate]) // Optimize: Filter by treatment progress
+  @@index([appointmentId]) // Optimize: Services by appointment (check-in flow)
+  @@index([consultingDoctorId, consultationDate]) // Optimize: Doctor's consultation history
+  @@index([saleOnlineId, createdAt]) // Optimize: Online sale performance tracking
+  @@index([consultingSaleId, consultationDate]) // Optimize: Clinic sale performance tracking
 }
 
 model PaymentVoucher {
@@ -590,6 +618,14 @@ model TreatmentLog {
   assistant2 Employee? @relation("Assistant2Logs", fields: [assistant2Id], references: [id])
   createdBy  Employee  @relation("CreatedLogs", fields: [createdById], references: [id])
   updatedBy  Employee  @relation("UpdatedLogs", fields: [updatedById], references: [id])
+
+  // 🚀 Performance Indexes
+  @@index([clinicId, treatmentDate(sort: Desc)]) // Optimize: Daily view - logs by clinic & date
+  @@index([customerId, treatmentDate(sort: Desc)]) // Optimize: Customer detail - treatment history
+  @@index([consultedServiceId, treatmentDate(sort: Desc)]) // Optimize: Service progress tracking
+  @@index([appointmentId, createdAt(sort: Asc)]) // Optimize: Appointment treatment logs
+  @@index([dentistId, treatmentDate]) // Optimize: Dentist workload & performance
+  @@index([treatmentStatus, treatmentDate]) // Optimize: Treatment status filtering
 }
 
 //---------------------------
