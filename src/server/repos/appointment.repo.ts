@@ -149,8 +149,9 @@ export const appointmentRepo = {
 
   /**
    * Get appointments for a specific date and clinic (Daily View)
-   * Following customer.repo.ts gold standard
-   * Includes next appointment for each customer (future appointments after query date)
+   * Optimized: Fixed N+1 query issue by fetching next appointments separately
+   * Previously: N+1 queries (1 main + N nested for each customer's next appointment)
+   * Now: 2 queries (1 main + 1 batch query for all next appointments)
    */
   async listDaily(params: {
     clinicId: string;
@@ -159,6 +160,7 @@ export const appointmentRepo = {
   }) {
     const { clinicId, dateStart, dateEnd } = params;
 
+    // Query 1: Fetch today's appointments without nested next appointments
     const items = await prisma.appointment.findMany({
       where: {
         clinicId,
@@ -176,22 +178,6 @@ export const appointmentRepo = {
             fullName: true,
             phone: true,
             dob: true,
-            // ⭐ Fetch next appointment (future appointments after query date)
-            appointments: {
-              where: {
-                appointmentDateTime: {
-                  gte: dateEnd, // After query date (future)
-                },
-              },
-              orderBy: {
-                appointmentDateTime: "asc",
-              },
-              take: 1, // Only get the nearest one
-              select: {
-                id: true,
-                appointmentDateTime: true,
-              },
-            },
           },
         },
         primaryDentist: {
@@ -218,7 +204,54 @@ export const appointmentRepo = {
       },
     });
 
-    return { items, count: items.length };
+    // Query 2: Batch fetch next appointments for all customers
+    // Extract unique customer IDs from today's appointments
+    const customerIds = [...new Set(items.map((apt) => apt.customerId))];
+
+    if (customerIds.length === 0) {
+      return { items: [], count: 0 };
+    }
+
+    // Fetch the next appointment for each customer (future appointments after dateEnd)
+    const nextAppointments = await prisma.appointment.findMany({
+      where: {
+        customerId: { in: customerIds },
+        appointmentDateTime: { gte: dateEnd },
+      },
+      select: {
+        id: true,
+        customerId: true,
+        appointmentDateTime: true,
+      },
+      orderBy: { appointmentDateTime: "asc" },
+    });
+
+    // Build a map: customerId -> earliest next appointment
+    const nextAppointmentMap = new Map<
+      string,
+      { id: string; appointmentDateTime: Date }
+    >();
+    nextAppointments.forEach((apt) => {
+      if (!nextAppointmentMap.has(apt.customerId)) {
+        nextAppointmentMap.set(apt.customerId, {
+          id: apt.id,
+          appointmentDateTime: apt.appointmentDateTime,
+        });
+      }
+    });
+
+    // Merge next appointments into customer data (application-layer join)
+    const itemsWithNextAppointment = items.map((apt) => ({
+      ...apt,
+      customer: {
+        ...apt.customer,
+        appointments: nextAppointmentMap.has(apt.customerId)
+          ? [nextAppointmentMap.get(apt.customerId)!]
+          : [],
+      },
+    }));
+
+    return { items: itemsWithNextAppointment, count: itemsWithNextAppointment.length };
   },
 
   /**
