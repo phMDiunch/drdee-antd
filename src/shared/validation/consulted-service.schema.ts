@@ -411,6 +411,8 @@ export const ConsultedServiceResponseSchema = z.object({
     .object({
       id: z.string(),
       name: z.string(),
+      shortName: z.string().nullable(),
+      colorCode: z.string().nullable(),
     })
     .nullable()
     .optional(), // Nullable - null cho LEAD tư vấn online

@@ -140,6 +140,7 @@ export default function CustomerDetailView({
     return {
       appointmentId: todayAppointment.id,
       checkInTime: todayAppointment.checkInTime,
+      clinicId: todayAppointment.clinicId, // Clinic nơi check-in
     };
   }, [todayAppointment]);
 
@@ -345,7 +346,7 @@ export default function CustomerDetailView({
                   customerId={customer.id}
                   customerCode={customer.customerCode || ""}
                   customerName={customer.fullName}
-                  clinicId={customer.clinicId || ""}
+                  clinicId={todayCheckIn?.clinicId || customer.clinicId || ""}
                   todayCheckIn={todayCheckIn}
                   onDataChange={() => refetch()}
                 />

@@ -298,6 +298,7 @@ export const CustomerDetailResponseSchema = CustomerResponseSchema.extend({
         checkInTime: z.string().datetime().nullable(),
         checkOutTime: z.string().datetime().nullable(),
         status: z.string(),
+        clinicId: z.string().uuid(), // ✅ THÊM: Để xác định clinic nơi check-in
       })
     )
     .optional(),

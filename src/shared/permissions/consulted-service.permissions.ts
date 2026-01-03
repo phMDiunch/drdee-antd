@@ -136,8 +136,8 @@ function getDaysSinceConfirmation(
 
 /**
  * Check if user can access service
- * Priority: Check customer's current clinic (customerClinicId) if available,
- * fallback to service's clinic (clinicId) for backward compatibility
+ * Check service's clinic (where the service was created/performed)
+ * Note: Service clinicId = clinic where customer was checked-in and consulted
  */
 function canAccessClinic(
   user: PermissionUser | null | undefined,
@@ -146,9 +146,9 @@ function canAccessClinic(
   if (!user) return false;
   if (isAdmin(user)) return true; // Admin can access all
 
-  // Check customer's current clinic (supports customer transfer between clinics)
-  const targetClinicId = service.customerClinicId ?? service.clinicId;
-  return user.clinicId === targetClinicId;
+  // Check service's clinic (where service was created)
+  // This is the clinic where customer checked-in and received consultation
+  return user.clinicId === service.clinicId;
 }
 
 /**

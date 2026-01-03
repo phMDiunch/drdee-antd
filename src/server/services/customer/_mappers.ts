@@ -92,6 +92,7 @@ type CustomerDetailWithRelations = CustomerWithRelations & {
     checkInTime: Date | null;
     checkOutTime: Date | null;
     status: string;
+    clinicId: string;
   }>;
 };
 
@@ -130,6 +131,7 @@ export function mapCustomerDetailToResponse(row: CustomerDetailWithRelations) {
             ? apt.checkOutTime.toISOString()
             : null,
           status: apt.status,
+          clinicId: apt.clinicId,
         }))
       : undefined,
   };

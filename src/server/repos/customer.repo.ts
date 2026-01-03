@@ -271,6 +271,7 @@ export const customerRepo = {
             checkInTime: true,
             checkOutTime: true,
             status: true,
+            clinicId: true, // ✅ THÊM: Để xác định clinic nơi check-in
           },
           orderBy: { appointmentDateTime: "desc" },
         },

@@ -114,9 +114,28 @@ export default function ConsultedServiceTable({
             },
           ]
         : []),
-      // Customer Detail View or Follow-up View: Add "Ngày tư vấn" column
+      // Customer Detail View or Follow-up View: Add "Chi nhánh" and "Ngày tư vấn" columns
       ...((isCustomerDetailView || view === "follow-up"
         ? [
+            {
+              title: "Chi nhánh",
+              dataIndex: "clinic",
+              key: "clinic",
+              width: 80,
+              render: (
+                clinic: {
+                  shortName: string | null;
+                  colorCode: string | null;
+                } | null
+              ) =>
+                clinic && clinic.shortName && clinic.colorCode ? (
+                  <Tag color={clinic.colorCode} style={{ fontSize: 11 }}>
+                    {clinic.shortName}
+                  </Tag>
+                ) : (
+                  <Text type="secondary">—</Text>
+                ),
+            },
             {
               title: "Ngày tư vấn",
               dataIndex: "consultationDate",

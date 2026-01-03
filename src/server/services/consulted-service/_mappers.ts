@@ -25,6 +25,8 @@ type ConsultedServiceWithRelations = ConsultedService & {
   clinic: {
     id: string;
     name: string;
+    shortName: string | null;
+    colorCode: string | null;
   } | null; // nullable for LEAD online consultations
 };
 
@@ -153,6 +155,8 @@ export function mapConsultedServiceToResponse(
       ? {
           id: row.clinic.id,
           name: row.clinic.name,
+          shortName: row.clinic.shortName,
+          colorCode: row.clinic.colorCode,
         }
       : null,
 

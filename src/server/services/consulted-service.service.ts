@@ -691,7 +691,21 @@ export const consultedServiceService = {
       );
     }
 
-    // 4. Confirm
+    // 4. Check clinic permission
+    const permissionCheck = consultedServicePermissions.canConfirm(
+      currentUser,
+      existing
+    );
+    if (!permissionCheck.allowed) {
+      throw new ServiceError(
+        "PERMISSION_DENIED",
+        permissionCheck.reason ||
+          "Không có quyền chốt dịch vụ của khách hàng thuộc chi nhánh khác",
+        403
+      );
+    }
+
+    // 5. Confirm
     const updated = await consultedServiceRepo.confirm(
       id,
       currentUser!.employeeId!

@@ -25,10 +25,11 @@ interface ConsultedServicesTabProps {
   customerId: string;
   customerCode: string;
   customerName: string;
-  clinicId: string | null; // nullable for LEAD
+  clinicId: string | null; // nullable for LEAD, or from appointment when checked-in
   todayCheckIn?: {
     appointmentId: string;
     checkInTime: string;
+    clinicId: string; // Clinic nơi check-in (appointment.clinicId)
   } | null;
   onDataChange?: () => void;
 }
